@@ -27,8 +27,7 @@ public class ArraySelector {
 	public static <T> T min(T[] a, Comparator<? super T> c, int fromIndex, int endIndex){
 		if(a == null)
 			return null;
-		if(!checkIndex(a.length, fromIndex, endIndex))
-			return null;
+		checkIndex(a.length, fromIndex, endIndex);
 		int minIndex = fromIndex;
 		for(int i = fromIndex + 1; i < endIndex; ++i){
 			if(c.compare(a[minIndex], a[i]) > 0)
@@ -37,15 +36,32 @@ public class ArraySelector {
 		return a[minIndex];
 	}
 	
+	public static <T> T max(T[] a, Comparator<? super T> c){
+		if(a == null)
+			return null;
+		return max(a, c, 0, a.length);
+	}
+	
+	public static <T> T max(T[] a, Comparator<? super T> c, int fromIndex, int endIndex){
+		if(a == null)
+			return null;
+		checkIndex(a.length, fromIndex, endIndex);
+		int maxIndex = fromIndex;
+		for(int i = fromIndex + 1; i < endIndex; ++i){
+			if(c.compare(a[maxIndex], a[i]) < 0)
+				maxIndex = i;
+		}
+		return a[maxIndex];
+	}
+	
 	private static <T> T selectInternal(T[] a, Comparator<? super T> c, int fromIndex, int endIndex, int order){
 		if(order <= 0)
 			return null;
 		if(a == null)
 			return null;
-		if(!checkIndex(a.length, fromIndex, endIndex))
-			return null;
+		checkIndex(a.length, fromIndex, endIndex);
 		if(order > endIndex - fromIndex)
-			return null;
+			throw new IllegalArgumentException(order + " > " + endIndex + " - " + fromIndex);
 		
 		int pivot = randomizedPartition(a, c, fromIndex, endIndex);
 		int k = pivot - fromIndex + 1;
@@ -60,8 +76,7 @@ public class ArraySelector {
 	
 	private static <T> int randomizedPartition(T[] a, Comparator<? super T> c, int fromIndex, int endIndex){
 		Random random = new Random();
-		int i = random.nextInt(endIndex - fromIndex);
-		i += fromIndex;
+		int i = random.nextInt(endIndex - fromIndex) + fromIndex;
 		exchangeElement(a, i, endIndex - 1);
 		return partition(a, c, fromIndex, endIndex);
 	}
@@ -80,27 +95,22 @@ public class ArraySelector {
 	
 	private static boolean exchangeElement(Object[] a, int i1, int i2){
 		if(i1 == i2)
-			return true;
-		try{
-			Object temp = a[i1];
-			a[i1] = a[i2];
-			a[i2] = temp;
-			return true;
-		} catch(Throwable th){
 			return false;
-		}
+		Object temp = a[i1];
+		a[i1] = a[i2];
+		a[i2] = temp;
+		return true;
 	}
 	
-	private static boolean checkIndex(int length, int from, int end){
+	private static void checkIndex(int length, int from, int end){
 		if(length <= 0)
-			return false;
+			throw new IndexOutOfBoundsException("length less than 1: " + length);
 		if(from < 0 || from >= length)
-			return false;
+			throw new IndexOutOfBoundsException("length: " + length + ", from: " + from);
 		if(end <= 0 || end > length)
-			return false;
+			throw new IndexOutOfBoundsException("length: " + length + ", end: " + end);
 		if(from >= end)
-			return false;
-		return true;
+			throw new IndexOutOfBoundsException("from: " + from + ", end: " + end);
 	}
 	
 	public static void main(String[] args){

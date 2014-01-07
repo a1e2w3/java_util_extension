@@ -466,12 +466,6 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 //	}
 
 	@Override
-	public boolean isEmpty() {
-		// TODO Auto-generated method stub
-		return this.entry == null || this.nodes == null || this.nodes.isEmpty();
-	}
-
-	@Override
 	public boolean union(FibonacciHeap<? extends E> otherElem){
 		// TODO Auto-generated method stub
 		if(otherElem == null)
