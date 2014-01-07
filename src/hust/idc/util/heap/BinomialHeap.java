@@ -598,6 +598,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		@Override
 		public void remove() {
 			// TODO Auto-generated method stub
+			// error remove
 //			if (this.current == null)
 //				throw new IllegalStateException();
 //			nodeIt.remove();
