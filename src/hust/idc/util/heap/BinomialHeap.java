@@ -1,18 +1,15 @@
 package hust.idc.util.heap;
 
-import hust.idc.util.EmptyIterator;
 import hust.idc.util.Mergeable;
 
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 public class BinomialHeap<E> extends AbstractHeap<E> implements
 		Mergeable<BinomialHeap<? extends E>> {
 	private BinomialHeapNode head;
-	private Set<BinomialHeapNode> nodes;
+	private int size = 0;
 
 	public BinomialHeap() {
 		super();
@@ -60,8 +57,8 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		}
 		this.clear();
 		this.head = newHeap.head;
-		this.nodes.addAll(newHeap.nodes);
-		return false;
+		++modCount;
+		return true;
 	}
 
 	@Override
@@ -70,14 +67,17 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		if (this.isEmpty()) {
 			BinomialHeapNode node = new BinomialHeapNode(e);
 			this.head = node;
-			if(this.nodes == null)
-				this.nodes = new HashSet<BinomialHeapNode>();
-			this.nodes.add(node);
+			++modCount;
+			++size;
 			return true;
 		} else {
 			BinomialHeapNode newNode = new BinomialHeapNode(e);
-			this.nodes.add(newNode);
-			return this.unionInternal(newNode);
+			boolean modified = this.unionInternal(newNode);
+			if(modified){
+				++size;
+				++modCount;
+			}
+			return modified;
 		}
 	}
 
@@ -88,8 +88,9 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		if (peekNode == null)
 			return null;
 		E elem = peekNode.element();
-		BinomialHeapNode removedNode = this.removeElementInNode(peekNode);
-		this.nodes.remove(removedNode);
+		this.removeElementInNode(peekNode);
+		++modCount;
+		--size;
 		return elem;
 	}
 
@@ -121,10 +122,12 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 
 		BinomialHeapNode newHead = copyHeap(otherElem.head,
 				this.new BinomialHeapNode(null));
-		// add new nodes to node set
-		// this.nodes might be null
-		this.nodes = getNodeSet(newHead, this.nodes);
-		return this.unionInternal(newHead);
+		boolean modified = this.unionInternal(newHead);
+		if(modified){
+			this.size += otherElem.size();
+			++modCount;
+		}
+		return modified;
 	}
 	
 	private boolean unionInternal(BinomialHeapNode newHead){
@@ -157,7 +160,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 			
 			next = current.rightSibling();
 		}
-	
+		
 		return true;
 	}
 
@@ -217,52 +220,52 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 			return newHeap;
 
 		newHeap.head = copyHeap(this.head, newHeap.new BinomialHeapNode(null));
-		newHeap.nodes = getNodeSet(newHeap.head, null);
+		newHeap.size = this.size();
 		return newHeap;
 	}
 
-	private static <E> Set<BinomialHeap<E>.BinomialHeapNode> getNodeSet(BinomialHeap<E>.BinomialHeapNode root,
-			Set<BinomialHeap<E>.BinomialHeapNode> nodeSet) {
-		if (root == null)
-			return null;
-		if (nodeSet == null)
-			nodeSet = new HashSet<BinomialHeap<E>.BinomialHeapNode>();
-		BinomialHeap<E>.BinomialHeapNode current = root, next = null;
-		nodeSet.add(current);
-		while (current != null) {
-			next = current.child();
-			if (next != null) {
-				current = next;
-				nodeSet.add(current);
-				continue;
-			}
-			next = current.rightSibling();
-			if (next != null) {
-				current = next;
-				nodeSet.add(current);
-				continue;
-			} else {
-				BinomialHeap<E>.BinomialHeapNode ancestor = current.parent();
-				boolean found = false;
-				while (ancestor != null) {
-					next = ancestor.rightSibling();
-					if (next != null) {
-						current = next;
-						nodeSet.add(current);
-						found = true;
-						break;
-					}
-					ancestor = ancestor.parent();
-				}
-				if (found) {
-					continue;
-				}
-				current = null;
-			}
-		}
-
-		return nodeSet;
-	}
+//	private static <E> List<BinomialHeap<E>.BinomialHeapNode> getNodeSet(BinomialHeap<E>.BinomialHeapNode root,
+//			List<BinomialHeap<E>.BinomialHeapNode> nodeSet) {
+//		if (root == null)
+//			return null;
+//		if (nodeSet == null)
+//			nodeSet = new ArrayList<BinomialHeap<E>.BinomialHeapNode>();
+//		BinomialHeap<E>.BinomialHeapNode current = root, next = null;
+//		nodeSet.add(current);
+//		while (current != null) {
+//			next = current.child();
+//			if (next != null) {
+//				current = next;
+//				nodeSet.add(current);
+//				continue;
+//			}
+//			next = current.rightSibling();
+//			if (next != null) {
+//				current = next;
+//				nodeSet.add(current);
+//				continue;
+//			} else {
+//				BinomialHeap<E>.BinomialHeapNode ancestor = current.parent();
+//				boolean found = false;
+//				while (ancestor != null) {
+//					next = ancestor.rightSibling();
+//					if (next != null) {
+//						current = next;
+//						nodeSet.add(current);
+//						found = true;
+//						break;
+//					}
+//					ancestor = ancestor.parent();
+//				}
+//				if (found) {
+//					continue;
+//				}
+//				current = null;
+//			}
+//		}
+//
+//		return nodeSet;
+//	}
 
 	@Override
 	public boolean remove(Object o) {
@@ -270,12 +273,17 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		try {
 			@SuppressWarnings("unchecked")
 			BinomialHeapNode node = (BinomialHeapNode) this.indexOf((E) o);
-			if(node == null || this.nodes == null){
+			if(node == null){
 				return false;
 			} else {
 				BinomialHeapNode removedNode = this.removeElementInNode(node);
-				this.nodes.remove(removedNode);
-				return removedNode != null;
+				if(removedNode == null)
+					return false;
+				else {
+					++modCount;
+					--size;
+					return true;
+				}
 			}
 		} catch (Exception e) {
 			return false;
@@ -315,22 +323,35 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 	@Override
 	public int size() {
 		// TODO Auto-generated method stub
-		return (this.nodes == null || this.head == null) ? 0 : this.nodes
-				.size();
+		return this.head == null ? 0 : this.size;
 	}
 
 	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
-		if (this.nodes != null)
-			this.nodes.clear();
+		BinomialHeapNode current = this.head;
+		while(current != null){
+			BinomialHeapNode next = current.rightSibling();
+			clearSubHeap(current);
+			current = next;
+		}
+		
 		this.head = null;
+		this.size = 0;
+		++modCount;
 	}
-
-	@Override
-	public boolean isEmpty() {
-		// TODO Auto-generated method stub
-		return this.head == null || this.nodes == null || this.nodes.isEmpty();
+	
+	private void clearSubHeap(BinomialHeapNode root){
+		if(root == null)
+			return ;
+		
+		BinomialHeapNode child = root.child();
+		while(child != null){
+			BinomialHeapNode next = child.rightSibling();
+			clearSubHeap(child);
+			child = next;
+		}
+		root.dispose();
 	}
 
 	/**
@@ -347,6 +368,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		BinomialHeapNode parent = current.parent();
 		while (parent != null) {
 			parent.exchangeElementWith(current);
+			
 			current = parent;
 			parent = current.parent();
 		}
@@ -452,6 +474,14 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 
 		private BinomialHeapNode copyNode() {
 			return new BinomialHeapNode(this.element());
+		}
+		
+		private void dispose(){
+			this.set(null);
+			this.parent = null;
+			this.child = null;
+			this.sibling = null;
+			this.degree = 0;
 		}
 
 //		private BinomialHeapNode copySubHeap(BinomialHeapNode parent) {
@@ -568,44 +598,17 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		}
 	}
 
-	private class BinomialHeapIterator implements Iterator<E> {
-		private Iterator<BinomialHeapNode> nodeIt;
-		private BinomialHeapNode current;
-
-		public BinomialHeapIterator() {
-			// TODO Auto-generated constructor stub
-			if (BinomialHeap.this.nodes == null) {
-				nodeIt = new EmptyIterator<BinomialHeapNode>();
-			} else {
-				nodeIt = BinomialHeap.this.nodes.iterator();
-			}
-			current = null;
+	private class BinomialHeapIterator extends HeapPreOrderIterator {
+		private BinomialHeapIterator(){
+			super();
 		}
 
 		@Override
-		public boolean hasNext() {
+		protected void removeCurrent() {
 			// TODO Auto-generated method stub
-			return nodeIt != null && nodeIt.hasNext();
-		}
-
-		@Override
-		public E next() {
-			// TODO Auto-generated method stub
-			this.current = nodeIt.next();
-			return this.current.element();
-		}
-
-		@Override
-		public void remove() {
-			// TODO Auto-generated method stub
-			// error remove
-//			if (this.current == null)
-//				throw new IllegalStateException();
-//			nodeIt.remove();
-//			BinomialHeap.this.removeNode(this.current);
-//			this.current = null;
 			throw new UnsupportedOperationException();
 		}
+		
 
 	}
 

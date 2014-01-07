@@ -72,6 +72,8 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 		for(int i = (this.size() << 1); i > 0; --i){
 			modified |= new BinaryHeapIndex(i).heaplifyDown();
 		}
+		if(modified)
+			++modCount;
 		return modified;
 	}
 
@@ -93,8 +95,10 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
-		if(this.elements != null)
+		if(this.elements != null && !this.elements.isEmpty()){
 			this.elements.clear();
+			++modCount;
+		}
 	}
 
 	@Override
@@ -106,8 +110,11 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 			this.elements = new ArrayList<E>();
 		}
 		boolean modified = this.elements.add(e);
-		if(modified && this.size() > 1)
-			new BinaryHeapIndex(this.size() - 1).heaplifyUp();
+		if(modified){
+			++modCount;
+			if(this.size() > 1)
+				new BinaryHeapIndex(this.size() - 1).heaplifyUp();
+		}
 		return modified;
 	}
 	
@@ -126,6 +133,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 			this.elements.remove(size - 1);
 			this.entry().heaplifyDown();
 		}
+		++modCount;
 		return element;
 	}
 
@@ -159,6 +167,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 		E elem = index.element();
 		index.set(this.elements.get(size - 1));
 		this.elements.remove(size - 1);
+		++modCount;
 		
 		int comp = this.compare(elem, index.element());
 		if(comp > 0){

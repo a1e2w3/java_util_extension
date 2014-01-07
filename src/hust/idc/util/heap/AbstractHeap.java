@@ -6,6 +6,7 @@ import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -48,6 +49,7 @@ import java.util.Queue;
  */
 public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E>, Cloneable {
 	private Comparator<? super E> comparator = null;
+	protected int modCount = 0;
 	
 	protected AbstractHeap(){
 		super();
@@ -62,13 +64,13 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 	protected AbstractHeap(E element){
 		this();
 		if(element != null)
-			this.add(element);
+			this.offer(element);
 	}
 	
 	protected AbstractHeap(E element, Comparator<? super E> comparator){
 		this(comparator);
 		if(element != null)
-			this.add(element);
+			this.offer(element);
 	}
 	
 	protected AbstractHeap(Collection<? extends E> elements){
@@ -198,8 +200,10 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		if(newElement == null)
 			return null;
 		HeapIndex<E> index = this.indexOf(oldElement);
-		if(index != null && index.exists())
+		if(index != null && index.exists()){
 			index.set(newElement);
+			++modCount;
+		}
 		return index;
 	}
 	
@@ -228,33 +232,33 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		return null;
 	}
 
-	@Override
-	public boolean addAll(Collection<? extends E> c) {
-		// TODO Auto-generated method stub
-		boolean modified = super.addAll(c);
-		if(modified)
-			this.rebuild();
-		return modified;
-	}
-
-	@Override
-	public boolean removeAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		boolean modified = super.removeAll(c);
-		if(modified)
-			this.rebuild();
-		return modified;
-	}
-
-	@Override
-	public boolean retainAll(Collection<?> c) {
-		// TODO Auto-generated method stub
-		boolean modified = super.retainAll(c);
-		if(modified){
-			this.rebuild();
-		}
-		return modified;
-	}
+//	@Override
+//	public boolean addAll(Collection<? extends E> c) {
+//		// TODO Auto-generated method stub
+//		boolean modified = super.addAll(c);
+//		if(modified)
+//			this.rebuild();
+//		return modified;
+//	}
+//
+//	@Override
+//	public boolean removeAll(Collection<?> c) {
+//		// TODO Auto-generated method stub
+//		boolean modified = super.removeAll(c);
+//		if(modified)
+//			this.rebuild();
+//		return modified;
+//	}
+//
+//	@Override
+//	public boolean retainAll(Collection<?> c) {
+//		// TODO Auto-generated method stub
+//		boolean modified = super.retainAll(c);
+//		if(modified){
+//			this.rebuild();
+//		}
+//		return modified;
+//	}
 
 	@Override
 	public List<E> sort() {
@@ -306,82 +310,89 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		return new EmptyIterator<E>();
 	}
 	
-//	/**
-//	 * Base class for Iterators for Heaps
-//	 * Using preorder tree traversal method to iterate the element in a heap
-//	 * @author Wang Cong
-//	 *
-//	 */
-//	abstract class HeapPreOrderIterator implements Iterator<E>{
-//		protected HeapIndex<E> current = null;
-//		protected HeapIndex<E> next;
-//		protected boolean removed = false;
-//		
-//		protected HeapPreOrderIterator(){
-//			next = AbstractHeap.this.entry();
-//		}
-//		
-//		@Override
-//		public boolean hasNext() {
-//			// TODO Auto-generated method stub
-//			return next != null;
-//		}
-//
-//		@Override
-//		public E next() {
-//			// TODO Auto-generated method stub
-//			if(next == null){
-//				throw new NoSuchElementException();
-//			}
-//			
-//			removed = false;
-//			current = next;
-//			next = this.getNext();
-//			return current.element();
-//		}
-//
-//		@Override
-//		public void remove(){
-//			if(current == null || removed){
-//				throw new IllegalStateException();
-//			}
-//			this.removeCurrent();
-//			removed = true;
-//		}
-//		
-//		protected abstract void removeCurrent();
-//		
-//		protected HeapIndex<E> getNext(){
-//			if(current == null){
-//				return AbstractHeap.this.entry();
-//			} else{
-//				HeapIndex<E> index = this.leftChild();
-//				if(index != null){
-//					return index;
-//				} 
-//				index = current.rightSibling();
-//				if(index != null){
-//					return index;
-//				} else {
-//					HeapIndex<E> ancestor = current.parent();
-//					while(ancestor != null){
-//						index = ancestor.rightSibling();
-//						if(index != null){
-//							return index;
-//						}
-//						ancestor = ancestor.parent();
-//					}
-//					return null;
-//				}
-//			}
-//		}
-//		
-//		protected HeapIndex<E> leftChild(){
-//			if(current == null)
-//				return null;
-//			return current.child();
-//		}
-//	}
+	/**
+	 * Base class for Iterators for Heaps
+	 * Using preorder tree traversal method to iterate the element in a heap
+	 * @author Wang Cong
+	 *
+	 */
+	abstract class HeapPreOrderIterator implements Iterator<E>{
+		protected HeapIndex<E> current = null;
+		protected HeapIndex<E> next;
+		private int expectedModCount = modCount;
+		protected boolean removed = false;
+		
+		protected HeapPreOrderIterator(){
+			next = AbstractHeap.this.entry();
+		}
+		
+		@Override
+		public boolean hasNext() {
+			// TODO Auto-generated method stub
+			return next != null;
+		}
+
+		@Override
+		public E next() {
+			// TODO Auto-generated method stub
+			checkForComodification();
+			if(next == null){
+				throw new NoSuchElementException();
+			}
+			
+			removed = false;
+			current = next;
+			next = this.getNext();
+			return current.element();
+		}
+
+		@Override
+		public void remove(){
+			if(current == null || removed){
+				throw new IllegalStateException();
+			}
+			this.removeCurrent();
+			removed = true;
+		}
+		
+		protected abstract void removeCurrent();
+		
+		protected HeapIndex<E> getNext(){
+			if(current == null){
+				return AbstractHeap.this.entry();
+			} else{
+				HeapIndex<E> index = this.leftChild();
+				if(index != null){
+					return index;
+				} 
+				index = current.rightSibling();
+				if(index != null){
+					return index;
+				} else {
+					HeapIndex<E> ancestor = current.parent();
+					while(ancestor != null){
+						index = ancestor.rightSibling();
+						if(index != null){
+							return index;
+						}
+						ancestor = ancestor.parent();
+					}
+					return null;
+				}
+			}
+		}
+		
+		protected HeapIndex<E> leftChild(){
+			if(current == null)
+				return null;
+			return current.child();
+		}
+		
+		final void checkForComodification() {
+		    if (modCount != expectedModCount)
+		    	throw new ConcurrentModificationException();
+		}
+	}
 	
 	/**
 	 * Base class for Heap Index

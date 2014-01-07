@@ -12,6 +12,9 @@ import java.util.Set;
 
 public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<FibonacciHeap<? extends E>> {
 	private FibonacciHeapNode entry;
+	/**
+	 * used to iterate
+	 */
 	private Set<FibonacciHeapNode> nodes;
 	
 	private static final double Ln_Phi = Math.log((Math.sqrt(5d) + 1) / 2);
@@ -64,7 +67,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 		this.clear();
 		this.entry = newHeap.entry();
 		this.nodes = newHeap.nodes;
-		return false;
+		++modCount;
+		return true;
 	}
 
 	@Override
@@ -142,6 +146,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 			this.nodes = new HashSet<FibonacciHeapNode>();
 		}
 		this.nodes.add(newNode);
+		++modCount;
 		return true;
 	}
 
@@ -199,8 +204,11 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 		}
 		
 		// merge root list
-		if(consolidate)
+		if(consolidate){
 			this.entry = this.consolidate(null);
+		} else {
+			++modCount;
+		}
 		
 		this.entry = this.peekNode();
 		return poll.element();
@@ -253,7 +261,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 	    	}
 	    	array.set(current.degree(), current);
 	    }
-	    
+
+		++modCount;
 	    return entry;
 	}
 	
@@ -390,6 +399,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 			index.mark = false;
 			this.cascadeCut(parent);
 		}
+		++modCount;
 		return true;
 	}
 	
@@ -558,7 +568,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 			entry.right.left = tail;
 			entry.right = otherEntry;
 		}
-		
+
+		++modCount;
 		return true;
 	}
 	

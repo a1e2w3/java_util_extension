@@ -24,7 +24,7 @@ public class TestBinomialHeap {
 		});
 		
 		Random random = new Random();
-		int size = random.nextInt(10) + 1000;
+		int size = random.nextInt(10) + 3;
 		System.out.println("initialize: size = " + size);
 		for(int i = 0; i < size; ++i){
 			int elem = random.nextInt(100);
