@@ -194,6 +194,19 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 			index.heaplifyDown();
 		return true;
 	}
+	
+	@Override
+	public boolean heaplifyAt(E element) throws NoSuchElementException {
+		HeapIndex<E> index = this.getIndexByReference(element);
+		if(index == null)
+			throw new NoSuchElementException("No such element in heap: " + element);
+		
+		if(index.heaplifyUp())
+			return true;
+		return index.heaplifyDown();
+	}
+	
+	protected abstract AbstractHeapIndex getIndexByReference(E element);
 
 	protected HeapIndex<E> replaceNotHeaplify(E oldElement, E newElement) {
 		// TODO Auto-generated method stub
@@ -351,11 +364,10 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 			if(current == null || removed){
 				throw new IllegalStateException();
 			}
-			this.removeCurrent();
-			removed = true;
+			removed = this.removeCurrent();
 		}
 		
-		protected abstract void removeCurrent();
+		protected abstract boolean removeCurrent();
 		
 		protected HeapIndex<E> getNext(){
 			if(current == null){

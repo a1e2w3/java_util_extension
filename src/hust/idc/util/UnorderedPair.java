@@ -47,7 +47,10 @@ public class UnorderedPair<T> extends Pair<T, T> {
 		if (!(obj instanceof Pair<?, ?>)) {
 			return false;
 		}
-		Pair<?, ?> other = (Pair<?, ?>) obj;
+		if(!(obj instanceof UnorderedPair<?>)){
+			return ((Pair<?, ?>) obj).equals(this);
+		}
+		UnorderedPair<?> other = (UnorderedPair<?>) obj;
 		if(this.getFirst() == null){
 			if(other.getFirst() == null){
 				if(this.getSecond() == null)

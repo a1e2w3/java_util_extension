@@ -4,6 +4,7 @@ import hust.idc.util.Sortable;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 
 /**
@@ -110,6 +111,15 @@ public interface Heap<E> extends Sortable<E>, Queue<E> {
 	 * @return <tt>true</tt> if the element changed.
 	 */
 	boolean decreaseElement(E oldElement, E newElement);
+	
+	/**
+	 * Adjust the heap to keep the order of element when an element changed.
+	 * It works only if the reference of the element exactly contained in the heap. 
+	 * @param element
+	 * @return true only if the reference of the element contains in heap and its position was changed
+	 * @throws NoSuchElementException the reference of the element not contains in the heap
+	 */
+	boolean heaplifyAt(E element) throws NoSuchElementException;
 	
 //	List<E> sort();
 	
