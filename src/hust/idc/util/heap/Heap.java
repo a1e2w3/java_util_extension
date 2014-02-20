@@ -121,8 +121,10 @@ public interface Heap<E> extends Sortable<E>, Queue<E> {
 	 */
 	boolean heaplifyAt(E element) throws NoSuchElementException;
 	
-//	List<E> sort();
-	
+	/**
+	 * Sort and clear the heap
+	 * @return the sorted elements
+	 */
 	List<E> sortAndClear();
 
 }
