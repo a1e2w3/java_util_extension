@@ -17,7 +17,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 	 */
 	private Set<FibonacciHeapNode> nodes;
 	
-	private static final double Ln_Phi = Math.log((Math.sqrt(5d) + 1) / 2);
+	private static final double Ln_Phi = Math.log((Math.sqrt(5.0d) + 1) / 2);
 
 	public FibonacciHeap() {
 		super();
@@ -437,6 +437,45 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 	}
 
 	@Override
+	protected FibonacciHeapNode getIndexByReference(
+			E element) {
+		// TODO Auto-generated method stub
+		if(this.isEmpty())
+			return null;
+		
+		FibonacciHeapNode index = this.getIndexByReference(this.entry(), element);
+		if(index != null)
+			return index;
+		FibonacciHeapNode root = this.entry().rightSibling();
+		while(root != this.entry()){
+			index = this.getIndexByReference(root, element);
+			if(index != null)
+				return index;
+			root = root.rightSibling();
+		}
+		return null;
+	}
+	
+	private FibonacciHeapNode getIndexByReference(FibonacciHeapNode root, E element){
+		if(root == null)
+			return null;
+		if(element == root.element())
+			return root;
+		
+		FibonacciHeapNode index = null;
+		Iterator<? extends AbstractHeapIndex> childrenIt = root.childIterator();
+		while(childrenIt.hasNext()){
+			@SuppressWarnings("unchecked")
+			FibonacciHeapNode child = (FibonacciHeapNode) childrenIt.next();
+			index = this.getIndexByReference(child, element);
+			if(index != null)
+				return null;
+		}
+		
+		return null;
+	}
+
+	@Override
 	protected FibonacciHeapNode entry() {
 		// TODO Auto-generated method stub
 		return this.entry;
@@ -455,15 +494,15 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 		return (this.nodes == null || this.entry() == null) ? 0 : this.nodes.size();
 	}
 	
-//	@Override
-//	public void clear() {
-//		// TODO Auto-generated method stub
-//		if(this.nodes != null){
-//			this.nodes.clear();
-//			this.nodes = null;
-//		}
-//		this.entry = null;
-//	}
+	@Override
+	public void clear() {
+		// TODO Auto-generated method stub
+		if(this.nodes != null){
+			this.nodes.clear();
+			this.nodes = null;
+		}
+		this.entry = null;
+	}
 
 	@Override
 	public boolean union(FibonacciHeap<? extends E> otherElem){

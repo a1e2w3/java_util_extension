@@ -196,6 +196,18 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 	}
 
 	@Override
+	protected BinaryHeapIndex getIndexByReference(E element) {
+		// TODO Auto-generated method stub
+		if(this.isEmpty())
+			return null;
+		for(int i = 0; i < this.elements.size(); ++i){
+			if(this.elements.get(i) == element)
+				return new BinaryHeapIndex(i);
+		}
+		return null;
+	}
+
+	@Override
 	protected BinaryHeapIndex entry() {
 		// TODO Auto-generated method stub
 		if(this.isEmpty())
