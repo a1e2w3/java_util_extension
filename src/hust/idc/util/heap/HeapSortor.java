@@ -24,7 +24,7 @@ public class HeapSortor {
 			c.add(new Integer(elem));
 			System.out.println("element " + i + ": " + elem);
 		}
-		System.out.println("Heap Sord: " + sort(c, new Comparator<Integer>(){
+		System.out.println("Heap Sorted: " + sort(c, new Comparator<Integer>(){
 			@Override
 			public int compare(Integer o1, Integer o2) {
 				// TODO Auto-generated method stub
