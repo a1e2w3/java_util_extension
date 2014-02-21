@@ -9,7 +9,7 @@ import java.util.Random;
 public class HeapSortor {
 	public static <E> List<E> sort(Collection<? extends E> elements, Comparator<? super E> comparator){
 		Heap<E> heap = new BinaryHeap<E>(elements, comparator);
-		return heap.sort();
+		return heap.sortAndClear();
 	}
 
 	public static void main(String[] args) {
