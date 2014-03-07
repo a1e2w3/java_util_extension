@@ -93,26 +93,41 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 			this.setComparator(null);
 	}
 
+	
 	@Override
 	public AbstractHeap<E> clone() {
 		// TODO Auto-generated method stub
 		return this.copy();
 	}
 	
+	/**
+	 * copy the structure of heap to a new heap, do not deep clone
+	 * the elements contains.
+	 * @return the copy of the heap
+	 */
 	protected abstract AbstractHeap<E> copy();
 
+	/* (non-Javadoc)
+	 * @see hust.idc.util.heap.Heap#rebuild()
+	 */
 	@Override
 	public void setComparator(Comparator<? super E> comparator) {
 		// TODO Auto-generated method stub
 		this.comparator = comparator;
 	}
 
+	/* (non-Javadoc)
+	 * @see hust.idc.util.heap.Heap#rebuild()
+	 */
 	@Override
 	public Comparator<? super E> getComparator() {
 		// TODO Auto-generated method stub
 		return this.comparator;
 	}
 
+	/* (non-Javadoc)
+	 * @see java.util.Collection#contains(Object)
+	 */
 	@SuppressWarnings("unchecked")
 	@Override
 	public boolean contains(Object o) {
@@ -126,6 +141,9 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see java.util.Collection#remove(Object)
+	 */
 	@Override
 	public abstract boolean remove(Object o);
 	
@@ -157,6 +175,9 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see hust.idc.util.heap.Heap#increaseElement(E, E)
+	 */
 	@Override
 	public boolean increaseElement(E oldElement, E newElement) {
 		// TODO Auto-generated method stub
@@ -176,6 +197,9 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		return true;
 	}
 
+	/* (non-Javadoc)
+	 * @see hust.idc.util.heap.Heap#decreaseElement(E, E)
+	 */
 	@Override
 	public boolean decreaseElement(E oldElement, E newElement) {
 		// TODO Auto-generated method stub
@@ -195,6 +219,9 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		return true;
 	}
 	
+	/* (non-Javadoc)
+	 * @see hust.idc.util.heap.Heap#heaplifyAt(E)
+	 */
 	@Override
 	public boolean heaplifyAt(E element) throws NoSuchElementException {
 		HeapIndex<E> index = this.getIndexByReference(element);
@@ -206,8 +233,22 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		return index.heaplifyDown();
 	}
 	
+	/**
+	 * Get Heap Index of the reference of the element, using "==" to decide 
+	 * if it was the one we need
+	 * @param element the reference of the element
+	 * @return <tt>null</tt> if not found, else return the actual index of the element
+	 */
 	protected abstract AbstractHeapIndex getIndexByReference(E element);
 
+	/**
+	 * Found the position of old element and replace it with the new element, but not change the
+	 * structure of the heap.
+	 * @param oldElement the old element to be replaced
+	 * @param newElement the new element to replace the old one
+	 * @return <tt>null</tt> if the new element was <tt>null</tt> or the old element was not found in heap;
+	 * 		   else return the actual position of the replacement occurred.
+	 */
 	protected HeapIndex<E> replaceNotHeaplify(E oldElement, E newElement) {
 		// TODO Auto-generated method stub
 		if(newElement == null)
@@ -220,10 +261,28 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		return index;
 	}
 	
+	/**
+	 * Found the position of an element in the heap. using <tt>equal</tt> method but not "==" to 
+	 * decide whether two element were equal.
+	 * @param element the element try to found
+	 * @return <tt>null</tt> if not found; else return the actual index of the element
+	 */
 	protected abstract HeapIndex<E> indexOf(E element);
 	
+	/**
+	 * Get the entry of the heap, that is an index of an element 
+	 * which can visit any other index through it
+	 * @return <tt>null</tt>if the heap is empty; else return the entry.
+	 */
 	protected abstract HeapIndex<E> entry();
 	
+	/**
+	 * Find the position of the element in a tree 
+	 * @param element the element to find
+	 * @param root the root position of the tree
+	 * @return <tt>null</tt> if the root was <tt>null</tt> or element not found;
+	 * 		   else return the actual index of the element
+	 */
 	protected AbstractHeapIndex find(E element, AbstractHeapIndex root){
 		if(element == null || root == null)
 			return null;
@@ -273,12 +332,19 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 //		return modified;
 //	}
 
+	/**
+	 * Get sorted elements of the heap
+	 * @return the list contains the sorted elements
+	 */
 	@Override
 	public List<E> sort() {
 		// TODO Auto-generated method stub
 		return this.copy().sortAndClear();
 	}
 
+	/* (non-Javadoc)
+	 * @see hust.idc.util.heap.Heap#sortAndClear()
+	 */
 	@Override
 	public List<E> sortAndClear() {
 		// TODO Auto-generated method stub
@@ -289,6 +355,12 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		return sorted;
 	}
 
+	/**
+	 * Compare two elements using the user defined comparator.
+	 * @param elem1
+	 * @param elem2
+	 * @return 
+	 */
 	@SuppressWarnings("unchecked")
 	protected int compare(E elem1, E elem2){
 		if(this.comparator == null){
@@ -309,6 +381,12 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 			return this.comparator.compare(elem1, elem2);
 	}
 	
+	/**
+	 * Compare two elements contains in heap index
+	 * @param i1
+	 * @param i2
+	 * @return
+	 */
 	protected int compare(HeapIndex<? extends E> i1, HeapIndex<? extends E> i2){
 		if(i1 == null){
 			return i2 == null ? 0 : -1;
@@ -319,6 +397,10 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 		}
 	}
 	
+	/**
+	 * @return An Iterator of empty collection
+	 * @see EmptyIterator
+	 */
 	protected Iterator<E> emptyIterator(){
 		return new EmptyIterator<E>();
 	}

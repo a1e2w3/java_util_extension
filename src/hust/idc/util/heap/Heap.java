@@ -59,6 +59,7 @@ import java.util.Queue;
  * @see	    BinomialHeap
  * @see	    FibonacciHeap
  * @since 1.0
+ * @param <E> the element type
  */
 public interface Heap<E> extends Sortable<E>, Queue<E> {
 	/**

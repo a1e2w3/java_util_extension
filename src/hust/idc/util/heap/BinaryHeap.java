@@ -1,11 +1,49 @@
 package hust.idc.util.heap;
 
+import hust.idc.util.Sortable;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Queue;
 
+/**
+ * A Complete-Binary-Tree Based implementation of the <tt>Heap</tt> interface, Implements
+ * almost all optional heap operations, except remove an element through iterator.remove().
+ * And it permits all elements except <tt>null</tt>, since <tt>null</tt> is used as a special return value 
+ * by the <tt>poll</tt> method to indicate that the heap contains no elements.<p>
+ * 
+ * Binary Heap hold all element in a specific order by an array list. Each element in the array list was 
+ * seemed as a node in heap, the index of root node was 0. For a node which index is i, its left child 
+ * would be held at index (2 * i) + 1 and right child would be(2 * i) + 2, if they existed.<p>
+ * 
+ * In addition to implementing the <tt>Heap</tt> interface, this class provides methods to manipulate
+ * the size of the array list that is used internally to store the element list. <p>
+ * 
+ * The <tt>size</tt>, <tt>isEmpty</tt>, <tt>peek</tt>, and <tt>iterator</tt> operations run in constant
+ * time.  The <tt>offer</tt>, <tt>add</tt>, <tt>poll</tt>, <tt>remove</tt> operation runs in <i>logarithmic time</i>,
+ * that is, add(or poll, remove) an elements in the heap contains n elements requires O(log n) time. 
+ * similarly, the <tt>contains</tt> operation runs in <i>logarithmic time</i>, too.<p>
+ * 
+ * <p>The iterators returned by this class's <tt>iterator</tt> method are not support 
+ * <tt>iterator.remove</tt> operation, because the order of elements in the heap may be changed once any 
+ * element is removed, the iterator cannot ensure the iterative sequence. And the iterators are 
+ * <i>fail-fast</i>: if the list is structurally modified at any time after the iterator is created
+ * the iterator will throw a {@link ConcurrentModificationException}.
+ * 
+ * @author WangCong
+ * @version 1.2.0, 08/10/13
+ * @see	    Collection
+ * @see	    Queue
+ * @see	    Sortable
+ * @see	    Heap
+ * @see	    AbstractHeap
+ * @since 1.0
+ * @param <E> the element type
+ */
 public class BinaryHeap<E> extends AbstractHeap<E> {
 	private ArrayList<E> elements;
 	private final BinaryHeapIndex entry = new BinaryHeapIndex(0);
@@ -51,6 +89,9 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 		this.elements = new ArrayList<E>(initialCompacity);
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.util.ArrayLisy#ensureCapacity()
+	 */
 	public void ensureCapacity(int minCapacity){
 		if(this.elements == null){
 			this.elements = new ArrayList<E>(minCapacity);
@@ -59,11 +100,17 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see java.util.ArrayLisy#trimToSize()
+	 */
 	public void trimToSize(){
 		if(this.elements != null)
 			this.elements.trimToSize();
 	}
 
+	/* (non-Javadoc)
+	 * @see hust.idc.util.heap.Heap#rebuild()
+	 */
 	@Override
 	public boolean rebuild(){
 		if(this.size() <= 1)
@@ -336,7 +383,6 @@ public class BinaryHeap<E> extends AbstractHeap<E> {
 			// TODO Auto-generated method stub
 			throw new UnsupportedOperationException();
 		}
-		
 		
 	}
 
