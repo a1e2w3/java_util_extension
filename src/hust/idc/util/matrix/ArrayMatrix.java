@@ -57,6 +57,20 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		
 		this.putAll(otherMatrix);
 	}
+	
+	public void trimToSize(){
+		this.rowKeys.trimToSize();
+		this.columnKeys.trimToSize();
+		
+		if(this.rows() < this.rowCapacity() || this.columns() < this.columnCapacity()){
+			Entry[][] newEntrys = new ArrayMatrix.Entry[this.rows()][];
+			for (int i = 0; i < rows(); ++i) {
+				newEntrys[i] = Arrays.copyOf(this.entrys[i], this.columns());
+				this.entrys[i] = null;
+			}
+			this.entrys = newEntrys;
+		}
+	}
 
 	@Override
 	public int size() {
