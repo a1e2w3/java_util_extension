@@ -124,10 +124,28 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	@Override
 	public V set(RK row, CK column, V value) {
 		// TODO Auto-generated method stub
-		++modCount;
-		HeadNode<RK> rowHead = addRowIfNotExists(row);
-		HeadNode<CK> columnHead = addColumnIfNotExists(column);
+		return setValueInRow(addRowIfNotExists(row), column, value);
+	}
 
+	private V setValueInRow(HeadNode<RK> rowHead, CK column, V value) {
+		if (rowHead == null)
+			return null;
+		HeadNode<CK> columnHead = addColumnIfNotExists(column);
+		return this.setValue(rowHead, columnHead, value);
+	}
+
+	private V setValueInColumn(HeadNode<CK> columnHead, RK row, V value) {
+		if (columnHead == null)
+			return null;
+		HeadNode<RK> rowHead = addRowIfNotExists(row);
+		return this.setValue(rowHead, columnHead, value);
+	}
+
+	private V setValue(HeadNode<RK> rowHead, HeadNode<CK> columnHead, V value) {
+		if (rowHead == null || columnHead == null)
+			return null;
+
+		++modCount;
 		EntryNode rowCur = rowHead.entry(), left = null;
 		while (rowCur != null && rowCur.columnHead().index < columnHead.index) {
 			left = rowCur;
@@ -143,17 +161,27 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		if (rowCur == null || rowCur.columnHead().index > columnHead.index) {
 			if (columnCur == null || columnCur.rowHead().index > rowHead.index) {
 				EntryNode newNode = new EntryNode(value, rowHead, columnHead);
+				newNode.left = left;
 				newNode.right = rowCur;
+				newNode.up = up;
 				newNode.down = columnCur;
 
+				// link left and right
 				if (left == null)
 					rowHead.entry = newNode;
 				else
 					left.right = newNode;
+				if (rowCur != null)
+					rowCur.left = newNode;
+				
+				// link up and down
 				if (up == null)
 					columnHead.entry = newNode;
 				else
 					up.down = newNode;
+				if (columnCur != null)
+					columnCur.up = newNode;
+				
 				rowHead.addSize(1);
 				columnHead.addSize(1);
 				++size;
@@ -163,7 +191,11 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 					rowHead.entry = columnCur;
 				else
 					left.right = columnCur;
+				if(rowCur != null)
+					rowCur.left = columnCur;
+				
 				columnCur.rowHead = rowHead;
+				columnCur.left = left;
 				columnCur.right = rowCur;
 				return columnCur.setValue(value);
 			}
@@ -175,8 +207,12 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 					columnHead.entry = rowCur;
 				else
 					up.down = rowCur;
+				if(columnCur != null)
+					columnCur.up = rowCur;
+				
 				rowCur.columnHead = columnHead;
 				rowCur.down = columnCur;
+				rowCur.up = up;
 				return rowCur.setValue(value);
 			}
 		}
@@ -185,6 +221,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	private HeadNode<RK> addRowIfNotExists(RK row) {
 		if (rowHeadsEntry == null) {
 			rowHeadsEntry = new HeadNode<RK>(row, 0);
+			rows = 1;
 			return rowHeadsEntry;
 		}
 
@@ -208,6 +245,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 
 		head.next = new HeadNode<RK>(row, head.index + 1);
+		head.next.prev = head;
 		++rows;
 		return head.next;
 	}
@@ -215,6 +253,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	private HeadNode<CK> addColumnIfNotExists(CK column) {
 		if (columnHeadsEntry == null) {
 			columnHeadsEntry = new HeadNode<CK>(column, 0);
+			columns = 1;
 			return columnHeadsEntry;
 		}
 
@@ -238,6 +277,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 
 		head.next = new HeadNode<CK>(column, head.index + 1);
+		head.next.prev = head;
 		++columns;
 		return head.next;
 	}
@@ -275,6 +315,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		V value = node.value;
 		node.dispose();
 		++modCount;
+		--size;
 		return value;
 	}
 
@@ -327,6 +368,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		if (rowHead.next != null)
 			rowHead.next.prev = rowHead.prev;
 		rowHead.dispose();
+		--rows;
 	}
 
 	private void removeColumnHead(HeadNode<CK> columnHead) {
@@ -340,18 +382,29 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		if (columnHead.next != null)
 			columnHead.next.prev = columnHead.prev;
 		columnHead.dispose();
+		--columns;
 	}
 
 	@Override
 	public Map<CK, V> rowMap(final RK row) {
 		// TODO Auto-generated method stub
+		
 		return new AbstractMap<CK, V>() {
+			private HeadNode<RK> head = LinkedMatrix.this.rowHead(row);
+
+			@Override
+			public V put(CK key, V value) {
+				// TODO Auto-generated method stub
+				if(null == head){
+					head = LinkedMatrix.this.addRowIfNotExists(row);
+				}
+				return LinkedMatrix.this.setValueInRow(head, key, value);
+			}
 
 			@Override
 			public Set<Map.Entry<CK, V>> entrySet() {
 				// TODO Auto-generated method stub
 				return new AbstractSet<Map.Entry<CK, V>>() {
-					private HeadNode<RK> head = LinkedMatrix.this.rowHead(row);
 
 					@Override
 					public Iterator<Map.Entry<CK, V>> iterator() {
@@ -433,12 +486,21 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		// TODO Auto-generated method stub
 		return new AbstractMap<RK, V>() {
 
+			private HeadNode<CK> head = LinkedMatrix.this.columnHead(column);
+
+			@Override
+			public V put(RK key, V value) {
+				// TODO Auto-generated method stub
+				if(head == null){
+					head = LinkedMatrix.this.addColumnIfNotExists(column);
+				}
+				return LinkedMatrix.this.setValueInColumn(head, key, value);
+			}
+
 			@Override
 			public Set<Map.Entry<RK, V>> entrySet() {
 				// TODO Auto-generated method stub
 				return new AbstractSet<Map.Entry<RK, V>>() {
-					private HeadNode<CK> head = LinkedMatrix.this
-							.columnHead(column);
 
 					@Override
 					public Iterator<Map.Entry<RK, V>> iterator() {
@@ -718,7 +780,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	private Iterator<Entry<RK, CK, V>> nodeIterator(final boolean rowOrder) {
 		return new Iterator<Entry<RK, CK, V>>() {
 			@SuppressWarnings("unchecked")
-			private HeadNode<?> currentHead = (HeadNode<?>) (rowOrder ? LinkedMatrix.this.rowHeadsEntry
+			private HeadNode<?> nextHead = (HeadNode<?>) (rowOrder ? LinkedMatrix.this.rowHeadsEntry
 					: LinkedMatrix.this.columnHeadsEntry);
 			private EntryNode currentNode = null;
 			private EntryNode nextNode = null;
@@ -729,14 +791,15 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 				if (currentNode == null
 						|| (rowOrder && (nextNode = currentNode.right) == null)
 						|| (!rowOrder && (nextNode = currentNode.down) == null)) {
-					while (currentHead != null && currentHead.entry() == null) {
-						currentHead = currentHead.next;
+					while (nextHead != null && nextHead.entry() == null) {
+						nextHead = nextHead.next;
 					}
-					if (currentHead == null)
+					if (nextHead == null)
 						return false;
-					nextNode = currentHead.entry();
+					nextNode = nextHead.entry();
+					nextHead = nextHead.next;
 				}
-				return true;
+				return nextNode != null;
 			}
 
 			private void checkModCount() {
@@ -747,9 +810,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			@Override
 			public boolean hasNext() {
 				// TODO Auto-generated method stub
-				if (nextNode != null)
-					return true;
-				return this.getNextNode();
+				return nextNode == null ? this.getNextNode() : true;
 			}
 
 			@Override
@@ -768,6 +829,8 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 				checkModCount();
 				if (currentNode == null)
 					throw new IllegalStateException();
+				if (nextNode == null)
+					this.getNextNode();
 				LinkedMatrix.this.removeNode(currentNode);
 				currentNode = null;
 				this.expectedModCount = LinkedMatrix.this.modCount;
@@ -806,30 +869,6 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		private HeadNode<CK> columnHead() {
 			return columnHead;
 		}
-
-		// private EntryNode left() {
-		// EntryNode node = rowHead().entry();
-		// if (this == node)
-		// return null;
-		// while (node != null) {
-		// if (this == node.right)
-		// return node;
-		// node = node.right;
-		// }
-		// return null;
-		// }
-		//
-		// private EntryNode up() {
-		// EntryNode node = columnHead().entry();
-		// if (this == node)
-		// return null;
-		// while (node != null) {
-		// if (this == node.down)
-		// return node;
-		// node = node.down;
-		// }
-		// return null;
-		// }
 
 		@Override
 		public RK getRowKey() {

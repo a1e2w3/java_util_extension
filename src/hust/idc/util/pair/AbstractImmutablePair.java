@@ -1,7 +1,7 @@
 package hust.idc.util.pair;
 
 public abstract class AbstractImmutablePair<T, S> extends AbstractPair<T, S> implements
-		Pair<T, S> {
+		ImmutablePair<T, S>, Pair<T, S> {
 	protected AbstractImmutablePair(){
 		super();
 	}

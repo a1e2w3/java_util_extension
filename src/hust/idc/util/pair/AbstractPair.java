@@ -27,9 +27,9 @@ public abstract class AbstractPair<T, S> implements Pair<T, S> {
 		// TODO Auto-generated method stub
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((getFirst() == null) ? 0 : getFirst().hashCode());
-		result = prime * result + ((getSecond() == null) ? 0 : getSecond().hashCode());
-		return result;
+		result += ((getFirst() == null) ? 0 : getFirst().hashCode());
+		result += ((getSecond() == null) ? 0 : getSecond().hashCode());
+		return result * prime;
 	}
 	
 	protected static boolean eq(Object obj1, Object obj2){

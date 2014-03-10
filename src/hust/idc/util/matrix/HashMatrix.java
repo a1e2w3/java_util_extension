@@ -398,7 +398,18 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	public Map<CK, V> rowMap(final RK row) {
 		// TODO Auto-generated method stub
 		return new AbstractMap<CK, V>() {
-			private Map<CK, V> innerMap = HashMatrix.this.map.get(row);
+			private HashMap<CK, V> innerMap = HashMatrix.this.map.get(row);
+
+			@Override
+			public V put(CK key, V value) {
+				// TODO Auto-generated method stub
+				if(innerMap == null){
+					innerMap = new HashMap<CK, V>();
+					HashMatrix.this.map.put(row, innerMap);
+				}
+				return innerMap.put(key, value);
+			}
+
 
 			@Override
 			public Set<Map.Entry<CK, V>> entrySet() {

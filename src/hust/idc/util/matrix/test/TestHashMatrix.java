@@ -7,7 +7,7 @@ import hust.idc.util.matrix.HashMatrix;
 import hust.idc.util.matrix.Matrix;
 import hust.idc.util.matrix.Matrix.Entry;
 
-public class TestHashMatrix {
+public class TestHashMatrix extends TestMatrix {
 
 	/**
 	 * @param args
@@ -53,26 +53,21 @@ public class TestHashMatrix {
 		matrix.set(0, 0, -3);
 		printMatrix(matrix);
 		
+		matrix.rowMap(2).clear();
+		printMatrix(matrix);
+		
+		matrix.columnMap(2).clear();
+		printMatrix(matrix);
+
+		matrix.rowMap(2).put(0, -2);
+		printMatrix(matrix);
+		
+		matrix.columnMap(2).put(0, -1);
+		printMatrix(matrix);
+		
 		matrix.clear();
 		printMatrix(matrix);
 
-	}
-	
-	private static void printMatrix(Matrix<? extends Integer, ? extends Integer, ? extends Integer> matrix){
-		System.out.println(matrix);
-		System.out.println("Size :" + matrix.size());
-		System.out.println("Empty :" + matrix.isEmpty());
-		System.out.println("Rows: " + matrix.rows());
-		System.out.println("Columns: " + matrix.columns());
-		System.out.println("Row key set: " + matrix.rowKeySet());
-		System.out.println("Column key set: " + matrix.columnKeySet());
-		System.out.println("Key pair set: " + matrix.keyPairSet());
-		System.out.println("Values: " + matrix.values());
-		System.out.println("Get: " + matrix.get(0, 7));
-		System.out.println(matrix.containsKey(2, 0));
-		System.out.println(matrix.containsRow(8));
-		System.out.println(matrix.containsColumn(6));
-		System.out.println(matrix.containsValue(8));
 	}
 
 }

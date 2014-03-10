@@ -42,13 +42,17 @@ public class ObjectPair<T, S> extends AbstractPair<T, S> implements Pair<T, S>, 
 	@Override
 	public T setFirst(T first) {
 		// TODO Auto-generated method stub
-		return this.first = first;
+		T old = this.first;
+		this.first = first;
+		return old;
 	}
 
 	@Override
 	public S setSecond(S second) {
 		// TODO Auto-generated method stub
-		return this.second = second;
+		S old = this.second;
+		this.second = second;
+		return old;
 	}
 
 }
