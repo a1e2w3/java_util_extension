@@ -63,6 +63,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		this.columnKeys.trimToSize();
 		
 		if(this.rows() < this.rowCapacity() || this.columns() < this.columnCapacity()){
+			@SuppressWarnings("unchecked")
 			Entry[][] newEntrys = new ArrayMatrix.Entry[this.rows()][];
 			for (int i = 0; i < rows(); ++i) {
 				newEntrys[i] = Arrays.copyOf(this.entrys[i], this.columns());
