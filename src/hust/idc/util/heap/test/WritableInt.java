@@ -1,4 +1,4 @@
-package hust.idc.test;
+package hust.idc.util.heap.test;
 
 public class WritableInt implements Comparable<WritableInt> {
 	private int value;

@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 
-public class BinomialHeap<E> extends AbstractHeap<E> implements
+public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		Mergeable<BinomialHeap<? extends E>> {
 	private BinomialHeapNode head;
 	// Cannot initilize to 0, this statement will be executed after super() in
@@ -314,34 +314,34 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 	}
 
 	@Override
-	protected BinomialHeapNode getIndexByReference(
-			E element) {
+	protected BinomialHeapNode getIndexByReference(E element) {
 		// TODO Auto-generated method stub
-		if(this.isEmpty())
+		if (this.isEmpty())
 			return null;
 		BinomialHeapNode root = this.entry();
 		BinomialHeapNode index = null;
-		while(root != null){
+		while (root != null) {
 			index = this.getIndexByReference(root, element);
-			if(index != null)
+			if (index != null)
 				return index;
 			root = root.rightSibling();
 		}
 		return null;
 	}
-	
-	private BinomialHeapNode getIndexByReference(BinomialHeapNode root, E element){
-		if(root == null)
+
+	private BinomialHeapNode getIndexByReference(BinomialHeapNode root,
+			E element) {
+		if (root == null)
 			return null;
-		if(element == root.element())
+		if (element == root.element())
 			return root;
 		BinomialHeapNode index = null;
 		Iterator<? extends AbstractHeapIndex> childrenIt = root.childIterator();
-		while(childrenIt.hasNext()){
+		while (childrenIt.hasNext()) {
 			@SuppressWarnings("unchecked")
 			BinomialHeapNode child = (BinomialHeapNode) childrenIt.next();
 			index = this.getIndexByReference(child, element);
-			if(index != null)
+			if (index != null)
 				return index;
 		}
 		return null;
@@ -508,7 +508,8 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		return newRoot;
 	}
 
-	private class BinomialHeapNode extends AbstractHeapIndex {
+	private class BinomialHeapNode extends AbstractHeapIndex implements
+			HeapIndex<E> {
 		private E element;
 		private BinomialHeapNode parent = null, child = null, sibling = null;
 		private int degree = 0;
@@ -643,7 +644,8 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements
 		}
 	}
 
-	private class BinomialHeapIterator extends HeapPreOrderIterator {
+	private class BinomialHeapIterator extends HeapPreOrderIterator implements
+			Iterator<E> {
 		private BinomialHeapIterator() {
 			super();
 		}

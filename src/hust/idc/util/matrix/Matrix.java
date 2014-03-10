@@ -41,9 +41,9 @@ public interface Matrix<RK, CK, V> {
 	
 	V remove(Pair<?, ?> keyPair);
 	
-	void removeRow(Object row);
+	void removeRow(RK row);
 	
-	void removeColumn(Object column);
+	void removeColumn(CK column);
 	
 	void clear();
 	
@@ -53,9 +53,9 @@ public interface Matrix<RK, CK, V> {
 	
 	Collection<V> values();
 	
-	Map<CK, V> rowMap(Object row);
+	Map<CK, V> rowMap(final RK row);
 	
-	Map<RK, V> columnMap(Object column);
+	Map<RK, V> columnMap(final CK column);
 	
 	Set<Entry<RK, CK, V>> entrySet();
 	
@@ -81,8 +81,6 @@ public interface Matrix<RK, CK, V> {
 		Map.Entry<RK, V> columnMapEntry();
 		
 		boolean match(Object row, Object column);
-		
-		boolean match(Pair<?, ?> keyPair);
 		
 		boolean equals(Object o);
 		

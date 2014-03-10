@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 
 
-public class UnorderedPair<T> extends AbstractPair<T, T> implements Serializable {
+public class UnorderedPair<T> extends AbstractPair<T, T> implements Pair<T, T>, Serializable {
 	/**
 	 * 
 	 */

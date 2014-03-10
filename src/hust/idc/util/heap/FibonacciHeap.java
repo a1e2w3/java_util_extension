@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<FibonacciHeap<? extends E>> {
+public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergeable<FibonacciHeap<? extends E>> {
 	private FibonacciHeapNode entry;
 	/**
 	 * used to iterate
@@ -241,7 +241,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 	    	current = current.rightSibling();
 	    }
 
-	    //合并相同度的根节点，使每个度数的二项树唯一
+	    //锟较诧拷锟斤拷同锟饺的革拷诘悖姑匡拷锟斤拷锟斤拷锟侥讹拷锟斤拷锟斤拷唯一
 	    for(int i = 0; i < rootList.size(); ++i){
 	    	current = rootList.get(i);
 	    	if(current.parent() != parent)
@@ -646,7 +646,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 //		return this.sort().toString() + " / " + super.toString();
 //	}
 	
-	private class FibonacciHeapNode extends AbstractHeapIndex{
+	private class FibonacciHeapNode extends AbstractHeapIndex implements HeapIndex<E> {
 		private E element;
 		private FibonacciHeapNode parent, child, left, right;
 		private int degree = 0;
@@ -756,7 +756,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Mergeable<Fibon
 		
 	}
 	
-	private class FibonacciHeapIterator implements Iterator<E>{
+	private class FibonacciHeapIterator implements Iterator<E> {
 		private Iterator<FibonacciHeapNode> nodeIt;
 		private FibonacciHeapNode current = null;
 		

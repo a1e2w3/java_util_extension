@@ -3,15 +3,15 @@ package hust.idc.util.pair;
 import java.io.Serializable;
 
 /**
- * PairÀà£¬ÖØÔØÁËequalsºÍhashCode·½·¨£¬¿ÉÓÃÓÚ×÷ÎªÓ³ÉäµÄKey£»
- * Ó¦È·±£ÀàĞÍAºÍB¶¼¿ÉÓÃ×öÓ³ÉäµÄKey£¬¼´ÖØÔØÁËequalsºÍhashCode·½·¨
- * PairÖ§³ÖÒÔÉî¿½±´µÄ·½Ê½clone£¬Ç°ÌáÊÇÀàĞÍAºÍB¶¼ÊÇ¿ÉĞòÁĞ»¯µÄ£¬·ñÔòÖ»×öÇ³¿½±´
+ * Pairï¿½à£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½equalsï¿½ï¿½hashCodeï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÎªÓ³ï¿½ï¿½ï¿½Keyï¿½ï¿½
+ * Ó¦È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½Bï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½ï¿½Keyï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½equalsï¿½ï¿½hashCodeï¿½ï¿½ï¿½ï¿½
+ * PairÖ§ï¿½ï¿½ï¿½ï¿½ï¿½î¿½ï¿½ï¿½ï¿½Ä·ï¿½Ê½cloneï¿½ï¿½Ç°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Aï¿½ï¿½Bï¿½ï¿½ï¿½Ç¿ï¿½ï¿½ï¿½ï¿½Ğ»ï¿½ï¿½Ä£ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½
  * @author WangCong
  *
- * @param <T> µÚÒ»¸ö²ÎÊıµÄÀàĞÍ
- * @param <S> µÚ¶ş¸ö²ÎÊıµÄÀàĞÍ
+ * @param <T> ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * @param <S> ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
-public class ObjectPair<T, S> extends AbstractPair<T, S> implements Serializable, Cloneable {
+public class ObjectPair<T, S> extends AbstractPair<T, S> implements Pair<T, S>, Serializable, Cloneable {
 	/**
 	 * 
 	 */

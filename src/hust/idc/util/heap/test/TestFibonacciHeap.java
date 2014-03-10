@@ -1,4 +1,4 @@
-package hust.idc.test;
+package hust.idc.util.heap.test;
 
 import hust.idc.util.heap.FibonacciHeap;
 import hust.idc.util.heap.Heap;

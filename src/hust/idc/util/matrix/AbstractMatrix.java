@@ -1,6 +1,6 @@
 package hust.idc.util.matrix;
 
-import hust.idc.util.pair.AbstractPair;
+import hust.idc.util.pair.AbstractImmutablePair;
 import hust.idc.util.pair.Pair;
 
 import java.io.Serializable;
@@ -21,12 +21,18 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	public int size() {
 		return entrySet().size();
 	}
-	
+
 	@Override
-	public abstract int rows();
-	
+	public int rows() {
+		// TODO Auto-generated method stub
+		return rowKeySet().size();
+	}
+
 	@Override
-	public abstract int columns();
+	public int columns() {
+		// TODO Auto-generated method stub
+		return columnKeySet().size();
+	}
 
 	@Override
 	public boolean isEmpty() {
@@ -87,13 +93,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	@Override
 	public boolean containsKey(Pair<?, ?> keyPair) {
 		// TODO Auto-generated method stub
-		Iterator<Entry<RK, CK, V>> entryIt = entrySet().iterator();
-		while (entryIt.hasNext()) {
-			Entry<RK, CK, V> entry = entryIt.next();
-			if (entry.match(keyPair))
-				return true;
-		}
-		return false;
+		return containsKey(keyPair.getFirst(), keyPair.getSecond());
 	}
 
 	@Override
@@ -131,13 +131,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	@Override
 	public V get(Pair<?, ?> keyPair) {
 		// TODO Auto-generated method stub
-		Iterator<Entry<RK, CK, V>> entryIt = entrySet().iterator();
-		while (entryIt.hasNext()) {
-			Entry<RK, CK, V> entry = entryIt.next();
-			if (entry.match(keyPair))
-				return entry.getValue();
-		}
-		return null;
+		return this.get(keyPair.getFirst(), keyPair.getSecond());
 	}
 
 	@Override
@@ -196,26 +190,17 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	@Override
 	public V remove(Pair<?, ?> keyPair) {
 		// TODO Auto-generated method stub
-		Iterator<Entry<RK, CK, V>> entryIt = entrySet().iterator();
-		while (entryIt.hasNext()) {
-			Entry<RK, CK, V> entry = entryIt.next();
-			if (entry.match(keyPair)) {
-				V oldValue = entry.getValue();
-				entryIt.remove();
-				return oldValue;
-			}
-		}
-		return null;
+		return this.remove(keyPair.getFirst(), keyPair.getSecond());
 	}
 
 	@Override
-	public void removeRow(Object row) {
+	public void removeRow(RK row) {
 		// TODO Auto-generated method stub
 		rowMap(row).clear();
 	}
 
 	@Override
-	public void removeColumn(Object column) {
+	public void removeColumn(CK column) {
 		// TODO Auto-generated method stub
 		columnMap(column).clear();
 	}
@@ -233,8 +218,8 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	 * appropriate view the first time this view is requested. The views are
 	 * stateless, so there's no reason to create more than one of each.
 	 */
-	transient volatile Collection<V> values = null;
-	transient volatile Set<Pair<RK, CK>> keyPairSet = null;
+	protected transient volatile Collection<V> values = null;
+	protected transient volatile Set<Pair<RK, CK>> keyPairSet = null;
 
 	@Override
 	public Collection<V> values() {
@@ -336,9 +321,15 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	public abstract Set<Entry<RK, CK, V>> entrySet();
 
 	@Override
-	public Map<CK, V> rowMap(final Object row) {
+	public Map<CK, V> rowMap(final RK row) {
 		// TODO Auto-generated method stub
 		return new AbstractMap<CK, V>() {
+
+			@Override
+			public V put(CK key, V value) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.set(row, key, value);
+			}
 
 			@Override
 			public Set<Map.Entry<CK, V>> entrySet() {
@@ -416,9 +407,15 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	}
 
 	@Override
-	public Map<RK, V> columnMap(final Object column) {
+	public Map<RK, V> columnMap(final CK column) {
 		// TODO Auto-generated method stub
 		return new AbstractMap<RK, V>() {
+
+			@Override
+			public V put(RK key, V value) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.set(key, column, value);
+			}
 
 			@Override
 			public Set<Map.Entry<RK, V>> entrySet() {
@@ -550,8 +547,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	}
 
 	/**
-	 * Utility method for AbstractEntry. Test for
-	 * equality, checking for nulls.
+	 * Utility method for AbstractEntry. Test for equality, checking for nulls.
 	 */
 	protected static boolean eq(Object o1, Object o2) {
 		return o1 == null ? o2 == null : o1.equals(o2);
@@ -646,11 +642,11 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 
 		// View
 		private Pair<RK, CK> keyPair = null;
-		
+
 		@Override
-		public Pair<RK, CK> getKeyPair(){
-			if(keyPair == null){
-				keyPair = new AbstractPair<RK, CK>(){
+		public Pair<RK, CK> getKeyPair() {
+			if (keyPair == null) {
+				keyPair = new AbstractImmutablePair<RK, CK>() {
 
 					@Override
 					public RK getFirst() {
@@ -663,7 +659,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 						// TODO Auto-generated method stub
 						return AbstractEntry.this.getColumnKey();
 					}
-					
+
 				};
 			}
 			return keyPair;
@@ -744,12 +740,6 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 		}
 
 		@Override
-		public boolean match(Pair<?, ?> keyPair) {
-			// TODO Auto-generated method stub
-			return eq(this.getKeyPair(), keyPair);
-		}
-
-		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
@@ -772,7 +762,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 			if (!(obj instanceof Matrix.Entry))
 				return false;
 			Entry<?, ?, ?> other = (Entry<?, ?, ?>) obj;
-			return other.match(getKeyPair())
+			return other.match(getRowKey(), getColumnKey())
 					&& eq(this.getValue(), other.getValue());
 		}
 
@@ -782,8 +772,29 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 		}
 	}
 
+	public static abstract class AbstractImmutableEntry<RK, CK, V> extends
+			AbstractEntry<RK, CK, V> implements Entry<RK, CK, V> {
+		protected AbstractImmutableEntry() {
+			super();
+		}
+
+		@Override
+		public abstract RK getRowKey();
+
+		@Override
+		public abstract CK getColumnKey();
+
+		@Override
+		public abstract V getValue();
+
+		@Override
+		public final V setValue(V value) {
+			throw new UnsupportedOperationException();
+		}
+	}
+
 	public static class SimpleEntry<RK, CK, V> extends AbstractEntry<RK, CK, V>
-			implements Serializable {
+			implements Entry<RK, CK, V>, Serializable {
 		/**
 		 * 
 		 */
@@ -820,7 +831,9 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 		@Override
 		public V setValue(V value) {
 			// TODO Auto-generated method stub
-			return this.value = value;
+			V oldValue = this.value;
+			this.value = value;
+			return oldValue;
 		}
 
 	}

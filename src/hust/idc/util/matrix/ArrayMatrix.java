@@ -2,8 +2,10 @@ package hust.idc.util.matrix;
 
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
@@ -39,12 +41,6 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	@Override
-	public int size() {
-		// TODO Auto-generated method stub
-		return this.size;
-	}
-
-	@Override
 	public int rows() {
 		// TODO Auto-generated method stub
 		return rowKeys.size();
@@ -66,16 +62,29 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		return entrys[0].length;
 	}
 	
-	private boolean checkIndex(int row, int column){
-		return row >= 0 && row < rowCapacity()
-				&& column >= 0 && column < columnCapacity();
+	private boolean checkIndexOutOfCapacity(int row, int column){
+		return row >= 0 || row < rowCapacity()
+				|| column >= 0 || column < columnCapacity();
+	}
+	
+	private boolean checkIndexOutOfSize(int row, int column){
+		return row >= 0 || row < rows()
+				|| column >= 0 || column < columns();
+	}
+	
+	private int rowIndex(Object row){
+		return rowKeys.indexOf(row);
+	}
+	
+	private int columnIndex(Object column){
+		return columnKeys.indexOf(column);
 	}
 
 	@Override
 	public V set(RK row, CK column, V value) {
 		// TODO Auto-generated method stub
-		int rowIndex = rowKeys.indexOf(row);
-		int columnIndex = columnKeys.indexOf(column);
+		int rowIndex = rowIndex(row);
+		int columnIndex = columnIndex(column);
 		
 		if(rowIndex < 0){
 			rowKeys.add(row);
@@ -87,12 +96,13 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			rowIndex = columns() - 1;
 		}
 		
-		if(!checkIndex(rowIndex, columnIndex)){
+		if(checkIndexOutOfCapacity(rowIndex, columnIndex)){
 			ensureCapacity(rowIndex + 1, columnIndex + 1);
 		}
 		
 		V oldValue = this.getValueAt(rowIndex, columnIndex);
 		entrys[rowIndex][columnIndex] = new SimpleEntry<RK, CK, V>(row, column, value);
+		++modCount;
 		return oldValue;
 	}
 	
@@ -109,13 +119,14 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 	
 	public void ensureCapacity(int minRow, int minColumn){
-		
+		if(minRow <= this.rowCapacity() && minColumn <= this.columnCapacity())
+			return ;
 	}
 
 	// View
-	private Set<Entry<RK, CK, V>> entrySet = null;
-	private Set<RK> rowKeySet = null;
-	private Set<CK> columnKeySet = null;
+	protected transient volatile Set<Entry<RK, CK, V>> entrySet = null;
+	protected transient volatile Set<RK> rowKeySet = null;
+	protected transient volatile Set<CK> columnKeySet = null;
 	
 	@Override
 	public Set<RK> rowKeySet() {
@@ -212,26 +223,27 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	@Override
 	public void removeRow(Object row) {
 		// TODO Auto-generated method stub
-		this.removeRow(this.rowKeys.indexOf(row));
+		this.removeRow(rowIndex(row));
 	}
 
 	@Override
 	public void removeColumn(Object column) {
 		// TODO Auto-generated method stub
-		this.removeColumn(this.columnKeys.indexOf(column));
+		this.removeColumn(columnIndex(column));
 	}
 
 	private void removeRow(int index){
-		
+		++modCount;
 	}
 	
 	private void removeColumn(int index){
-		
+		++modCount;
 	}
 	
 	private V removeElementAt(int row, int column){
 		V oldValue = this.getValueAt(row, column);
 		this.entrys[row][column] = null;
+		++modCount;
 		return oldValue;
 	}
 
@@ -288,36 +300,108 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		@Override
 		public int size() {
 			// TODO Auto-generated method stub
-			return ArrayMatrix.this.size();
+			return ArrayMatrix.this.size;
 		}
 		
 	}
 	
 	private class EntryIterator implements Iterator<Entry<RK, CK, V>> {
 		private int expectedModCount;
+		private boolean entryRemoved;
+		private int rowIndex = 0, columnIndex = 0;
+		private int nextRowIndex = 0, nextColumnIndex = 0;
 		
 		private EntryIterator(){
 			this.expectedModCount = ArrayMatrix.this.modCount;
+			this.getNextEntryIndex();
+		}
+		
+		private void checkModified(){
+			if(expectedModCount != ArrayMatrix.this.modCount)
+				throw new ConcurrentModificationException();
+		}
+		
+		private void getNextArrayIndex(){
+			if(columnIndex >= ArrayMatrix.this.columns()){
+				++nextRowIndex;
+				nextColumnIndex = 0;
+			} else {
+				++nextColumnIndex;
+			}
+		}
+		
+		private void getNextEntryIndex(){
+			while(!ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex, nextColumnIndex)
+					&& nextEntry() == null){
+				this.getNextArrayIndex();
+			}
+		}
+		
+		private Entry<RK, CK, V> nextEntry(){
+			return ArrayMatrix.this.entrys[nextRowIndex][nextColumnIndex];
 		}
 
 		@Override
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
-			return false;
+			return !ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex, columnIndex);
 		}
 
 		@Override
 		public hust.idc.util.matrix.Matrix.Entry<RK, CK, V> next() {
 			// TODO Auto-generated method stub
-			return null;
+			if(ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex, columnIndex))
+				throw new NoSuchElementException();
+			
+			checkModified();
+			Entry<RK, CK, V> e = this.nextEntry();
+			rowIndex = nextRowIndex;
+			columnIndex = nextColumnIndex;
+			this.getNextEntryIndex();
+			return e;
 		}
 
 		@Override
 		public void remove() {
 			// TODO Auto-generated method stub
+			if(!entryRemoved){
+				checkModified();
+				removeElementAt(rowIndex, columnIndex);
+				entryRemoved = true;
+				this.expectedModCount = ArrayMatrix.this.modCount;
+			} else {
+				throw new IllegalStateException();
+			}
+		}
+		
+	}
+	
+	private static class Head{
+		int index = UNASSIGNED;
+		int size = 0;
+		
+		private static final int UNASSIGNED = -1;
+		
+		private Head(){
 			
 		}
 		
+		private int getIndex(){
+			return index;
+		}
+		
+		private void assignIndex(int index){
+			this.index = index;
+		}
+		
+		private void removeIndexAssignment(){
+			this.index = UNASSIGNED;
+		}
+		
+		private int increaseSize(int incr){
+			size = Math.max(0, size + incr);
+			return size;
+		}
 	}
 
 }

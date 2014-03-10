@@ -1,19 +1,19 @@
-package hust.idc.test;
+package hust.idc.util.heap.test;
 
-import hust.idc.util.heap.FibonacciHeap;
+import hust.idc.util.heap.BinomialHeap;
 import hust.idc.util.heap.Heap;
 
 import java.util.Comparator;
 import java.util.Random;
 
-public class TestFibonacciHeaplify {
+public class TestBinomialHeaplify {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Heap<WritableInt> intHeap = new FibonacciHeap<WritableInt>(new Comparator<WritableInt>(){
+		Heap<WritableInt> intHeap = new BinomialHeap<WritableInt>(new Comparator<WritableInt>(){
 			@Override
 			public int compare(WritableInt o1, WritableInt o2) {
 				// TODO Auto-generated method stub
