@@ -29,13 +29,13 @@ public interface Matrix<RK, CK, V> {
 	
 	V get(Pair<?, ?> keyPair);
 	
-	V set(RK row, CK column, V value);
+	V put(RK row, CK column, V value);
 
-	V set(Pair<? extends RK, ? extends CK> keyPair, V value);
+	V put(Pair<? extends RK, ? extends CK> keyPair, V value);
 	
-	void setAll(Matrix<? extends RK, ? extends CK, ? extends V> matrix);
+	void putAll(Matrix<? extends RK, ? extends CK, ? extends V> matrix);
 	
-	void setAll(Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> map);
+	void putAll(Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> map);
 	
 	V remove(Object row, Object column);
 	

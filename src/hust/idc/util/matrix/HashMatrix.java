@@ -39,13 +39,31 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	public HashMatrix(
 			Matrix<? extends RK, ? extends CK, ? extends V> otherMatrix) {
 		this();
-		this.setAll(otherMatrix);
+		this.putAll(otherMatrix);
 	}
 
 	public HashMatrix(
 			Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> otherMatrix) {
 		this();
-		this.setAll(otherMatrix);
+		this.putAll(otherMatrix);
+	}
+
+	@Override
+	public int size() {
+		// TODO Auto-generated method stub
+		return size;
+	}
+
+	@Override
+	public int rows() {
+		// TODO Auto-generated method stub
+		return map.size();
+	}
+
+	@Override
+	public int columns() {
+		// TODO Auto-generated method stub
+		return columnKeys.size();
 	}
 
 	@Override
@@ -77,7 +95,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	@Override
-	public V set(RK row, CK column, V value) {
+	public V put(RK row, CK column, V value) {
 		// TODO Auto-generated method stub
 		if (!map.containsKey(row)) {
 			map.put(row, new HashMap<CK, V>());

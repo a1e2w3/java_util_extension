@@ -15,7 +15,7 @@ public class TestLinkedMatrix extends TestMatrix {
 
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 5; ++j) {
-				matrix.set(i, j, i + j);
+				matrix.put(i, j, i + j);
 			}
 		}
 		printMatrix(matrix);
@@ -45,10 +45,10 @@ public class TestLinkedMatrix extends TestMatrix {
 		}
 		printMatrix(matrix);
 
-		matrix.set(8, 9, 3);
+		matrix.put(8, 9, 3);
 		printMatrix(matrix);
 
-		matrix.set(0, 0, -3);
+		matrix.put(0, 0, -3);
 		printMatrix(matrix);
 
 		matrix.rowMap(2).clear();

@@ -1,43 +1,67 @@
 package hust.idc.util.matrix;
 
+import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
 public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		Matrix<RK, CK, V> {
-	private ArrayList<RK> rowKeys;
-	private ArrayList<CK> columnKeys;
-	private Entry<RK, CK, V>[][] entrys;
+	private ArrayList<Head<RK>> rowKeys;
+	private ArrayList<Head<CK>> columnKeys;
+	private ArrayMatrix<RK, CK, V>.Entry[][] entrys;
 	private int size = 0;
-	
+
 	private int modCount = 0;
-	
-	public ArrayMatrix(){
+
+	public ArrayMatrix() {
 		this(10);
 	}
-	
-	public ArrayMatrix(int initialDemension){
+
+	public ArrayMatrix(int initialDemension) {
 		this(initialDemension, initialDemension);
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public ArrayMatrix(int initialRows, int initialColumns){
+	public ArrayMatrix(int initialRows, int initialColumns) {
 		super();
-        if (initialRows < 0)
-            throw new IllegalArgumentException("Illegal Rows: "+
-            		initialRows);
-        if (initialColumns < 0)
-            throw new IllegalArgumentException("Illegal Columns: "+
-            		initialColumns);
-        
-		rowKeys = new ArrayList<RK>(initialRows);
-		columnKeys = new ArrayList<CK>(initialColumns);
-		entrys = new Entry[initialRows][initialColumns];
+		if (initialRows < 0)
+			throw new IllegalArgumentException("Illegal Rows: " + initialRows);
+		if (initialColumns < 0)
+			throw new IllegalArgumentException("Illegal Columns: "
+					+ initialColumns);
+
+		rowKeys = new ArrayList<Head<RK>>(initialRows);
+		columnKeys = new ArrayList<Head<CK>>(initialColumns);
+		entrys = new ArrayMatrix.Entry[initialRows][initialColumns];
+	}
+
+	@SuppressWarnings("unchecked")
+	public ArrayMatrix(
+			Matrix<? extends RK, ? extends CK, ? extends V> otherMatrix) {
+		super();
+		int row = otherMatrix == null ? 0 : otherMatrix.rows();
+		int column = otherMatrix == null ? 0 : otherMatrix.columns();
+		int initialRows = Math.max(10, row + (row << 1));
+		int initialColumns = Math.max(10, column + (column << 1));
+		
+		rowKeys = new ArrayList<Head<RK>>(initialRows);
+		columnKeys = new ArrayList<Head<CK>>(initialColumns);
+		entrys = new ArrayMatrix.Entry[initialRows][initialColumns];
+		
+		this.putAll(otherMatrix);
+	}
+
+	@Override
+	public int size() {
+		// TODO Auto-generated method stub
+		return size;
 	}
 
 	@Override
@@ -51,94 +75,332 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		// TODO Auto-generated method stub
 		return columnKeys.size();
 	}
-	
-	private int rowCapacity(){
+
+	private int rowCapacity() {
 		return entrys.length;
 	}
-	
-	private int columnCapacity(){
-		if(0 == entrys.length)
+
+	private int columnCapacity() {
+		if (0 == entrys.length)
 			return 0;
 		return entrys[0].length;
 	}
-	
-	private boolean checkIndexOutOfCapacity(int row, int column){
-		return row >= 0 || row < rowCapacity()
-				|| column >= 0 || column < columnCapacity();
+
+	private boolean checkIndexOutOfCapacity(int row, int column) {
+		return row < 0 || row >= rowCapacity() || column < 0
+				|| column >= columnCapacity();
 	}
-	
-	private boolean checkIndexOutOfSize(int row, int column){
-		return row >= 0 || row < rows()
-				|| column >= 0 || column < columns();
+
+	private boolean checkIndexOutOfSize(int row, int column) {
+		return row < 0 || row >= rows() || column < 0 || column >= columns();
 	}
-	
-	private int rowIndex(Object row){
-		return rowKeys.indexOf(row);
+
+	private Head<RK> rowHead(Object row) {
+		if (null == row) {
+			for (int i = 0; i < rows(); ++i) {
+				Head<RK> rowHead = rowKeys.get(i);
+				if (null == rowHead.getKey())
+					return rowHead;
+			}
+		} else {
+			for (int i = 0; i < rows(); ++i) {
+				Head<RK> rowHead = rowKeys.get(i);
+				if (row.equals(rowHead.getKey()))
+					return rowHead;
+			}
+		}
+		return null;
 	}
-	
-	private int columnIndex(Object column){
-		return columnKeys.indexOf(column);
+
+	private Head<CK> columnHead(Object column) {
+		if (null == column) {
+			for (int i = 0; i < columns(); ++i) {
+				Head<CK> columnHead = columnKeys.get(i);
+				if (null == columnHead.getKey())
+					return columnHead;
+			}
+		} else {
+			for (int i = 0; i < columns(); ++i) {
+				Head<CK> columnHead = columnKeys.get(i);
+				if (column.equals(columnHead.getKey()))
+					return columnHead;
+			}
+		}
+		return null;
 	}
 
 	@Override
-	public V set(RK row, CK column, V value) {
+	public boolean containsRow(Object row) {
 		// TODO Auto-generated method stub
-		int rowIndex = rowIndex(row);
-		int columnIndex = columnIndex(column);
-		
-		if(rowIndex < 0){
-			rowKeys.add(row);
-			rowIndex = rows() - 1;
-		}
-		
-		if(columnIndex < 0){
-			columnKeys.add(column);
-			rowIndex = columns() - 1;
-		}
-		
-		if(checkIndexOutOfCapacity(rowIndex, columnIndex)){
-			ensureCapacity(rowIndex + 1, columnIndex + 1);
-		}
-		
-		V oldValue = this.getValueAt(rowIndex, columnIndex);
-		entrys[rowIndex][columnIndex] = new SimpleEntry<RK, CK, V>(row, column, value);
-		++modCount;
-		return oldValue;
+		return rowHead(row) != null;
 	}
-	
-	private V getValueAt(int row, int column){
-		try{
-			return entrys[row][column].getValue();
-		} catch(Throwable th){
+
+	@Override
+	public boolean containsColumn(Object column) {
+		// TODO Auto-generated method stub
+		return columnHead(column) != null;
+	}
+
+	@Override
+	public boolean containsKey(Object row, Object column) {
+		// TODO Auto-generated method stub
+		Head<RK> rowHead = rowHead(row);
+		if (null == rowHead)
+			return false;
+		Head<CK> columnHead = columnHead(column);
+		if (null == columnHead)
+			return false;
+		return entrys[rowHead.index][columnHead.index] != null;
+	}
+
+	@Override
+	public V get(Object row, Object column) {
+		// TODO Auto-generated method stub
+		Head<RK> rowHead = rowHead(row);
+		if (null == rowHead)
 			return null;
+		Head<CK> columnHead = columnHead(column);
+		if (null == columnHead)
+			return null;
+		return entrys[rowHead.index][columnHead.index] == null ? null
+				: entrys[rowHead.index][columnHead.index].getValue();
+	}
+
+	private Head<RK> addRowIfNotExists(RK row) {
+		int i = 0;
+		if (null == row) {
+			for (; i < rows(); ++i) {
+				Head<RK> rowHead = rowKeys.get(i);
+				if (null == rowHead.getKey())
+					return rowHead;
+			}
+		} else {
+			for (; i < rows(); ++i) {
+				Head<RK> rowHead = rowKeys.get(i);
+				if (row.equals(rowHead.getKey()))
+					return rowHead;
+			}
+		}
+		Head<RK> rowHead = new Head<RK>(row, i);
+		rowKeys.add(rowHead);
+		return rowHead;
+	}
+
+	private Head<CK> addColumnIfNotExists(CK column) {
+		int i = 0;
+		if (null == column) {
+			for (; i < columns(); ++i) {
+				Head<CK> rowHead = columnKeys.get(i);
+				if (null == rowHead.getKey())
+					return rowHead;
+			}
+		} else {
+			for (; i < columns(); ++i) {
+				Head<CK> rowHead = columnKeys.get(i);
+				if (column.equals(rowHead.getKey()))
+					return rowHead;
+			}
+		}
+		Head<CK> columnHead = new Head<CK>(column, i);
+		columnKeys.add(columnHead);
+		return columnHead;
+	}
+
+	@Override
+	public V put(RK row, CK column, V value) {
+		// TODO Auto-generated method stub
+		Head<RK> rowHead = this.addRowIfNotExists(row);
+		return setValueInRow(rowHead, column, value);
+	}
+
+	private V setValueInRow(Head<RK> rowHead, CK column, V value) {
+		if (rowHead == null)
+			return null;
+		Head<CK> columnHead = addColumnIfNotExists(column);
+		return this.setValue(rowHead, columnHead, value);
+	}
+
+	private V setValueInColumn(Head<CK> columnHead, RK row, V value) {
+		if (columnHead == null)
+			return null;
+		Head<RK> rowHead = addRowIfNotExists(row);
+		return this.setValue(rowHead, columnHead, value);
+	}
+
+	private V setValue(Head<RK> rowHead, Head<CK> columnHead, V value) {
+		if (checkIndexOutOfCapacity(rowHead.index, columnHead.index)) {
+			ensureCapacity(rowHead.index + 1, columnHead.index + 1);
+		}
+
+		++modCount;
+		if (entrys[rowHead.index][columnHead.index] == null) {
+			entrys[rowHead.index][columnHead.index] = new Entry(value, rowHead,
+					columnHead);
+			++size;
+			rowHead.increaseSize(1);
+			columnHead.increaseSize(1);
+			return null;
+		} else {
+			return entrys[rowHead.index][columnHead.index].setValue(value);
 		}
 	}
-	
-	public void ensureCapacity(int minDemension){
+
+	public void ensureCapacity(int minDemension) {
 		ensureCapacity(minDemension, minDemension);
 	}
-	
-	public void ensureCapacity(int minRow, int minColumn){
-		if(minRow <= this.rowCapacity() && minColumn <= this.columnCapacity())
-			return ;
+
+	@SuppressWarnings("unchecked")
+	public void ensureCapacity(int minRow, int minColumn) {
+		if (minRow <= this.rowCapacity() && minColumn <= this.columnCapacity())
+			return;
+		int oldRows = Math.max(this.rows(), 7);
+		int oldColumns = Math.max(this.columns(), 7);
+		int newRowCapacity = Math.max(oldRows + (oldRows >> 1),
+				minRow);
+		int newColumnCapacity = Math.max(oldColumns
+				+ (oldColumns >> 1), minColumn);
+
+		Entry[][] newEntrys = new ArrayMatrix.Entry[newRowCapacity][];
+		int i = 0;
+		for (; i < rows(); ++i) {
+			newEntrys[i] = Arrays.copyOf(this.entrys[i], newColumnCapacity);
+			this.entrys[i] = null;
+		}
+		for (; i < newEntrys.length; ++i) {
+			newEntrys[i] = new ArrayMatrix.Entry[newColumnCapacity];
+		}
+		this.entrys = newEntrys;
+	}
+
+	@Override
+	public V remove(Object row, Object column) {
+		// TODO Auto-generated method stub
+		Head<RK> rowHead = rowHead(row);
+		if (null == rowHead)
+			return null;
+		Head<CK> columnHead = columnHead(column);
+		if (null == columnHead)
+			return null;
+		return removeElementAt(rowHead.index, rowHead.index);
+	}
+
+	@Override
+	public void removeRow(Object row) {
+		// TODO Auto-generated method stub
+		Head<RK> rowHead = rowHead(row);
+		if (null == rowHead)
+			return;
+		for (int i = 0; i < columns(); ++i) {
+			this.removeElementAt(rowHead.index, i);
+		}
+		this.removeEmptyRow(rowHead);
+	}
+
+	@Override
+	public void removeColumn(Object column) {
+		// TODO Auto-generated method stub
+		Head<CK> columnHead = columnHead(column);
+		if (null == columnHead)
+			return;
+		for (int i = 0; i < rows(); ++i) {
+			this.removeElementAt(i, columnHead.index);
+		}
+		this.removeEmptyColumn(columnHead);
+	}
+
+	@Override
+	public void clear() {
+		// TODO Auto-generated method stub
+		for (int i = 0; i < rows(); ++i) {
+			for (int j = 0; j < columns(); ++j) {
+				if (this.entrys[i][j] != null) {
+					this.entrys[i][j].dispose();
+					this.entrys[i][j] = null;
+				}
+			}
+		}
+		for (int i = rows() - 1; i >= 0; --i) {
+			this.rowKeys.get(i).dispose();
+			this.rowKeys.remove(i);
+		}
+		for (int j = columns() - 1; j >= 0; --j) {
+			this.columnKeys.get(j).dispose();
+			this.columnKeys.remove(j);
+		}
+		size = 0;
+		++modCount;
+	}
+
+	private V removeElementAt(int row, int column) {
+		if (this.entrys[row][column] == null) {
+			return null;
+		} else {
+			++modCount;
+			--size;
+			if (this.entrys[row][column].rowHead.increaseSize(-1) == 0) {
+				// remove row head
+				this.removeEmptyRow(this.entrys[row][column].rowHead);
+			}
+			if (this.entrys[row][column].columnHead.increaseSize(-1) == 0) {
+				// remove column head
+				this.removeEmptyColumn(this.entrys[row][column].columnHead);
+			}
+			V oldValue = this.entrys[row][column].getValue();
+			this.entrys[row][column].dispose();
+			this.entrys[row][column] = null;
+			return oldValue;
+		}
+	}
+
+	private void removeEmptyRow(Head<RK> rowHead) {
+		if (null == rowHead)
+			return;
+		rowKeys.remove(rowHead.index);
+		for(int i = rowHead.index; i < rows(); ++i){
+			Head<RK> head = rowKeys.get(i);
+			head.index = i;
+			
+			for(int j = 0; j < columns(); ++j){
+				entrys[i][j] = entrys[i + 1][j];
+				entrys[i + 1][j] = null;
+			}
+		}
+		++modCount;
+	}
+
+	private void removeEmptyColumn(Head<CK> columnHead) {
+		if (null == columnHead)
+			return;
+		columnKeys.remove(columnHead.index);
+		for(int i = columnHead.index; i < columns(); ++i){
+			Head<CK> head = columnKeys.get(i);
+			head.index = i;
+			
+			for(int j = 0; j < rows(); ++j){
+				entrys[j][i] = entrys[j][i + 1];
+				entrys[j][i + 1] = null;
+			}
+		}
+		++modCount;
 	}
 
 	// View
-	protected transient volatile Set<Entry<RK, CK, V>> entrySet = null;
+	protected transient volatile Set<Matrix.Entry<RK, CK, V>> entrySet = null;
 	protected transient volatile Set<RK> rowKeySet = null;
 	protected transient volatile Set<CK> columnKeySet = null;
-	
+
 	@Override
 	public Set<RK> rowKeySet() {
 		// TODO Auto-generated method stub
-		if(rowKeySet == null){
-			rowKeySet = new AbstractSet<RK>(){
+		if (rowKeySet == null) {
+			rowKeySet = new AbstractSet<RK>() {
 
 				@Override
 				public Iterator<RK> iterator() {
 					// TODO Auto-generated method stub
-					return new Iterator<RK>(){
-						ListIterator<RK> iterator = ArrayMatrix.this.rowKeys.listIterator();
+					return new Iterator<RK>() {
+						ListIterator<Head<RK>> iterator = ArrayMatrix.this.rowKeys
+								.listIterator();
 						int index = -1;
 
 						@Override
@@ -151,7 +413,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						public RK next() {
 							// TODO Auto-generated method stub
 							index = iterator.nextIndex();
-							return iterator.next();
+							return iterator.next().getKey();
 						}
 
 						@Override
@@ -159,16 +421,16 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 							// TODO Auto-generated method stub
 							ArrayMatrix.this.removeRow(index);
 						}
-						
+
 					};
 				}
 
 				@Override
 				public int size() {
 					// TODO Auto-generated method stub
-					return ArrayMatrix.this.rows();
+					return ArrayMatrix.this.rowKeys.size();
 				}
-				
+
 			};
 		}
 		return rowKeySet;
@@ -177,14 +439,15 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	@Override
 	public Set<CK> columnKeySet() {
 		// TODO Auto-generated method stub
-		if(columnKeySet == null){
-			columnKeySet = new AbstractSet<CK>(){
+		if (columnKeySet == null) {
+			columnKeySet = new AbstractSet<CK>() {
 
 				@Override
 				public Iterator<CK> iterator() {
 					// TODO Auto-generated method stub
-					return new Iterator<CK>(){
-						ListIterator<CK> iterator = ArrayMatrix.this.columnKeys.listIterator();
+					return new Iterator<CK>() {
+						ListIterator<Head<CK>> iterator = ArrayMatrix.this.columnKeys
+								.listIterator();
 						int index = -1;
 
 						@Override
@@ -197,7 +460,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						public CK next() {
 							// TODO Auto-generated method stub
 							index = iterator.nextIndex();
-							return iterator.next();
+							return iterator.next().getKey();
 						}
 
 						@Override
@@ -205,94 +468,276 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 							// TODO Auto-generated method stub
 							ArrayMatrix.this.removeColumn(index);
 						}
-						
+
 					};
 				}
 
 				@Override
 				public int size() {
 					// TODO Auto-generated method stub
-					return ArrayMatrix.this.rows();
+					return ArrayMatrix.this.columnKeys.size();
 				}
-				
+
 			};
 		}
 		return columnKeySet;
-	}
-	
-	@Override
-	public void removeRow(Object row) {
-		// TODO Auto-generated method stub
-		this.removeRow(rowIndex(row));
-	}
-
-	@Override
-	public void removeColumn(Object column) {
-		// TODO Auto-generated method stub
-		this.removeColumn(columnIndex(column));
-	}
-
-	private void removeRow(int index){
-		++modCount;
-	}
-	
-	private void removeColumn(int index){
-		++modCount;
-	}
-	
-	private V removeElementAt(int row, int column){
-		V oldValue = this.getValueAt(row, column);
-		this.entrys[row][column] = null;
-		++modCount;
-		return oldValue;
 	}
 
 	@Override
 	protected int rowValueCount(Object row) {
 		// TODO Auto-generated method stub
-		int rowIndex = this.rowKeys.indexOf(row);
-		if(rowIndex < 0 || rowIndex >= rows())
-			return 0;
-		
-		int count = 0;
-		for(int i = 0; i < columns(); ++i){
-			if(entrys[rowIndex][i] != null)
-				++count;
-		}
-		return count;
+		Head<RK> rowHead = this.rowHead(row);
+		return rowHead == null ? 0 : rowHead.size;
 	}
 
 	@Override
 	protected int columnValueCount(Object column) {
 		// TODO Auto-generated method stub
-		int columnIndex = this.columnKeys.indexOf(column);
-		if(columnIndex < 0 || columnIndex >= columns())
-			return 0;
-		
-		int count = 0;
-		for(int i = 0; i < rows(); ++i){
-			if(entrys[i][columnIndex] != null)
-				++count;
-		}
-		return count;
+		Head<CK> columnHead = this.columnHead(column);
+		return columnHead == null ? 0 : columnHead.size;
 	}
 
 	@Override
-	public Set<Entry<RK, CK, V>> entrySet() {
+	public Map<CK, V> rowMap(final RK row) {
 		// TODO Auto-generated method stub
-		if(entrySet == null){
+		return new AbstractMap<CK, V>() {
+
+			private Head<RK> head = ArrayMatrix.this.rowHead(row);
+
+			@Override
+			public V put(CK key, V value) {
+				// TODO Auto-generated method stub
+				if (head == null) {
+					head = ArrayMatrix.this.addRowIfNotExists(row);
+				}
+				return ArrayMatrix.this.setValueInRow(head, key, value);
+			}
+
+			@Override
+			public Set<Map.Entry<CK, V>> entrySet() {
+				// TODO Auto-generated method stub
+				return new AbstractSet<Map.Entry<CK, V>>() {
+
+					@Override
+					public Iterator<Map.Entry<CK, V>> iterator() {
+						// TODO Auto-generated method stub
+						return new Iterator<Map.Entry<CK, V>>() {
+
+							private int currentColumn = -1;
+							private int nextColumn = -1;
+
+							private int expectedModCount = ArrayMatrix.this.modCount;
+
+							private void checkModCount() {
+								if (expectedModCount != ArrayMatrix.this.modCount)
+									throw new ConcurrentModificationException();
+							}
+
+							private boolean getNext() {
+								checkModCount();
+								if (currentColumn < 0) {
+									if (null == head)
+										return false;
+									for (int i = 0; i < columns(); ++i) {
+										if (entrys[head.index][i] != null) {
+											nextColumn = i;
+											break;
+										}
+									}
+								} else {
+									for (int i = currentColumn + 1; i < columns(); ++i) {
+										if (entrys[head.index][i] != null) {
+											nextColumn = i;
+											break;
+										}
+									}
+								}
+								return nextColumn >= 0
+										&& nextColumn < columns();
+							}
+
+							@Override
+							public boolean hasNext() {
+								// TODO Auto-generated method stub
+								if (nextColumn < 0)
+									return getNext();
+								else
+									return nextColumn < columns();
+							}
+
+							@Override
+							public Map.Entry<CK, V> next() {
+								// TODO Auto-generated method stub
+								if (nextColumn < 0 && !getNext())
+									throw new NoSuchElementException();
+								if (nextColumn > columns()
+										|| entrys[head.index][nextColumn] == null)
+									throw new NoSuchElementException();
+								currentColumn = nextColumn;
+								nextColumn = -1;
+								return entrys[head.index][currentColumn]
+										.rowMapEntry();
+							}
+
+							@Override
+							public void remove() {
+								// TODO Auto-generated method stub
+								checkModCount();
+								if (currentColumn < 0
+										|| entrys[head.index][currentColumn] == null)
+									throw new IllegalStateException();
+								ArrayMatrix.this.removeElementAt(head.index,
+										currentColumn);
+								if (head.disposed()) {
+									head = null;
+									currentColumn = nextColumn = -1;
+								}
+								expectedModCount = ArrayMatrix.this.modCount;
+							}
+
+						};
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return head == null ? 0 : head.size;
+					}
+
+				};
+			}
+
+		};
+	}
+
+	@Override
+	public Map<RK, V> columnMap(final CK column) {
+		// TODO Auto-generated method stub
+		return new AbstractMap<RK, V>() {
+
+			private Head<CK> head = ArrayMatrix.this.columnHead(column);
+
+			@Override
+			public V put(RK key, V value) {
+				// TODO Auto-generated method stub
+				if (head == null) {
+					head = ArrayMatrix.this.addColumnIfNotExists(column);
+				}
+				return ArrayMatrix.this.setValueInColumn(head, key, value);
+			}
+
+			@Override
+			public Set<Map.Entry<RK, V>> entrySet() {
+				// TODO Auto-generated method stub
+				return new AbstractSet<Map.Entry<RK, V>>() {
+
+					@Override
+					public Iterator<Map.Entry<RK, V>> iterator() {
+						// TODO Auto-generated method stub
+						return new Iterator<Map.Entry<RK, V>>() {
+
+							private int currentRow = -1;
+							private int nextRow = -1;
+
+							private int expectedModCount = ArrayMatrix.this.modCount;
+
+							private void checkModCount() {
+								if (expectedModCount != ArrayMatrix.this.modCount)
+									throw new ConcurrentModificationException();
+							}
+
+							private boolean getNext() {
+								checkModCount();
+								if (currentRow < 0) {
+									if (null == head)
+										return false;
+									for (int i = 0; i < rows(); ++i) {
+										if (entrys[i][head.index] != null) {
+											nextRow = i;
+											break;
+										}
+									}
+								} else {
+									for (int i = currentRow + 1; i < rows(); ++i) {
+										if (entrys[i][head.index] != null) {
+											nextRow = i;
+											break;
+										}
+									}
+								}
+								return nextRow >= 0 && nextRow < rows();
+							}
+
+							@Override
+							public boolean hasNext() {
+								// TODO Auto-generated method stub
+								if (nextRow < 0)
+									return getNext();
+								else
+									return nextRow < rows();
+							}
+
+							@Override
+							public Map.Entry<RK, V> next() {
+								// TODO Auto-generated method stub
+								if (nextRow < 0 && !getNext())
+									throw new NoSuchElementException();
+								if (nextRow > rows()
+										|| entrys[nextRow][head.index] == null)
+									throw new NoSuchElementException();
+								currentRow = nextRow;
+								nextRow = -1;
+								return entrys[currentRow][head.index]
+										.columnMapEntry();
+							}
+
+							@Override
+							public void remove() {
+								// TODO Auto-generated method stub
+								checkModCount();
+								if (currentRow < 0
+										|| entrys[currentRow][head.index] == null)
+									throw new IllegalStateException();
+								ArrayMatrix.this.removeElementAt(currentRow,
+										head.index);
+								if (head.disposed()) {
+									head = null;
+									currentRow = nextRow = -1;
+								}
+								expectedModCount = ArrayMatrix.this.modCount;
+							}
+
+						};
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return head == null ? 0 : head.size;
+					}
+
+				};
+			}
+
+		};
+	}
+
+	@Override
+	public Set<Matrix.Entry<RK, CK, V>> entrySet() {
+		// TODO Auto-generated method stub
+		if (entrySet == null) {
 			entrySet = new EntrySet();
 		}
 		return entrySet;
 	}
-	
-	private class EntrySet extends AbstractSet<Entry<RK, CK, V>> {
-		private EntrySet(){
+
+	private class EntrySet extends AbstractSet<Matrix.Entry<RK, CK, V>> {
+		private EntrySet() {
 			super();
 		}
 
 		@Override
-		public Iterator<Entry<RK, CK, V>> iterator() {
+		public Iterator<Matrix.Entry<RK, CK, V>> iterator() {
 			// TODO Auto-generated method stub
 			return new EntryIterator();
 		}
@@ -302,105 +747,168 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			// TODO Auto-generated method stub
 			return ArrayMatrix.this.size;
 		}
-		
+
 	}
-	
-	private class EntryIterator implements Iterator<Entry<RK, CK, V>> {
-		private int expectedModCount;
-		private boolean entryRemoved;
-		private int rowIndex = 0, columnIndex = 0;
+
+	private class EntryIterator implements Iterator<Matrix.Entry<RK, CK, V>> {
+		private int expectedModCount = ArrayMatrix.this.modCount;
+		private boolean entryRemoved = false;
+		private int rowIndex = 0, columnIndex = -1;
 		private int nextRowIndex = 0, nextColumnIndex = 0;
-		
-		private EntryIterator(){
+
+		private EntryIterator() {
 			this.expectedModCount = ArrayMatrix.this.modCount;
 			this.getNextEntryIndex();
 		}
-		
-		private void checkModified(){
-			if(expectedModCount != ArrayMatrix.this.modCount)
+
+		private void checkModified() {
+			if (expectedModCount != ArrayMatrix.this.modCount)
 				throw new ConcurrentModificationException();
 		}
-		
-		private void getNextArrayIndex(){
-			if(columnIndex >= ArrayMatrix.this.columns()){
-				++nextRowIndex;
-				nextColumnIndex = 0;
-			} else {
-				++nextColumnIndex;
-			}
+
+		private boolean nextEntryHasGot() {
+			return nextRowIndex >= 0 && nextColumnIndex >= 0;
 		}
-		
-		private void getNextEntryIndex(){
-			while(!ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex, nextColumnIndex)
-					&& nextEntry() == null){
-				this.getNextArrayIndex();
-			}
+
+		private boolean getNextEntryIndex() {
+			checkModified();
+			nextRowIndex = rowIndex;
+			nextColumnIndex = columnIndex;
+			do{
+				if (nextColumnIndex + 1 >= ArrayMatrix.this.columns()) {
+					++nextRowIndex;
+					nextColumnIndex = 0;
+				} else {
+					++nextColumnIndex;
+				}
+			} while (!ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex,
+					nextColumnIndex) && nextEntry() == null);
+			return !ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex,
+					nextColumnIndex);
 		}
-		
-		private Entry<RK, CK, V> nextEntry(){
+
+		private Matrix.Entry<RK, CK, V> nextEntry() {
 			return ArrayMatrix.this.entrys[nextRowIndex][nextColumnIndex];
 		}
 
 		@Override
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
-			return !ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex, columnIndex);
+			if (nextEntryHasGot())
+				return !ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex,
+						nextColumnIndex);
+			else
+				return getNextEntryIndex();
 		}
 
 		@Override
-		public hust.idc.util.matrix.Matrix.Entry<RK, CK, V> next() {
+		public Matrix.Entry<RK, CK, V> next() {
 			// TODO Auto-generated method stub
-			if(ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex, columnIndex))
+			if (!nextEntryHasGot()) {
+				if (!getNextEntryIndex())
+					throw new NoSuchElementException();
+			} else if (ArrayMatrix.this.checkIndexOutOfSize(nextRowIndex,
+					nextColumnIndex)) {
 				throw new NoSuchElementException();
-			
-			checkModified();
-			Entry<RK, CK, V> e = this.nextEntry();
+			}
+
 			rowIndex = nextRowIndex;
 			columnIndex = nextColumnIndex;
+			nextRowIndex = nextColumnIndex = -1;
 			this.getNextEntryIndex();
-			return e;
+			entryRemoved = false;
+			return ArrayMatrix.this.entrys[rowIndex][columnIndex];
 		}
 
 		@Override
 		public void remove() {
 			// TODO Auto-generated method stub
-			if(!entryRemoved){
+			checkModified();
+			if (!entryRemoved) {
 				checkModified();
-				removeElementAt(rowIndex, columnIndex);
+				ArrayMatrix.this.removeElementAt(rowIndex, columnIndex);
 				entryRemoved = true;
 				this.expectedModCount = ArrayMatrix.this.modCount;
 			} else {
 				throw new IllegalStateException();
 			}
 		}
-		
+
 	}
-	
-	private static class Head{
-		int index = UNASSIGNED;
-		int size = 0;
-		
-		private static final int UNASSIGNED = -1;
-		
-		private Head(){
-			
+
+	private class Entry extends AbstractEntry<RK, CK, V> implements
+			Matrix.Entry<RK, CK, V> {
+		private V value;
+		private Head<RK> rowHead;
+		private Head<CK> columnHead;
+
+		private Entry(V value, Head<RK> rowHead, Head<CK> columnHead) {
+			this.value = value;
+			this.rowHead = rowHead;
+			this.columnHead = columnHead;
 		}
-		
-		private int getIndex(){
-			return index;
+
+		@Override
+		public RK getRowKey() {
+			// TODO Auto-generated method stub
+			return this.rowHead.getKey();
 		}
-		
-		private void assignIndex(int index){
+
+		@Override
+		public CK getColumnKey() {
+			// TODO Auto-generated method stub
+			return this.columnHead.getKey();
+		}
+
+		@Override
+		public V getValue() {
+			// TODO Auto-generated method stub
+			return this.value;
+		}
+
+		@Override
+		public V setValue(V value) {
+			// TODO Auto-generated method stub
+			V old = this.value;
+			this.value = value;
+			return old;
+		}
+
+		private void dispose() {
+			this.value = null;
+			this.rowHead = null;
+			this.columnHead = null;
+		}
+
+	}
+
+	private static class Head<K> {
+		private K key;
+		private int index;
+		private int size = 0;
+
+		private Head(K key, int index) {
+			this.key = key;
 			this.index = index;
 		}
-		
-		private void removeIndexAssignment(){
-			this.index = UNASSIGNED;
-		}
-		
-		private int increaseSize(int incr){
+
+		private int increaseSize(int incr) {
 			size = Math.max(0, size + incr);
 			return size;
+		}
+
+		private K getKey() {
+			return this.key;
+		}
+
+		private void dispose() {
+			key = null;
+			index = -1;
+			size = 0;
+		}
+
+		private boolean disposed() {
+			return index < 0;
 		}
 	}
 

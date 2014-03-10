@@ -25,16 +25,10 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	}
 
 	@Override
-	public int rows() {
-		// TODO Auto-generated method stub
-		return rowKeySet().size();
-	}
+	public abstract int rows();
 
 	@Override
-	public int columns() {
-		// TODO Auto-generated method stub
-		return columnKeySet().size();
-	}
+	public abstract int columns();
 
 	@Override
 	public boolean isEmpty() {
@@ -137,31 +131,31 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	}
 
 	@Override
-	public V set(RK row, CK column, V value) {
+	public V put(RK row, CK column, V value) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public V set(Pair<? extends RK, ? extends CK> keyPair, V value) {
+	public V put(Pair<? extends RK, ? extends CK> keyPair, V value) {
 		// TODO Auto-generated method stub
-		return set(keyPair.getFirst(), keyPair.getSecond(), value);
+		return put(keyPair.getFirst(), keyPair.getSecond(), value);
 	}
 
 	@Override
-	public void setAll(Matrix<? extends RK, ? extends CK, ? extends V> matrix) {
+	public void putAll(Matrix<? extends RK, ? extends CK, ? extends V> matrix) {
 		// TODO Auto-generated method stub
 		Iterator<? extends Entry<? extends RK, ? extends CK, ? extends V>> entryIt = matrix
 				.entrySet().iterator();
 		while (entryIt.hasNext()) {
 			Entry<? extends RK, ? extends CK, ? extends V> entry = entryIt
 					.next();
-			set(entry.getRowKey(), entry.getColumnKey(), entry.getValue());
+			put(entry.getRowKey(), entry.getColumnKey(), entry.getValue());
 		}
 	}
 
 	@Override
-	public void setAll(
+	public void putAll(
 			Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> map) {
 		// TODO Auto-generated method stub
 		Iterator<? extends Map.Entry<? extends Pair<? extends RK, ? extends CK>, ? extends V>> entryIt = map
@@ -169,7 +163,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 		while (entryIt.hasNext()) {
 			Map.Entry<? extends Pair<? extends RK, ? extends CK>, ? extends V> entry = entryIt
 					.next();
-			set(entry.getKey().getFirst(), entry.getKey().getSecond(),
+			put(entry.getKey().getFirst(), entry.getKey().getSecond(),
 					entry.getValue());
 		}
 	}
@@ -330,7 +324,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 			@Override
 			public V put(CK key, V value) {
 				// TODO Auto-generated method stub
-				return AbstractMatrix.this.set(row, key, value);
+				return AbstractMatrix.this.put(row, key, value);
 			}
 
 			@Override
@@ -418,7 +412,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 			@Override
 			public V put(RK key, V value) {
 				// TODO Auto-generated method stub
-				return AbstractMatrix.this.set(key, column, value);
+				return AbstractMatrix.this.put(key, column, value);
 			}
 
 			@Override
