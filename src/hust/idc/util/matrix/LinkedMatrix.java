@@ -16,7 +16,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	private HeadNode<CK> columnHeadsEntry;
 	private int size, rows, columns;
 
-	private int modCount = 0;
+	private volatile int modCount = 0;
 
 	public LinkedMatrix() {
 		super();
@@ -30,12 +30,14 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			Matrix<? extends RK, ? extends CK, ? extends V> otherMatrix) {
 		this();
 		this.putAll(otherMatrix);
+		modCount = 0;
 	}
 
 	public LinkedMatrix(
 			Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> otherMatrix) {
 		this();
 		this.putAll(otherMatrix);
+//		modCount = 0;
 	}
 
 	@Override
@@ -882,7 +884,9 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			this.up = this.down = null;
 		}
 
-		private void dispose() {
+		@Override
+		protected void dispose() {
+			super.dispose();
 			this.value = null;
 			this.rowHead = null;
 			this.columnHead = null;

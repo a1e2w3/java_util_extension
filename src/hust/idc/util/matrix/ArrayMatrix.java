@@ -18,8 +18,15 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	private ArrayMatrix<RK, CK, V>.Entry[][] entrys;
 	private int size = 0;
 
-	private int modCount = 0;
+	private volatile int modCount = 0;
 
+    /**
+     * The maximum capacity, used if a higher value is implicitly specified
+     * by either of the constructors with arguments.
+     * MUST be a power of two <= 1<<30.
+     */
+    private static final int MAXIMUM_CAPACITY = 1 << 30;
+    
 	public ArrayMatrix() {
 		this(10);
 	}
@@ -37,9 +44,11 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			throw new IllegalArgumentException("Illegal Columns: "
 					+ initialColumns);
 
-		rowKeys = new ArrayList<Head<RK>>(initialRows);
-		columnKeys = new ArrayList<Head<CK>>(initialColumns);
-		entrys = new ArrayMatrix.Entry[initialRows][initialColumns];
+		int rowCapacity = Math.min(MAXIMUM_CAPACITY, initialRows);
+		int columnCapacity = Math.min(MAXIMUM_CAPACITY, initialColumns);
+		rowKeys = new ArrayList<Head<RK>>(rowCapacity);
+		columnKeys = new ArrayList<Head<CK>>(columnCapacity);
+		entrys = new ArrayMatrix.Entry[rowCapacity][columnCapacity];
 	}
 
 	@SuppressWarnings("unchecked")
@@ -56,6 +65,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		entrys = new ArrayMatrix.Entry[initialRows][initialColumns];
 		
 		this.putAll(otherMatrix);
+//		modCount = 0;
 	}
 	
 	public void trimToSize(){
@@ -270,10 +280,10 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return;
 		int oldRows = Math.max(this.rows(), 7);
 		int oldColumns = Math.max(this.columns(), 7);
-		int newRowCapacity = Math.max(oldRows + (oldRows >> 1),
-				minRow);
-		int newColumnCapacity = Math.max(oldColumns
-				+ (oldColumns >> 1), minColumn);
+		int newRowCapacity = Math.min(MAXIMUM_CAPACITY, Math.max(oldRows + (oldRows >> 1),
+				minRow));
+		int newColumnCapacity = Math.min(MAXIMUM_CAPACITY, Math.max(oldColumns
+				+ (oldColumns >> 1), minColumn));
 
 		Entry[][] newEntrys = new ArrayMatrix.Entry[newRowCapacity][];
 		int i = 0;
@@ -889,7 +899,9 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return old;
 		}
 
-		private void dispose() {
+		@Override
+		protected void dispose() {
+			super.dispose();
 			this.value = null;
 			this.rowHead = null;
 			this.columnHead = null;

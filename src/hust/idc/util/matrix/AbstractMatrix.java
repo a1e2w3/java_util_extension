@@ -215,7 +215,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	 * stateless, so there's no reason to create more than one of each.
 	 */
 	protected transient volatile Collection<V> values = null;
-	protected transient volatile Set<Pair<RK, CK>> keyPairSet = null;
+	protected transient volatile Set<? extends Pair<RK, CK>> keyPairSet = null;
 
 	@Override
 	public Collection<V> values() {
@@ -269,7 +269,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	}
 
 	@Override
-	public Set<Pair<RK, CK>> keyPairSet() {
+	public Set<? extends Pair<RK, CK>> keyPairSet() {
 		// TODO Auto-generated method stub
 		if (keyPairSet == null) {
 			keyPairSet = new AbstractSet<Pair<RK, CK>>() {
@@ -766,6 +766,12 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 		public String toString() {
 			return getKeyPair() + "=" + getValue();
 		}
+		
+		protected void dispose(){
+			this.keyPair = null;
+			this.rowMapEntry = null;
+			this.columnMapEntry = null;
+		}
 	}
 
 	public static abstract class AbstractImmutableEntry<RK, CK, V> extends
@@ -878,6 +884,13 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 			V oldValue = this.value;
 			this.value = value;
 			return oldValue;
+		}
+
+		@Override
+		protected void dispose() {
+			// TODO Auto-generated method stub
+			super.dispose();
+			this.value = null;
 		}
 
 	}

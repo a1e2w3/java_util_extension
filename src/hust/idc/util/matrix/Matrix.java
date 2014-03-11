@@ -59,7 +59,7 @@ public interface Matrix<RK, CK, V> {
 	
 	Set<Entry<RK, CK, V>> entrySet();
 	
-	Set<Pair<RK, CK>> keyPairSet();
+	Set<? extends Pair<RK, CK>> keyPairSet();
 	
 	boolean equals(Object o);
 	
