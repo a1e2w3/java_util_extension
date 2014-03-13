@@ -33,4 +33,4 @@ operations are almost the same with LinkedMatrix, but its memory space are more 
 capacity of array always greater than the matrix size, which the the number of values, and it grows automatically when 
 new tuples are added into the matrix.
 
-Open source project link: https://github.com/a1e2w3/java_util_extension.git
+Open source project links: https://github.com/a1e2w3/java_util_extension.git or https://a1e2w3@bitbucket.org/a1e2w3/java_util_extension.git
