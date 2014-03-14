@@ -1,5 +1,8 @@
 package hust.idc.util.matrix;
 
+import java.util.Map;
+import java.util.Set;
+
 import hust.idc.util.pair.AbstractImmutableUnorderedPair;
 import hust.idc.util.pair.Pair;
 
@@ -9,6 +12,47 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 	protected AbstractSymmetricMatrix() {
 		super();
 	}
+
+	@Override
+	public abstract int rows();
+
+	@Override
+	public int columns(){
+		return rows();
+	}
+
+	@Override
+	public boolean containsColumn(Object column) {
+		// TODO Auto-generated method stub
+		return containsRow(column);
+	}
+
+	@Override
+	public void removeColumn(K column) {
+		// TODO Auto-generated method stub
+		removeRow(column);
+	}
+
+	@Override
+	public Map<K, V> columnMap(K column) {
+		// TODO Auto-generated method stub
+		return rowMap(column);
+	}
+
+	@Override
+	protected int columnValueCount(Object column) {
+		// TODO Auto-generated method stub
+		return rowValueCount(column);
+	}
+
+	@Override
+	public Set<K> columnKeySet() {
+		// TODO Auto-generated method stub
+		return rowKeySet();
+	}
+
+	@Override
+	public abstract Set<Entry<K, K, V>> entrySet();
 
 	public static abstract class AbstractSymmetricMatrixEntry<K, V> extends
 			AbstractEntry<K, K, V> implements

@@ -30,7 +30,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			Matrix<? extends RK, ? extends CK, ? extends V> otherMatrix) {
 		this();
 		this.putAll(otherMatrix);
-		modCount = 0;
+//		modCount = 0;
 	}
 
 	public LinkedMatrix(
@@ -175,7 +175,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		EntryNode columnCur = columnHead.entry(), up = null;
 		while (columnCur != null && columnCur.rowHead().index < rowHead.index) {
 			up = columnCur;
-			columnCur = columnCur.down;
+			columnCur = columnCur.lower;
 		}
 
 		if (rowCur == null || rowCur.columnHead().index > columnHead.index) {
@@ -183,8 +183,8 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 				EntryNode newNode = new EntryNode(value, rowHead, columnHead);
 				newNode.left = left;
 				newNode.right = rowCur;
-				newNode.up = up;
-				newNode.down = columnCur;
+				newNode.upper = up;
+				newNode.lower = columnCur;
 
 				// link left and right
 				if (left == null)
@@ -198,9 +198,9 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 				if (up == null)
 					columnHead.entry = newNode;
 				else
-					up.down = newNode;
+					up.lower = newNode;
 				if (columnCur != null)
-					columnCur.up = newNode;
+					columnCur.upper = newNode;
 
 				rowHead.addSize(1);
 				columnHead.addSize(1);
@@ -226,13 +226,13 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 				if (up == null)
 					columnHead.entry = rowCur;
 				else
-					up.down = rowCur;
+					up.lower = rowCur;
 				if (columnCur != null)
-					columnCur.up = rowCur;
+					columnCur.upper = rowCur;
 
 				rowCur.columnHead = columnHead;
-				rowCur.down = columnCur;
-				rowCur.up = up;
+				rowCur.lower = columnCur;
+				rowCur.upper = up;
 				return rowCur.setValue(value);
 			}
 		}
@@ -319,18 +319,18 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		if (node.right != null)
 			node.right.left = node.left;
 
-		if (node.up == null)
-			node.columnHead.entry = node.down;
+		if (node.upper == null)
+			node.columnHead.entry = node.lower;
 		else
-			node.up.down = node.down;
-		if (node.down != null)
-			node.down.up = node.up;
+			node.upper.lower = node.lower;
+		if (node.lower != null)
+			node.lower.upper = node.upper;
 
 		if (node.rowHead.addSize(-1) == 0) {
 			this.removeRowHead(node.rowHead);
 		}
 		if (node.columnHead.addSize(-1) == 0) {
-			this.removeColumn(node.columnHead);
+			this.removeColumnHead(node.columnHead);
 		}
 		V value = node.value;
 		node.dispose();
@@ -369,7 +369,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			return;
 		EntryNode node = columnHead.entry(), next = null;
 		while (node != null) {
-			next = node.down;
+			next = node.lower;
 			this.removeNode(node);
 			node = next;
 		}
@@ -497,7 +497,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return head == null ? 0 : head.listSize();
+						return head == null ? 0 : head.size;
 					}
 
 				};
@@ -543,7 +543,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 								if (current == null)
 									return head != null && head.entry != null;
 								else
-									return current.down != null;
+									return current.lower != null;
 							}
 
 							private boolean getNext() {
@@ -553,9 +553,9 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 										return false;
 									return (current = head.entry) != null;
 								} else {
-									if (current.down == null)
+									if (current.lower == null)
 										return false;
-									current = current.down;
+									current = current.lower;
 									return true;
 								}
 							}
@@ -580,7 +580,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 								checkModCount();
 								if (currentRemoved || current == null)
 									throw new IllegalStateException();
-								EntryNode up = current.up;
+								EntryNode up = current.upper;
 								LinkedMatrix.this.removeNode(current);
 								if (head.disposed()) {
 									current = null;
@@ -598,7 +598,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return head == null ? 0 : head.listSize();
+						return head == null ? 0 : head.size;
 					}
 
 				};
@@ -611,14 +611,14 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	protected int rowValueCount(Object row) {
 		// TODO Auto-generated method stub
 		HeadNode<RK> head = rowHead(row);
-		return head == null ? 0 : head.listSize();
+		return head == null ? 0 : head.size;
 	}
 
 	@Override
 	protected int columnValueCount(Object column) {
 		// TODO Auto-generated method stub
 		HeadNode<CK> head = columnHead(column);
-		return head == null ? 0 : head.listSize();
+		return head == null ? 0 : head.size;
 	}
 
 	// View
@@ -820,7 +820,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 				checkModCount();
 				if (currentNode == null
 						|| (rowOrder && (nextNode = currentNode.right) == null)
-						|| (!rowOrder && (nextNode = currentNode.down) == null)) {
+						|| (!rowOrder && (nextNode = currentNode.lower) == null)) {
 					while (nextHead != null && nextHead.entry() == null) {
 						nextHead = nextHead.next;
 					}
@@ -872,7 +872,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	private class EntryNode extends AbstractEntry<RK, CK, V> implements
 			Entry<RK, CK, V> {
 		private V value;
-		private EntryNode right, left, up, down;
+		private EntryNode right, left, upper, lower;
 		private HeadNode<RK> rowHead;
 		private HeadNode<CK> columnHead;
 
@@ -881,7 +881,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			this.rowHead = rowHead;
 			this.columnHead = columnHead;
 			this.left = this.right = null;
-			this.up = this.down = null;
+			this.upper = this.lower = null;
 		}
 
 		@Override
@@ -891,7 +891,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			this.rowHead = null;
 			this.columnHead = null;
 			this.left = this.right = null;
-			this.up = this.down = null;
+			this.upper = this.lower = null;
 		}
 
 		private HeadNode<RK> rowHead() {
@@ -947,10 +947,6 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 
 		private K getKey() {
 			return key;
-		}
-
-		private int listSize() {
-			return size;
 		}
 
 		private int addSize(int incr) {
