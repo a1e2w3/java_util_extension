@@ -32,3 +32,8 @@ ArrayMatrix implement matrix with a two-demensional array. It is efficient to a 
 operations are almost the same with LinkedMatrix, but its memory space are more compact. Similar with ArrayList, the 
 capacity of array always greater than the matrix size, which the the number of values, and it grows automatically when 
 new tuples are added into the matrix.
+<<<<<<< HEAD
+=======
+
+Open source project links: https://github.com/a1e2w3/java_util_extension.git or https://a1e2w3@bitbucket.org/a1e2w3/java_util_extension.git
+>>>>>>> java_util_extension@github/master
