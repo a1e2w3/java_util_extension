@@ -18,22 +18,22 @@ many different users, we could use a matrix to contain the authorities, let the 
 be the column key, the authority of the given user to the given document.  We have three kind implementations of 
 matrix now. 
 
-An HashMap maintain the data with a nested HashMap, so random access will be the fastest. The key of outter hashMap is 
-the row key of the matrix, and the time complexity of random get all value of a row is O(1), too. But it is lack the 
-ability of get all value of a specific column, so developers are better to let the row key was the more frequece accessed 
-one. HashMatrix is suitable for a sparse matrix.  
+An HashMap maintain the data with a two-dimensional array, the position of an entry was decided by hash code of row key 
+and column key, the row key decide the row in array and the column key decide the column. So random access will be the 
+fastest. In version 1.0, we use a nest hash map to implement the hash matrix, the array implementation was in the plan. 
+The key of outer hashMap is the row key of the matrix, and the time complexity of random get all value of a row 
+is O(1), too. But it is lack the ability of get all value of a specific column, so developers are better to let the row 
+key was the more frequent accessed one. HashMatrix is suitable for a sparse matrix.  
 
-LinkedMatrix is an implemention of cross list. each element in the matrix maintain an pointer to the right element in the 
+LinkedMatrix is an implementation of cross list. each element in the matrix maintain an pointer to the right element in the 
 same row and the lower element in the same column. It can provide the view of rows and columns in linear time. And the 
-time of random access will be O(numofrow * numofcolumn). Compared with ArrayMatrix, it need less memory space when the 
-matrix is sparse.  
+time of random access will be O(numOfRow + numOfColumn). Compared with ArrayMatrix, it need less memory space when the 
+matrix is sparse, and it doesn't need continuous memory for each row or column.  
 
-ArrayMatrix implement matrix with a two-demensional array. It is efficient to a dense matrix. The performance of access 
+ArrayMatrix implement matrix with a two-dimensional array. It is efficient to a dense matrix. The performance of access 
 operations are almost the same with LinkedMatrix, but its memory space are more compact. Similar with ArrayList, the 
 capacity of array always greater than the matrix size, which the the number of values, and it grows automatically when 
 new tuples are added into the matrix.
-<<<<<<< HEAD
-=======
 
-Open source project links: https://github.com/a1e2w3/java_util_extension.git or https://a1e2w3@bitbucket.org/a1e2w3/java_util_extension.git
->>>>>>> java_util_extension@github/master
+Open source project links: https://github.com/a1e2w3/java_util_extension.git 
+or https://a1e2w3@bitbucket.org/a1e2w3/java_util_extension.git

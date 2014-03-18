@@ -14,17 +14,17 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 	}
 
 	@Override
-	public abstract int demension();
+	public abstract int dimension();
 
 	@Override
 	public int rows() {
 		// TODO Auto-generated method stub
-		return demension();
+		return dimension();
 	}
 
 	@Override
 	public int columns(){
-		return demension();
+		return dimension();
 	}
 
 	@Override

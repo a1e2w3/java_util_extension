@@ -18,7 +18,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	private ArrayList<Head> heads;
 	private ArraySymmetricMatrix<K, V>.Entry[] entrys;
 	private int size;
-	private int demensionCapacity;
+	private int dimensionCapacity;
 
 	private volatile int modCount = 0;
 
@@ -40,19 +40,19 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			throw new IllegalArgumentException("Illegal Demension: "
 					+ initialDemension);
 
-		demensionCapacity = Math.min(MAXIMUM_CAPACITY, initialDemension);
-		heads = new ArrayList<Head>(demensionCapacity);
-		entrys = new ArraySymmetricMatrix.Entry[arraySize(demensionCapacity)];
+		dimensionCapacity = Math.min(MAXIMUM_CAPACITY, initialDemension);
+		heads = new ArrayList<Head>(dimensionCapacity);
+		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
 	}
 
 	@SuppressWarnings("unchecked")
 	public ArraySymmetricMatrix(
 			SymmetricMatrix<? extends K, ? extends V> otherMatrix) {
 		super();
-		int demension = otherMatrix == null ? 0 : otherMatrix.demension();
-		demensionCapacity = Math.max(10, demension + (demension << 1));
-		heads = new ArrayList<Head>(demensionCapacity);
-		entrys = new ArraySymmetricMatrix.Entry[arraySize(demensionCapacity)];
+		int demension = otherMatrix == null ? 0 : otherMatrix.dimension();
+		dimensionCapacity = Math.max(10, demension + (demension << 1));
+		heads = new ArrayList<Head>(dimensionCapacity);
+		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
 
 		this.putAll(otherMatrix);
 		// modCount = 0;
@@ -70,15 +70,15 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	private int demensionCapacity() {
-		return demensionCapacity;
+		return dimensionCapacity;
 	}
 
 	public void trimToSize() {
 		this.heads.trimToSize();
 
-		if (this.demension() < this.demensionCapacity()) {
+		if (this.dimension() < this.demensionCapacity()) {
 			this.entrys = Arrays.copyOf(this.entrys,
-					arraySize(this.demension()));
+					arraySize(this.dimension()));
 		}
 	}
 
@@ -89,7 +89,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public int demension() {
+	public int dimension() {
 		// TODO Auto-generated method stub
 		return heads.size();
 	}
@@ -207,11 +207,11 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		modCount++;
 		if (minDemension > this.demensionCapacity()) {
 			Entry oldData[] = entrys;
-			this.demensionCapacity = (this.demensionCapacity() * 3) / 2 + 1;
-			if (this.demensionCapacity < minDemension)
-				this.demensionCapacity = minDemension;
+			this.dimensionCapacity = (this.demensionCapacity() * 3) / 2 + 1;
+			if (this.dimensionCapacity < minDemension)
+				this.dimensionCapacity = minDemension;
 			// minCapacity is usually close to size, so this is a win:
-			entrys = Arrays.copyOf(oldData, arraySize(this.demensionCapacity));
+			entrys = Arrays.copyOf(oldData, arraySize(this.dimensionCapacity));
 		}
 	}
 
@@ -283,7 +283,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		Head rowHead = getHead(row);
 		if(null == rowHead)
 			return ;
-		for(int i = 0; i < this.demension(); ++i){
+		for(int i = 0; i < this.dimension(); ++i){
 			this.removeElementAt(indexFor(rowHead.index, i));
 		}
 		if(!rowHead.disposed())
@@ -293,7 +293,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
-		int demension = this.demension() - 1;
+		int demension = this.dimension() - 1;
 		int maxIndex = indexFor(demension, demension);
 		for (int i = 0; i <= maxIndex; ++i) {
 			if (this.entrys[i] != null) {
@@ -399,7 +399,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 								checkModCount();
 								if(null == head)
 									return false;
-								for(nextColumn = nextColumn + 1; nextColumn < ArraySymmetricMatrix.this.demension(); ++nextColumn){
+								for(nextColumn = nextColumn + 1; nextColumn < ArraySymmetricMatrix.this.dimension(); ++nextColumn){
 									nextIndex = indexFor(head.index, nextColumn);
 									nextInRow = (head.index >= nextColumn);
 									if(null != ArraySymmetricMatrix.this.entrys[nextIndex])
@@ -504,7 +504,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 						public boolean hasNext() {
 							// TODO Auto-generated method stub
 							checkModCount();
-							return currentIndex + 1 < ArraySymmetricMatrix.this.demension();
+							return currentIndex + 1 < ArraySymmetricMatrix.this.dimension();
 						}
 
 						@Override
@@ -533,7 +533,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 				@Override
 				public int size() {
 					// TODO Auto-generated method stub
-					return ArraySymmetricMatrix.this.demension();
+					return ArraySymmetricMatrix.this.dimension();
 				}
 				
 			};
@@ -553,7 +553,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					return new Iterator<Matrix.Entry<K, K, V>>(){
 						private int currentIndex = -1;
 						private int nextIndex = -1;
-						private final int maxIndex = arraySize(ArraySymmetricMatrix.this.demension()) + 1;
+						private final int maxIndex = arraySize(ArraySymmetricMatrix.this.dimension()) + 1;
 						
 						private int expectedModCount = ArraySymmetricMatrix.this.modCount;
 

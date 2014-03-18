@@ -45,7 +45,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public int demension() {
+	public int dimension() {
 		// TODO Auto-generated method stub
 		return demension;
 	}
