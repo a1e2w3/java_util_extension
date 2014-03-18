@@ -6,7 +6,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		implements SymmetricMatrix<K, V>, Matrix<K, K, V> {
 
 	@Override
-	public int rows() {
+	public int demension() {
 		// TODO Auto-generated method stub
 		return 0;
 	}

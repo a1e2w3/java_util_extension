@@ -1,23 +1,26 @@
 package hust.idc.util.matrix.test;
 
-import hust.idc.util.matrix.ArrayMatrix;
+import hust.idc.util.matrix.ArraySymmetricMatrix;
 import hust.idc.util.matrix.Matrix;
 import hust.idc.util.matrix.Matrix.Entry;
 
 import java.util.Iterator;
 import java.util.Map;
 
-public class TestArrayMatrix extends TestMatrix {
+public class TestArraySymmetricMatrix extends TestMatrix {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Matrix<Integer, Integer, Integer> matrix = new ArrayMatrix<Integer, Integer, Integer>();
+		Matrix<Integer, Integer, Integer> matrix = new ArraySymmetricMatrix<Integer, Integer>();
 
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 5; ++j) {
+				if(i == 2 && j == 4)
+					matrix.put(2, 4, 6);
+				else
 				matrix.put(i, j, i + j);
 			}
 		}
@@ -28,9 +31,9 @@ public class TestArrayMatrix extends TestMatrix {
 		while (iterator.hasNext()) {
 			Entry<Integer, Integer, Integer> entry = iterator.next();
 			System.out.println("Entry: " + entry);
-			if (entry.getValue() == 3)
+			if (3 == entry.getValue())
 				iterator.remove();
-			else if (entry.getValue() == 4)
+			else if (4 == entry.getValue())
 				entry.setValue(8);
 		}
 		printMatrix(matrix);
@@ -66,14 +69,9 @@ public class TestArrayMatrix extends TestMatrix {
 		matrix.columnMap(2).put(0, -1);
 		printMatrix(matrix);
 
-//		matrix.clear();
-		iterator = matrix.entrySet().iterator();
-		while (iterator.hasNext()) {
-			Entry<Integer, Integer, Integer> entry = iterator.next();
-			System.out.println("Entry: " + entry);
-			iterator.remove();
-		}
+		matrix.clear();
 		printMatrix(matrix);
+
 	}
 
 }

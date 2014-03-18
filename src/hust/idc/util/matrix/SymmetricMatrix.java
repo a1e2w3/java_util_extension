@@ -2,6 +2,8 @@ package hust.idc.util.matrix;
 
 public interface SymmetricMatrix<K, V> extends Matrix<K, K, V> {
 	
+	int demension();
+	
 	boolean equals(Object o);
 	
 	int hashCode();

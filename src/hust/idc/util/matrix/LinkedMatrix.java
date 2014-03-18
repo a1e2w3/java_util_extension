@@ -30,14 +30,14 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			Matrix<? extends RK, ? extends CK, ? extends V> otherMatrix) {
 		this();
 		this.putAll(otherMatrix);
-//		modCount = 0;
+		// modCount = 0;
 	}
 
 	public LinkedMatrix(
 			Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> otherMatrix) {
 		this();
 		this.putAll(otherMatrix);
-//		modCount = 0;
+		// modCount = 0;
 	}
 
 	@Override
@@ -361,7 +361,8 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			node = next;
 		}
 		++modCount;
-		this.removeRowHead(rowHead);
+		if (!rowHead.disposed())
+			this.removeRowHead(rowHead);
 	}
 
 	private void removeColumn(HeadNode<CK> columnHead) {
@@ -374,7 +375,8 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			node = next;
 		}
 		++modCount;
-		this.removeColumnHead(columnHead);
+		if (!columnHead.disposed())
+			this.removeColumnHead(columnHead);
 	}
 
 	private void removeRowHead(HeadNode<RK> rowHead) {
@@ -405,26 +407,47 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		--columns;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Map<CK, V> rowMap(final RK row) {
+	public Map<CK, V> rowMap(RK row) {
 		// TODO Auto-generated method stub
+		HeadNode<RK> head = this.rowHead(row);
+		if (null == head)
+			return new RowMapView(row, head);
 
-		return new AbstractMap<CK, V>() {
-			private HeadNode<RK> head = LinkedMatrix.this.rowHead(row);
+		if (null == head.viewMap) {
+			head.viewMap = new RowMapView(row, head);
+		}
+		return (Map<CK, V>) head.viewMap;
+	}
 
-			@Override
-			public V put(CK key, V value) {
-				// TODO Auto-generated method stub
-				if (null == head) {
-					head = LinkedMatrix.this.addRowIfNotExists(row);
-				}
-				return LinkedMatrix.this.setValueInRow(head, key, value);
+	private class RowMapView extends AbstractMap<CK, V> {
+		private HeadNode<RK> head;
+		private RK row;
+
+		private RowMapView(RK key, HeadNode<RK> head) {
+			this.row = key;
+			this.head = head;
+		}
+
+		@Override
+		public V put(CK key, V value) {
+			// TODO Auto-generated method stub
+			if (null == head || head.disposed()) {
+				head = LinkedMatrix.this.addRowIfNotExists(row);
+				head.viewMap = this;
 			}
+			return LinkedMatrix.this.setValueInRow(head, key, value);
+		}
 
-			@Override
-			public Set<Map.Entry<CK, V>> entrySet() {
-				// TODO Auto-generated method stub
-				return new AbstractSet<Map.Entry<CK, V>>() {
+		// View
+		protected transient volatile Set<Map.Entry<CK, V>> entrySet = null;
+
+		@Override
+		public Set<Map.Entry<CK, V>> entrySet() {
+			// TODO Auto-generated method stub
+			if (null == entrySet) {
+				entrySet = new AbstractSet<Map.Entry<CK, V>>() {
 
 					@Override
 					public Iterator<Map.Entry<CK, V>> iterator() {
@@ -501,31 +524,60 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 					}
 
 				};
-			}
 
-		};
+			}
+			return entrySet;
+		}
+
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			return head == null ? 0 : head.size;
+		}
+
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Map<RK, V> columnMap(final CK column) {
+	public Map<RK, V> columnMap(CK column) {
 		// TODO Auto-generated method stub
-		return new AbstractMap<RK, V>() {
+		HeadNode<CK> head = LinkedMatrix.this.columnHead(column);
+		if (null == head)
+			return new ColumnMapView(column, head);
 
-			private HeadNode<CK> head = LinkedMatrix.this.columnHead(column);
+		if (null == head.viewMap) {
+			head.viewMap = new ColumnMapView(column, head);
+		}
+		return (Map<RK, V>) head.viewMap;
+	}
 
-			@Override
-			public V put(RK key, V value) {
-				// TODO Auto-generated method stub
-				if (head == null) {
-					head = LinkedMatrix.this.addColumnIfNotExists(column);
-				}
-				return LinkedMatrix.this.setValueInColumn(head, key, value);
+	private class ColumnMapView extends AbstractMap<RK, V> {
+		private HeadNode<CK> head;
+		private CK column;
+
+		private ColumnMapView(CK key, HeadNode<CK> head) {
+			this.column = key;
+			this.head = head;
+		}
+
+		@Override
+		public V put(RK key, V value) {
+			// TODO Auto-generated method stub
+			if (null == head || head.disposed()) {
+				head = LinkedMatrix.this.addColumnIfNotExists(column);
+				head.viewMap = this;
 			}
+			return LinkedMatrix.this.setValueInColumn(head, key, value);
+		}
 
-			@Override
-			public Set<Map.Entry<RK, V>> entrySet() {
-				// TODO Auto-generated method stub
-				return new AbstractSet<Map.Entry<RK, V>>() {
+		// View
+		protected transient volatile Set<Map.Entry<RK, V>> entrySet = null;
+
+		@Override
+		public Set<Map.Entry<RK, V>> entrySet() {
+			// TODO Auto-generated method stub
+			if (null == entrySet) {
+				entrySet = new AbstractSet<Map.Entry<RK, V>>() {
 
 					@Override
 					public Iterator<Map.Entry<RK, V>> iterator() {
@@ -603,8 +655,15 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 
 				};
 			}
+			return entrySet;
+		}
 
-		};
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			return head == null ? 0 : head.size;
+		}
+
 	}
 
 	@Override
@@ -936,6 +995,9 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		private EntryNode entry;
 		private HeadNode<K> prev, next;
 
+		// View
+		protected transient volatile Map<?, V> viewMap = null;
+
 		private HeadNode(K key, int index) {
 			this.key = key;
 			this.index = index;
@@ -964,6 +1026,8 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			size = 0;
 			entry = null;
 			prev = next = null;
+
+			viewMap = null;
 		}
 
 		private boolean disposed() {

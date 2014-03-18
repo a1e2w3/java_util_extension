@@ -16,17 +16,17 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	private ArrayList<Head<RK>> rowKeys;
 	private ArrayList<Head<CK>> columnKeys;
 	private ArrayMatrix<RK, CK, V>.Entry[][] entrys;
-	private int size = 0;
+	private int size;
 
 	private volatile int modCount = 0;
 
-    /**
-     * The maximum capacity, used if a higher value is implicitly specified
-     * by either of the constructors with arguments.
-     * MUST be a power of two <= 1<<30.
-     */
-    private static final int MAXIMUM_CAPACITY = 1 << 30;
-    
+	/**
+	 * The maximum capacity, used if a higher value is implicitly specified by
+	 * either of the constructors with arguments. MUST be a power of two <=
+	 * 1<<30.
+	 */
+	private static final int MAXIMUM_CAPACITY = 1 << 30;
+
 	public ArrayMatrix() {
 		this(10);
 	}
@@ -59,20 +59,21 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		int column = otherMatrix == null ? 0 : otherMatrix.columns();
 		int initialRows = Math.max(10, row + (row << 1));
 		int initialColumns = Math.max(10, column + (column << 1));
-		
+
 		rowKeys = new ArrayList<Head<RK>>(initialRows);
 		columnKeys = new ArrayList<Head<CK>>(initialColumns);
 		entrys = new ArrayMatrix.Entry[initialRows][initialColumns];
-		
+
 		this.putAll(otherMatrix);
-//		modCount = 0;
+		// modCount = 0;
 	}
-	
-	public void trimToSize(){
+
+	public void trimToSize() {
 		this.rowKeys.trimToSize();
 		this.columnKeys.trimToSize();
-		
-		if(this.rows() < this.rowCapacity() || this.columns() < this.columnCapacity()){
+
+		if (this.rows() < this.rowCapacity()
+				|| this.columns() < this.columnCapacity()) {
 			@SuppressWarnings("unchecked")
 			Entry[][] newEntrys = new ArrayMatrix.Entry[this.rows()][];
 			for (int i = 0; i < rows(); ++i) {
@@ -157,13 +158,13 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	@Override
 	public boolean containsRow(Object row) {
 		// TODO Auto-generated method stub
-		return rowHead(row) != null;
+		return null != rowHead(row);
 	}
 
 	@Override
 	public boolean containsColumn(Object column) {
 		// TODO Auto-generated method stub
-		return columnHead(column) != null;
+		return null != columnHead(column);
 	}
 
 	@Override
@@ -175,7 +176,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		Head<CK> columnHead = columnHead(column);
 		if (null == columnHead)
 			return false;
-		return entrys[rowHead.index][columnHead.index] != null;
+		return null != entrys[rowHead.index][columnHead.index];
 	}
 
 	@Override
@@ -187,7 +188,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		Head<CK> columnHead = columnHead(column);
 		if (null == columnHead)
 			return null;
-		return entrys[rowHead.index][columnHead.index] == null ? null
+		return null == entrys[rowHead.index][columnHead.index] ? null
 				: entrys[rowHead.index][columnHead.index].getValue();
 	}
 
@@ -239,14 +240,14 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	private V setValueInRow(Head<RK> rowHead, CK column, V value) {
-		if (rowHead == null)
+		if (null == rowHead)
 			return null;
 		Head<CK> columnHead = addColumnIfNotExists(column);
 		return this.setValue(rowHead, columnHead, value);
 	}
 
 	private V setValueInColumn(Head<CK> columnHead, RK row, V value) {
-		if (columnHead == null)
+		if (null == columnHead)
 			return null;
 		Head<RK> rowHead = addRowIfNotExists(row);
 		return this.setValue(rowHead, columnHead, value);
@@ -280,10 +281,10 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return;
 		int oldRows = Math.max(this.rows(), 7);
 		int oldColumns = Math.max(this.columns(), 7);
-		int newRowCapacity = Math.min(MAXIMUM_CAPACITY, Math.max(oldRows + (oldRows >> 1),
-				minRow));
-		int newColumnCapacity = Math.min(MAXIMUM_CAPACITY, Math.max(oldColumns
-				+ (oldColumns >> 1), minColumn));
+		int newRowCapacity = Math.min(MAXIMUM_CAPACITY,
+				Math.max(oldRows + (oldRows >> 1), minRow));
+		int newColumnCapacity = Math.min(MAXIMUM_CAPACITY,
+				Math.max(oldColumns + (oldColumns >> 1), minColumn));
 
 		Entry[][] newEntrys = new ArrayMatrix.Entry[newRowCapacity][];
 		int i = 0;
@@ -318,7 +319,8 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		for (int i = 0; i < columns(); ++i) {
 			this.removeElementAt(rowHead.index, i);
 		}
-		this.removeEmptyRow(rowHead);
+		if(!rowHead.disposed())
+			this.removeEmptyRow(rowHead);
 	}
 
 	@Override
@@ -330,7 +332,8 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		for (int i = 0; i < rows(); ++i) {
 			this.removeElementAt(i, columnHead.index);
 		}
-		this.removeEmptyColumn(columnHead);
+		if(!columnHead.disposed())
+			this.removeEmptyColumn(columnHead);
 	}
 
 	@Override
@@ -362,17 +365,18 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		} else {
 			++modCount;
 			--size;
-			if (this.entrys[row][column].rowHead.increaseSize(-1) == 0) {
-				// remove row head
-				this.removeEmptyRow(this.entrys[row][column].rowHead);
-			}
-			if (this.entrys[row][column].columnHead.increaseSize(-1) == 0) {
-				// remove column head
-				this.removeEmptyColumn(this.entrys[row][column].columnHead);
-			}
-			V oldValue = this.entrys[row][column].getValue();
-			this.entrys[row][column].dispose();
+			Entry entry = this.entrys[row][column];
 			this.entrys[row][column] = null;
+			if (entry.rowHead.increaseSize(-1) == 0) {
+				// remove row head
+				this.removeEmptyRow(entry.rowHead);
+			}
+			if (entry.columnHead.increaseSize(-1) == 0) {
+				// remove column head
+				this.removeEmptyColumn(entry.columnHead);
+			}
+			V oldValue = entry.getValue();
+			entry.dispose();
 			return oldValue;
 		}
 	}
@@ -381,32 +385,34 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		if (null == rowHead)
 			return;
 		rowKeys.remove(rowHead.index);
-		for(int i = rowHead.index; i < rows(); ++i){
+		for (int i = rowHead.index; i < rows(); ++i) {
 			Head<RK> head = rowKeys.get(i);
 			head.index = i;
-			
-			for(int j = 0; j < columns(); ++j){
+
+			for (int j = 0; j < columns(); ++j) {
 				entrys[i][j] = entrys[i + 1][j];
 				entrys[i + 1][j] = null;
 			}
 		}
 		++modCount;
+		rowHead.dispose();
 	}
 
 	private void removeEmptyColumn(Head<CK> columnHead) {
 		if (null == columnHead)
 			return;
 		columnKeys.remove(columnHead.index);
-		for(int i = columnHead.index; i < columns(); ++i){
+		for (int i = columnHead.index; i < columns(); ++i) {
 			Head<CK> head = columnKeys.get(i);
 			head.index = i;
-			
-			for(int j = 0; j < rows(); ++j){
+
+			for (int j = 0; j < rows(); ++j) {
 				entrys[j][i] = entrys[j][i + 1];
 				entrys[j][i + 1] = null;
 			}
 		}
 		++modCount;
+		columnHead.dispose();
 	}
 
 	// View
@@ -522,26 +528,75 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		return columnHead == null ? 0 : columnHead.size;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Map<CK, V> rowMap(final RK row) {
+	public Map<CK, V> rowMap(RK row) {
 		// TODO Auto-generated method stub
-		return new AbstractMap<CK, V>() {
+		Head<RK> head = ArrayMatrix.this.rowHead(row);
+		if (null == head)
+			return new RowMapView(row, head);
 
-			private Head<RK> head = ArrayMatrix.this.rowHead(row);
+		if (null == head.viewMap) {
+			head.viewMap = new RowMapView(row, head);
+		}
+		return (Map<CK, V>) head.viewMap;
+	}
 
-			@Override
-			public V put(CK key, V value) {
-				// TODO Auto-generated method stub
-				if (head == null) {
-					head = ArrayMatrix.this.addRowIfNotExists(row);
-				}
-				return ArrayMatrix.this.setValueInRow(head, key, value);
+	private class RowMapView extends AbstractMap<CK, V> {
+		private Head<RK> head;
+		private RK row;
+
+		private RowMapView(RK key, Head<RK> head) {
+			this.row = key;
+			this.head = head;
+		}
+
+		@Override
+		public boolean containsKey(Object key) {
+			// TODO Auto-generated method stub
+			if (null == head)
+				return false;
+
+			Head<CK> columnHead = ArrayMatrix.this.columnHead(key);
+			if (null == columnHead)
+				return false;
+
+			return null != ArrayMatrix.this.entrys[head.index][columnHead.index];
+		}
+
+		@Override
+		public V get(Object key) {
+			// TODO Auto-generated method stub
+			if (null == head)
+				return null;
+
+			Head<CK> columnHead = ArrayMatrix.this.columnHead(key);
+			if (null == columnHead)
+				return null;
+
+			return null == ArrayMatrix.this.entrys[head.index][columnHead.index] ? null
+					: ArrayMatrix.this.entrys[head.index][columnHead.index]
+							.getValue();
+		}
+
+		@Override
+		public V put(CK key, V value) {
+			// TODO Auto-generated method stub
+			if (null == head || head.disposed()) {
+				head = ArrayMatrix.this.addRowIfNotExists(row);
+				head.viewMap = this;
 			}
+			return ArrayMatrix.this.setValueInRow(head, key, value);
+		}
 
-			@Override
-			public Set<Map.Entry<CK, V>> entrySet() {
-				// TODO Auto-generated method stub
-				return new AbstractSet<Map.Entry<CK, V>>() {
+		// View
+		protected transient volatile Set<Map.Entry<CK, V>> entrySet = null;
+
+		@Override
+		public Set<Map.Entry<CK, V>> entrySet() {
+			// TODO Auto-generated method stub
+			if (null == entrySet) {
+				entrySet = new AbstractSet<Map.Entry<CK, V>>() {
 
 					@Override
 					public Iterator<Map.Entry<CK, V>> iterator() {
@@ -631,30 +686,84 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 				};
 			}
+			return entrySet;
+		}
 
-		};
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			return head == null ? 0 : head.size;
+		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public Map<RK, V> columnMap(final CK column) {
+	public Map<RK, V> columnMap(CK column) {
 		// TODO Auto-generated method stub
-		return new AbstractMap<RK, V>() {
+		Head<CK> head = ArrayMatrix.this.columnHead(column);
+		if (null == head)
+			return new ColumnMapView(column, head);
+		if (null == head.viewMap) {
+			head.viewMap = new ColumnMapView(column, head);
+		}
+		return (Map<RK, V>) head.viewMap;
+	}
 
-			private Head<CK> head = ArrayMatrix.this.columnHead(column);
+	private class ColumnMapView extends AbstractMap<RK, V> {
+		private Head<CK> head;
+		private CK column;
 
-			@Override
-			public V put(RK key, V value) {
-				// TODO Auto-generated method stub
-				if (head == null) {
-					head = ArrayMatrix.this.addColumnIfNotExists(column);
-				}
-				return ArrayMatrix.this.setValueInColumn(head, key, value);
+		private ColumnMapView(CK key, Head<CK> head) {
+			this.column = key;
+			this.head = head;
+		}
+
+		@Override
+		public boolean containsKey(Object key) {
+			// TODO Auto-generated method stub
+			if (null == head)
+				return false;
+
+			Head<RK> rowHead = ArrayMatrix.this.rowHead(key);
+			if (null == rowHead)
+				return false;
+
+			return null != ArrayMatrix.this.entrys[rowHead.index][head.index];
+		}
+
+		@Override
+		public V get(Object key) {
+			// TODO Auto-generated method stub
+			if (null == head)
+				return null;
+
+			Head<RK> rowHead = ArrayMatrix.this.rowHead(key);
+			if (null == rowHead)
+				return null;
+
+			return null == ArrayMatrix.this.entrys[rowHead.index][head.index] ? null
+					: ArrayMatrix.this.entrys[rowHead.index][head.index]
+							.getValue();
+		}
+
+		@Override
+		public V put(RK key, V value) {
+			// TODO Auto-generated method stub
+			if (null == head || head.disposed()) {
+				head = ArrayMatrix.this.addColumnIfNotExists(column);
+				head.viewMap = this;
 			}
+			return ArrayMatrix.this.setValueInColumn(head, key, value);
+		}
 
-			@Override
-			public Set<Map.Entry<RK, V>> entrySet() {
-				// TODO Auto-generated method stub
-				return new AbstractSet<Map.Entry<RK, V>>() {
+		// View
+		protected transient volatile Set<Map.Entry<RK, V>> entrySet = null;
+
+		@Override
+		public Set<Map.Entry<RK, V>> entrySet() {
+			// TODO Auto-generated method stub
+			if (null == entrySet) {
+				entrySet = new AbstractSet<Map.Entry<RK, V>>() {
 
 					@Override
 					public Iterator<Map.Entry<RK, V>> iterator() {
@@ -743,8 +852,14 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 				};
 			}
+			return entrySet;
+		}
 
-		};
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			return head == null ? 0 : head.size;
+		}
 	}
 
 	@Override
@@ -779,7 +894,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		private int expectedModCount = ArrayMatrix.this.modCount;
 		private boolean entryRemoved = false;
 		private int rowIndex = 0, columnIndex = -1;
-		private int nextRowIndex = 0, nextColumnIndex = 0;
+		private int nextRowIndex = -1, nextColumnIndex = -1;
 
 		private EntryIterator() {
 			this.expectedModCount = ArrayMatrix.this.modCount;
@@ -799,7 +914,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			checkModified();
 			nextRowIndex = rowIndex;
 			nextColumnIndex = columnIndex;
-			do{
+			do {
 				if (nextColumnIndex + 1 >= ArrayMatrix.this.columns()) {
 					++nextRowIndex;
 					nextColumnIndex = 0;
@@ -814,6 +929,10 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		private Matrix.Entry<RK, CK, V> nextEntry() {
 			return ArrayMatrix.this.entrys[nextRowIndex][nextColumnIndex];
+		}
+		
+		private void clearNext(){
+			nextRowIndex = nextColumnIndex = -1;
 		}
 
 		@Override
@@ -839,7 +958,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 			rowIndex = nextRowIndex;
 			columnIndex = nextColumnIndex;
-			nextRowIndex = nextColumnIndex = -1;
+			clearNext();
 			this.getNextEntryIndex();
 			entryRemoved = false;
 			return ArrayMatrix.this.entrys[rowIndex][columnIndex];
@@ -850,8 +969,18 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			// TODO Auto-generated method stub
 			checkModified();
 			if (!entryRemoved) {
-				checkModified();
+				Head<RK> rowHead = ArrayMatrix.this.entrys[rowIndex][columnIndex].rowHead;
+				Head<CK> columnHead = ArrayMatrix.this.entrys[rowIndex][columnIndex].columnHead;
 				ArrayMatrix.this.removeElementAt(rowIndex, columnIndex);
+				if(rowHead.disposed()){
+					columnIndex = -1;
+					clearNext();
+				}
+				if(columnHead.disposed()){
+					if(columnIndex >= 0)
+						--columnIndex;
+					clearNext();
+				}
 				entryRemoved = true;
 				this.expectedModCount = ArrayMatrix.this.modCount;
 			} else {
@@ -909,10 +1038,13 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 	}
 
-	private static class Head<K> {
+	private class Head<K> {
 		private K key;
 		private int index;
 		private int size = 0;
+
+		// View
+		protected transient volatile Map<?, V> viewMap = null;
 
 		private Head(K key, int index) {
 			this.key = key;
@@ -932,10 +1064,18 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			key = null;
 			index = -1;
 			size = 0;
+
+			viewMap = null;
 		}
 
 		private boolean disposed() {
 			return index < 0;
+		}
+
+		@Override
+		public String toString() {
+			return "Head [key=" + key + ", index=" + index + ", size=" + size
+					+ "]";
 		}
 	}
 
