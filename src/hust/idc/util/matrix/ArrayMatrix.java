@@ -12,13 +12,18 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
-		Matrix<RK, CK, V> {
-	private ArrayList<Head<RK>> rowKeys;
-	private ArrayList<Head<CK>> columnKeys;
-	private ArrayMatrix<RK, CK, V>.Entry[][] entrys;
-	private int size;
+		Matrix<RK, CK, V>, Cloneable, java.io.Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 78725161200911574L;
 
-	private volatile int modCount = 0;
+	transient ArrayList<Head<RK>> rowKeys;
+	transient ArrayList<Head<CK>> columnKeys;
+	transient ArrayMatrix<RK, CK, V>.Entry[][] entrys;
+	int size;
+
+	transient volatile int modCount = 0;
 
 	/**
 	 * The maximum capacity, used if a higher value is implicitly specified by
@@ -102,26 +107,26 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		return columnKeys.size();
 	}
 
-	private int rowCapacity() {
+	int rowCapacity() {
 		return entrys.length;
 	}
 
-	private int columnCapacity() {
+	int columnCapacity() {
 		if (0 == entrys.length)
 			return 0;
 		return entrys[0].length;
 	}
 
-	private boolean checkIndexOutOfCapacity(int row, int column) {
+	boolean checkIndexOutOfCapacity(int row, int column) {
 		return row < 0 || row >= rowCapacity() || column < 0
 				|| column >= columnCapacity();
 	}
 
-	private boolean checkIndexOutOfSize(int row, int column) {
+	boolean checkIndexOutOfSize(int row, int column) {
 		return row < 0 || row >= rows() || column < 0 || column >= columns();
 	}
 
-	private Head<RK> rowHead(Object row) {
+	Head<RK> rowHead(Object row) {
 		if (null == row) {
 			for (int i = 0; i < rows(); ++i) {
 				Head<RK> rowHead = rowKeys.get(i);
@@ -138,7 +143,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		return null;
 	}
 
-	private Head<CK> columnHead(Object column) {
+	Head<CK> columnHead(Object column) {
 		if (null == column) {
 			for (int i = 0; i < columns(); ++i) {
 				Head<CK> columnHead = columnKeys.get(i);
@@ -319,7 +324,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		for (int i = 0; i < columns(); ++i) {
 			this.removeElementAt(rowHead.index, i);
 		}
-		if(!rowHead.disposed())
+		if (!rowHead.disposed())
 			this.removeEmptyRow(rowHead);
 	}
 
@@ -332,7 +337,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		for (int i = 0; i < rows(); ++i) {
 			this.removeElementAt(i, columnHead.index);
 		}
-		if(!columnHead.disposed())
+		if (!columnHead.disposed())
 			this.removeEmptyColumn(columnHead);
 	}
 
@@ -543,8 +548,8 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	private class RowMapView extends AbstractMap<CK, V> {
-		private Head<RK> head;
-		private RK row;
+		private transient volatile Head<RK> head;
+		private final transient RK row;
 
 		private RowMapView(RK key, Head<RK> head) {
 			this.row = key;
@@ -710,8 +715,8 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	private class ColumnMapView extends AbstractMap<RK, V> {
-		private Head<CK> head;
-		private CK column;
+		private transient volatile Head<CK> head;
+		private final transient CK column;
 
 		private ColumnMapView(CK key, Head<CK> head) {
 			this.column = key;
@@ -871,7 +876,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		return entrySet;
 	}
 
-	private class EntrySet extends AbstractSet<Matrix.Entry<RK, CK, V>> {
+	private final class EntrySet extends AbstractSet<Matrix.Entry<RK, CK, V>> {
 		private EntrySet() {
 			super();
 		}
@@ -890,7 +895,8 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 	}
 
-	private class EntryIterator implements Iterator<Matrix.Entry<RK, CK, V>> {
+	private final class EntryIterator implements
+			Iterator<Matrix.Entry<RK, CK, V>> {
 		private int expectedModCount = ArrayMatrix.this.modCount;
 		private boolean entryRemoved = false;
 		private int rowIndex = 0, columnIndex = -1;
@@ -930,8 +936,8 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		private Matrix.Entry<RK, CK, V> nextEntry() {
 			return ArrayMatrix.this.entrys[nextRowIndex][nextColumnIndex];
 		}
-		
-		private void clearNext(){
+
+		private void clearNext() {
 			nextRowIndex = nextColumnIndex = -1;
 		}
 
@@ -972,12 +978,12 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				Head<RK> rowHead = ArrayMatrix.this.entrys[rowIndex][columnIndex].rowHead;
 				Head<CK> columnHead = ArrayMatrix.this.entrys[rowIndex][columnIndex].columnHead;
 				ArrayMatrix.this.removeElementAt(rowIndex, columnIndex);
-				if(rowHead.disposed()){
+				if (rowHead.disposed()) {
 					columnIndex = -1;
 					clearNext();
 				}
-				if(columnHead.disposed()){
-					if(columnIndex >= 0)
+				if (columnHead.disposed()) {
+					if (columnIndex >= 0)
 						--columnIndex;
 					clearNext();
 				}
@@ -991,10 +997,18 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	private class Entry extends AbstractEntry<RK, CK, V> implements
-			Matrix.Entry<RK, CK, V> {
+			Matrix.Entry<RK, CK, V>, Cloneable, java.io.Serializable {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 4908660465028835562L;
+
 		private V value;
-		private Head<RK> rowHead;
-		private Head<CK> columnHead;
+		private transient Head<RK> rowHead;
+		private transient Head<CK> columnHead;
+
+		private Entry() {
+		}
 
 		private Entry(V value, Head<RK> rowHead, Head<CK> columnHead) {
 			this.value = value;
@@ -1038,13 +1052,20 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 	}
 
-	private class Head<K> {
+	private class Head<K> implements Cloneable, java.io.Serializable {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 6651923880517474907L;
 		private K key;
 		private int index;
 		private int size = 0;
 
 		// View
 		protected transient volatile Map<?, V> viewMap = null;
+
+		private Head() {
+		}
 
 		private Head(K key, int index) {
 			this.key = key;
@@ -1076,6 +1097,71 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		public String toString() {
 			return "Head [key=" + key + ", index=" + index + ", size=" + size
 					+ "]";
+		}
+	}
+
+	/**
+	 * Save the state of the <tt>ArrayMatrix</tt> instance to a stream (that is,
+	 * serialize it).
+	 * 
+	 * @serialData The length of the array backing the <tt>ArrayMatrix</tt>
+	 *             instance is emitted (int), followed by all of its keys and
+	 *             elements (each an <tt>Object</tt>) in the proper order.
+	 */
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		// Write out element count, and any hidden stuff
+		int expectedModCount = modCount;
+		s.defaultWriteObject();
+
+		// Write out array length
+		s.writeInt(this.rowCapacity());
+		s.writeInt(this.columnCapacity());
+
+		s.writeObject(rowKeys);
+		s.writeObject(columnKeys);
+
+		// Write out all elements in the proper order.
+		for (int i = 0; i < rows(); ++i) {
+			for (int j = 0; j < columns(); ++j) {
+				s.writeObject(entrys[i][j]);
+			}
+		}
+
+		if (modCount != expectedModCount) {
+			throw new ConcurrentModificationException();
+		}
+
+	}
+
+	/**
+	 * Reconstitute the <tt>ArrayMatrix</tt> instance from a stream (that is,
+	 * deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.IOException, ClassNotFoundException {
+		// Read in size, and any hidden stuff
+		s.defaultReadObject();
+
+		// Read in array length and allocate array
+		int rowCapacity = s.readInt();
+		int columnCapacity = s.readInt();
+
+		rowKeys = (ArrayList<Head<RK>>) s.readObject();
+		columnKeys = (ArrayList<Head<CK>>) s.readObject();
+		entrys = new ArrayMatrix.Entry[rowCapacity][columnCapacity];
+
+		// Read in all elements in the proper order.
+		for (int i = 0; i < rowKeys.size(); i++) {
+			Head<RK> rowHead = rowKeys.get(i);
+			for (int j = 0; j < columnKeys.size(); ++j) {
+				entrys[i][j] = (Entry) s.readObject();
+				if (null != entrys[i][j]) {
+					entrys[i][j].rowHead = rowHead;
+					entrys[i][j].columnHead = columnKeys.get(j);
+				}
+			}
 		}
 	}
 

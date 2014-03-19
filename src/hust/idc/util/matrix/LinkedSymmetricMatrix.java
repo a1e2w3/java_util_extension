@@ -12,10 +12,10 @@ import java.util.Set;
 
 public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		implements SymmetricMatrix<K, V>, Matrix<K, K, V> {
-	private HeadNode headsEntry;
-	private int size, demension;
+	transient HeadNode headsEntry;
+	int size, demension;
 
-	private volatile int modCount = 0;
+	transient volatile int modCount = 0;
 
 	public LinkedSymmetricMatrix() {
 		super();
@@ -50,7 +50,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return demension;
 	}
 
-	private HeadNode getHead(Object key) {
+	HeadNode getHead(Object key) {
 		HeadNode head = headsEntry;
 		if (key == null) {
 			while (head != null) {
@@ -80,7 +80,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return getEntry(row, column) != null;
 	}
 
-	private EntryNode getEntry(Object row, Object column) {
+	EntryNode getEntry(Object row, Object column) {
 		HeadNode rowHead = getHead(row);
 		if (rowHead == null)
 			return null;
@@ -371,8 +371,8 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	private class RowMap extends AbstractMap<K, V> {
-		private final K row;
-		private HeadNode head;
+		private final transient K row;
+		private transient volatile HeadNode head;
 
 		private RowMap(K key, HeadNode head) {
 			this.row = key;
@@ -604,7 +604,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return entrySet;
 	}
 
-	private Iterator<Entry<K, K, V>> nodeIterator() {
+	Iterator<Entry<K, K, V>> nodeIterator() {
 		return new Iterator<Entry<K, K, V>>() {
 			private HeadNode nextHead = LinkedSymmetricMatrix.this.headsEntry;
 			private EntryNode currentNode = null;

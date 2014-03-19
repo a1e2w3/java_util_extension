@@ -13,21 +13,26 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
-		implements SymmetricMatrix<K, V>, Matrix<K, K, V> {
+		implements SymmetricMatrix<K, V>, Matrix<K, K, V>, Cloneable,
+		java.io.Serializable {
 
-	private ArrayList<Head> heads;
-	private ArraySymmetricMatrix<K, V>.Entry[] entrys;
-	private int size;
-	private int dimensionCapacity;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2314143094634309919L;
 
-	private volatile int modCount = 0;
+	transient ArrayList<Head> heads;
+	transient ArraySymmetricMatrix<K, V>.Entry[] entrys;
+	int size;
+	int dimensionCapacity;
+
+	transient volatile int modCount = 0;
 
 	/**
 	 * The maximum capacity, used if a higher value is implicitly specified by
-	 * either of the constructors with arguments. MUST be a power of two <=
-	 * 1<<30.
+	 * either of the constructors with arguments. Equal with arraySize(1<<15)
 	 */
-	private static final int MAXIMUM_CAPACITY = 1 << 30;
+	static final int MAXIMUM_CAPACITY = (1 << 29) + (1 << 14);
 
 	public ArraySymmetricMatrix() {
 		this(10);
@@ -189,7 +194,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		int index = indexFor(rowHead.index, columnHead.index);
 		++modCount;
 		if (entrys[index] == null) {
-			if(rowHead.index < columnHead.index)
+			if (rowHead.index < columnHead.index)
 				entrys[index] = new Entry(value, columnHead, rowHead);
 			else
 				entrys[index] = new Entry(value, rowHead, columnHead);
@@ -226,8 +231,8 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			return null;
 		return removeElementAt(indexFor(rowHead.index, columnHead.index));
 	}
-	
-	private V removeElementAt(int index){
+
+	private V removeElementAt(int index) {
 		if (index < 0 || index > entrys.length || null == entrys[index])
 			return null;
 
@@ -247,29 +252,29 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 	private void removeHead(Head head) {
 		this.heads.remove(head.index);
-		
-		++ modCount;
-		for(int i = head.index; i < heads.size(); ++i){
+
+		++modCount;
+		for (int i = head.index; i < heads.size(); ++i) {
 			Head otherHead = heads.get(i);
 			otherHead.index = i;
 
-			for(int j = 0; j <= i; ++j){
+			for (int j = 0; j <= i; ++j) {
 				// adjust the position of entries in array for each row behind
 				int oldIndex = indexFor(i + 1, j);
-				if(null == entrys[oldIndex])
+				if (null == entrys[oldIndex])
 					continue;
-				
+
 				int newIndex = indexFor(i, j);
-				
+
 				entrys[newIndex] = entrys[oldIndex];
 				entrys[oldIndex] = null;
 			}
-			
+
 			// move the diagonal element
 			int oldIndex = indexFor(i + 1, i + 1);
-			if(null == entrys[oldIndex])
+			if (null == entrys[oldIndex])
 				continue;
-			
+
 			int newIndex = indexFor(i, i);
 			entrys[newIndex] = entrys[oldIndex];
 			entrys[oldIndex] = null;
@@ -281,12 +286,12 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	public void removeRow(K row) {
 		// TODO Auto-generated method stub
 		Head rowHead = getHead(row);
-		if(null == rowHead)
-			return ;
-		for(int i = 0; i < this.dimension(); ++i){
+		if (null == rowHead)
+			return;
+		for (int i = 0; i < this.dimension(); ++i) {
 			this.removeElementAt(indexFor(rowHead.index, i));
 		}
-		if(!rowHead.disposed())
+		if (!rowHead.disposed())
 			this.removeHead(rowHead);
 	}
 
@@ -321,9 +326,9 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return head.rowMapView;
 	}
 
-	private class RowMapView extends AbstractMap<K, V> {
-		private Head head;
-		private K key;
+	private final class RowMapView extends AbstractMap<K, V> {
+		private transient volatile Head head;
+		private final transient K key;
 
 		private RowMapView(K key, Head head) {
 			this.key = key;
@@ -394,15 +399,16 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 								if (expectedModCount != ArraySymmetricMatrix.this.modCount)
 									throw new ConcurrentModificationException();
 							}
-							
-							private boolean getNext(){
+
+							private boolean getNext() {
 								checkModCount();
-								if(null == head)
+								if (null == head)
 									return false;
-								for(nextColumn = nextColumn + 1; nextColumn < ArraySymmetricMatrix.this.dimension(); ++nextColumn){
+								for (nextColumn = nextColumn + 1; nextColumn < ArraySymmetricMatrix.this
+										.dimension(); ++nextColumn) {
 									nextIndex = indexFor(head.index, nextColumn);
 									nextInRow = (head.index >= nextColumn);
-									if(null != ArraySymmetricMatrix.this.entrys[nextIndex])
+									if (null != ArraySymmetricMatrix.this.entrys[nextIndex])
 										return true;
 								}
 								return false;
@@ -411,7 +417,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 							@Override
 							public boolean hasNext() {
 								// TODO Auto-generated method stub
-								if(nextIndex < 0)
+								if (nextIndex < 0)
 									return getNext();
 								return null != ArraySymmetricMatrix.this.entrys[nextIndex];
 							}
@@ -419,14 +425,14 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 							@Override
 							public Map.Entry<K, V> next() {
 								// TODO Auto-generated method stub
-								if(nextIndex < 0 && !getNext())
+								if (nextIndex < 0 && !getNext())
 									throw new NoSuchElementException();
-								if(null == ArraySymmetricMatrix.this.entrys[nextIndex])
+								if (null == ArraySymmetricMatrix.this.entrys[nextIndex])
 									throw new NoSuchElementException();
 								ArraySymmetricMatrix<K, V>.Entry entry = ArraySymmetricMatrix.this.entrys[nextIndex];
 								currentIndex = nextIndex;
 								nextIndex = -1;
-								if(nextInRow)
+								if (nextInRow)
 									return entry.rowMapEntry();
 								else
 									return entry.columnMapEntry();
@@ -436,11 +442,13 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 							public void remove() {
 								// TODO Auto-generated method stub
 								checkModCount();
-								if(currentIndex < 0 || null == ArraySymmetricMatrix.this.entrys[currentIndex])
+								if (currentIndex < 0
+										|| null == ArraySymmetricMatrix.this.entrys[currentIndex])
 									throw new IllegalStateException();
-								
-								ArraySymmetricMatrix.this.removeElementAt(currentIndex);
-								if(head.disposed()){
+
+								ArraySymmetricMatrix.this
+										.removeElementAt(currentIndex);
+								if (head.disposed()) {
 									currentIndex = nextIndex = nextColumn = -1;
 									head = null;
 								}
@@ -484,15 +492,15 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	public Set<K> rowKeySet() {
 		// TODO Auto-generated method stub
 		if (keySet == null) {
-			keySet = new AbstractSet<K>(){
+			keySet = new AbstractSet<K>() {
 
 				@Override
 				public Iterator<K> iterator() {
 					// TODO Auto-generated method stub
-					return new Iterator<K>(){
+					return new Iterator<K>() {
 						private int currentIndex = -1;
 						private Head currentHead = null;
-						
+
 						private int expectedModCount = ArraySymmetricMatrix.this.modCount;
 
 						private void checkModCount() {
@@ -504,15 +512,17 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 						public boolean hasNext() {
 							// TODO Auto-generated method stub
 							checkModCount();
-							return currentIndex + 1 < ArraySymmetricMatrix.this.dimension();
+							return currentIndex + 1 < ArraySymmetricMatrix.this
+									.dimension();
 						}
 
 						@Override
 						public K next() {
 							// TODO Auto-generated method stub
-							if(!hasNext())
+							if (!hasNext())
 								throw new NoSuchElementException();
-							currentHead = ArraySymmetricMatrix.this.heads.get(++currentIndex);
+							currentHead = ArraySymmetricMatrix.this.heads
+									.get(++currentIndex);
 							return currentHead.getKey();
 						}
 
@@ -520,13 +530,13 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 						public void remove() {
 							// TODO Auto-generated method stub
 							checkModCount();
-							if(null == currentHead || currentHead.disposed())
+							if (null == currentHead || currentHead.disposed())
 								throw new IllegalStateException();
 							ArraySymmetricMatrix.this.removeHead(currentHead);
 							--currentIndex;
 							expectedModCount = ArraySymmetricMatrix.this.modCount;
 						}
-						
+
 					};
 				}
 
@@ -535,7 +545,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					// TODO Auto-generated method stub
 					return ArraySymmetricMatrix.this.dimension();
 				}
-				
+
 			};
 		}
 		return keySet;
@@ -545,27 +555,28 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	public Set<Matrix.Entry<K, K, V>> entrySet() {
 		// TODO Auto-generated method stub
 		if (entrySet == null) {
-			entrySet = new AbstractSet<Matrix.Entry<K, K, V>>(){
+			entrySet = new AbstractSet<Matrix.Entry<K, K, V>>() {
 
 				@Override
 				public Iterator<Matrix.Entry<K, K, V>> iterator() {
 					// TODO Auto-generated method stub
-					return new Iterator<Matrix.Entry<K, K, V>>(){
+					return new Iterator<Matrix.Entry<K, K, V>>() {
 						private int currentIndex = -1;
 						private int nextIndex = -1;
-						private final int maxIndex = arraySize(ArraySymmetricMatrix.this.dimension()) + 1;
-						
+						private final int maxIndex = arraySize(ArraySymmetricMatrix.this
+								.dimension()) + 1;
+
 						private int expectedModCount = ArraySymmetricMatrix.this.modCount;
 
 						private void checkModCount() {
 							if (expectedModCount != ArraySymmetricMatrix.this.modCount)
 								throw new ConcurrentModificationException();
 						}
-						
-						private boolean getNext(){
+
+						private boolean getNext() {
 							checkModCount();
-							for(nextIndex = currentIndex + 1; nextIndex < maxIndex; ++nextIndex){
-								if(null != ArraySymmetricMatrix.this.entrys[nextIndex])
+							for (nextIndex = currentIndex + 1; nextIndex < maxIndex; ++nextIndex) {
+								if (null != ArraySymmetricMatrix.this.entrys[nextIndex])
 									return true;
 							}
 							return false;
@@ -574,15 +585,16 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 						@Override
 						public boolean hasNext() {
 							// TODO Auto-generated method stub
-							if(nextIndex < 0)
+							if (nextIndex < 0)
 								return getNext();
-							return nextIndex < maxIndex && null != ArraySymmetricMatrix.this.entrys[nextIndex];
+							return nextIndex < maxIndex
+									&& null != ArraySymmetricMatrix.this.entrys[nextIndex];
 						}
 
 						@Override
 						public Matrix.Entry<K, K, V> next() {
 							// TODO Auto-generated method stub
-							if(!hasNext())
+							if (!hasNext())
 								throw new NoSuchElementException();
 							Entry entry = ArraySymmetricMatrix.this.entrys[nextIndex];
 							currentIndex = nextIndex;
@@ -593,24 +605,26 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 						@Override
 						public void remove() {
 							// TODO Auto-generated method stub
-							if(currentIndex < 0 || null == ArraySymmetricMatrix.this.entrys[currentIndex])
+							if (currentIndex < 0
+									|| null == ArraySymmetricMatrix.this.entrys[currentIndex])
 								throw new IllegalStateException();
-							
+
 							Head rowHead = ArraySymmetricMatrix.this.entrys[currentIndex].rowHead;
 							Head columnHead = ArraySymmetricMatrix.this.entrys[currentIndex].columnHead;
 							int curRow = rowHead.index, curColumn = columnHead.index;
-							ArraySymmetricMatrix.this.removeElementAt(currentIndex);
-							if(rowHead.disposed()){
+							ArraySymmetricMatrix.this
+									.removeElementAt(currentIndex);
+							if (rowHead.disposed()) {
 								curColumn = 0;
 								nextIndex = -1;
 							}
-							if(columnHead.disposed()){
+							if (columnHead.disposed()) {
 								nextIndex = -1;
 							}
 							currentIndex = indexFor(curRow, curColumn) - 1;
 							expectedModCount = ArraySymmetricMatrix.this.modCount;
 						}
-						
+
 					};
 				}
 
@@ -619,17 +633,24 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					// TODO Auto-generated method stub
 					return ArraySymmetricMatrix.this.size;
 				}
-				
+
 			};
 		}
 		return entrySet;
 	}
 
 	private class Entry extends AbstractEntry<K, K, V> implements
-			Matrix.Entry<K, K, V> {
+			Matrix.Entry<K, K, V>, java.io.Serializable {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -6709401879909455962L;
 		private V value;
-		private Head rowHead;
-		private Head columnHead;
+		private transient Head rowHead;
+		private transient Head columnHead;
+
+		private Entry() {
+		}
 
 		private Entry(V value, Head rowHead, Head columnHead) {
 			this.value = value;
@@ -677,13 +698,20 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 	}
 
-	private class Head {
+	private class Head implements java.io.Serializable {
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -9172460042129676112L;
 		private K key;
 		private int index;
 		private int size = 0;
 
 		// View
 		protected transient volatile Map<K, V> rowMapView = null;
+
+		private Head() {
+		}
 
 		private Head(K key, int index) {
 			this.key = key;
@@ -708,6 +736,67 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 		private boolean disposed() {
 			return index < 0;
+		}
+	}
+
+	/**
+	 * Save the state of the <tt>ArraySymmetricMatrix</tt> instance to a stream
+	 * (that is, serialize it).
+	 * 
+	 * @serialData The length of the array backing the
+	 *             <tt>ArraySymmetricMatrix</tt> instance is emitted (int),
+	 *             followed by all of its keys and elements (each an
+	 *             <tt>Object</tt>) in the proper order.
+	 */
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		// Write out element count, and any hidden stuff
+		int expectedModCount = modCount;
+		s.defaultWriteObject();
+
+		s.writeObject(heads);
+
+		// Write out all elements in the proper order.
+		int arrayLength = arraySize(dimension());
+		for (int i = 0; i < arrayLength; ++i) {
+			s.writeObject(entrys[i]);
+		}
+
+		if (modCount != expectedModCount) {
+			throw new ConcurrentModificationException();
+		}
+
+	}
+
+	/**
+	 * Reconstitute the <tt>ArraySymmetricMatrix</tt> instance from a stream
+	 * (that is, deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.IOException, ClassNotFoundException {
+		// Read in size, and any hidden stuff
+		s.defaultReadObject();
+
+		// Read in array length and allocate array
+		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
+
+		heads = (ArrayList<Head>) s.readObject();
+
+		// Read in all elements in the proper order.
+		int arrayLength = arraySize(dimension());
+		int row = 0, column = 0;
+		for (int i = 0; i < arrayLength; i++) {
+			entrys[i] = (Entry) s.readObject();
+			if (null != entrys[i]) {
+				entrys[i].rowHead = heads.get(row);
+				entrys[i].columnHead = heads.get(column);
+			}
+
+			if ((++column) > row) {
+				++row;
+				column = 0;
+			}
 		}
 	}
 

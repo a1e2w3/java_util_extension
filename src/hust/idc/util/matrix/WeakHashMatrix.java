@@ -59,6 +59,7 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		table = new WeakHashMatrix.Entry[DEFAULT_INITIAL_CAPACITY][DEFAULT_INITIAL_CAPACITY];
 		// rowSizes = new int[DEFAULT_INITIAL_CAPACITY];
 		// columnSizes = new int[DEFAULT_INITIAL_CAPACITY];
+		init();
 	}
 
 	public WeakHashMatrix(int initialRows, int initialColumns) {
@@ -84,6 +85,7 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		this.loadFactor = loadFactor;
 		rowThreshold = (int) (rowCapacity * loadFactor);
 		columnThreshold = (int) (columnCapacity * loadFactor);
+		init();
 	}
 
 	public WeakHashMatrix(
@@ -100,6 +102,16 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		this();
 		this.putAll(otherMatrix);
 	}
+	
+	/**
+     * Initialization hook for subclasses. This method is called
+     * in all constructors and pseudo-constructors (clone, readObject)
+     * after HashMap has been initialized but before any entries have
+     * been inserted.  (In the absence of this method, readObject would
+     * require explicit knowledge of subclasses.)
+     */
+    void init() {
+    }
 
 	private static int ensureCapacity(int minCapacity) {
 		int capacity = 1;

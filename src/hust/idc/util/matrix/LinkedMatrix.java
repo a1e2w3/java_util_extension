@@ -12,11 +12,11 @@ import java.util.Set;
 
 public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		implements Matrix<RK, CK, V> {
-	private HeadNode<RK> rowHeadsEntry;
-	private HeadNode<CK> columnHeadsEntry;
-	private int size, rows, columns;
+	transient HeadNode<RK> rowHeadsEntry;
+	transient HeadNode<CK> columnHeadsEntry;
+	int size, rows, columns;
 
-	private volatile int modCount = 0;
+	transient volatile int modCount = 0;
 
 	public LinkedMatrix() {
 		super();
@@ -58,7 +58,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		return columns;
 	}
 
-	private HeadNode<RK> rowHead(Object row) {
+	HeadNode<RK> rowHead(Object row) {
 		HeadNode<RK> head = rowHeadsEntry;
 		if (row == null) {
 			while (head != null) {
@@ -76,7 +76,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		return null;
 	}
 
-	private HeadNode<CK> columnHead(Object column) {
+	HeadNode<CK> columnHead(Object column) {
 		HeadNode<CK> head = columnHeadsEntry;
 		if (column == null) {
 			while (head != null) {
@@ -112,7 +112,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		return getEntry(row, column) != null;
 	}
 
-	private EntryNode getEntry(Object row, Object column) {
+	EntryNode getEntry(Object row, Object column) {
 		HeadNode<RK> rowHead = rowHead(row);
 		if (rowHead == null)
 			return null;
@@ -422,8 +422,8 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	}
 
 	private class RowMapView extends AbstractMap<CK, V> {
-		private HeadNode<RK> head;
-		private RK row;
+		private transient volatile HeadNode<RK> head;
+		private final transient RK row;
 
 		private RowMapView(RK key, HeadNode<RK> head) {
 			this.row = key;
@@ -552,8 +552,8 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	}
 
 	private class ColumnMapView extends AbstractMap<RK, V> {
-		private HeadNode<CK> head;
-		private CK column;
+		private transient volatile HeadNode<CK> head;
+		private final transient CK column;
 
 		private ColumnMapView(CK key, HeadNode<CK> head) {
 			this.column = key;
@@ -866,7 +866,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		return entrySet;
 	}
 
-	private Iterator<Entry<RK, CK, V>> nodeIterator(final boolean rowOrder) {
+	Iterator<Entry<RK, CK, V>> nodeIterator(final boolean rowOrder) {
 		return new Iterator<Entry<RK, CK, V>>() {
 			@SuppressWarnings("unchecked")
 			private HeadNode<?> nextHead = (HeadNode<?>) (rowOrder ? LinkedMatrix.this.rowHeadsEntry
