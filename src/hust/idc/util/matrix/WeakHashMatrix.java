@@ -1,7 +1,6 @@
 package hust.idc.util.matrix;
 
 import hust.idc.util.AbstractMapEntry;
-import hust.idc.util.matrix.Matrix.Entry;
 import hust.idc.util.pair.AbstractImmutablePair;
 import hust.idc.util.pair.Pair;
 

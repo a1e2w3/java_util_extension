@@ -11,9 +11,13 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
-		implements SymmetricMatrix<K, V>, Matrix<K, K, V> {
+		implements SymmetricMatrix<K, V>, Matrix<K, K, V>, Cloneable, java.io.Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6082087458154465268L;
 	transient HeadNode headsEntry;
-	int size, demension;
+	transient int size, demension;
 
 	transient volatile int modCount = 0;
 
@@ -348,6 +352,31 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			head.next.prev = head.prev;
 		head.dispose();
 		--demension;
+	}
+	
+	/**
+	 * Returns a shallow copy of this <tt>LinkedSymmetricMatrix</tt> instance: the keys and
+	 * values themselves are not cloned.
+	 * 
+	 * @return a shallow copy of this matrix
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public LinkedSymmetricMatrix<K, V> clone() {
+		// TODO Auto-generated method stub
+		try {
+			LinkedSymmetricMatrix<K, V> v = (LinkedSymmetricMatrix<K, V>) super.clone();
+			v.clearViews();
+			v.size = v.demension = 0;
+			v.headsEntry = null;
+		    v.putAll(this);
+		    v.modCount = 0;
+		    return v;
+		} catch (CloneNotSupportedException e) {
+		    // this shouldn't happen, since we are Cloneable
+			e.printStackTrace();
+		    throw new InternalError();
+		}
 	}
 
 	@Override
@@ -779,6 +808,59 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 		private boolean disposed() {
 			return index < 0;
+		}
+	}
+	
+	/**
+	 * Save the state of the <tt>LinkedMatrix</tt> instance to a stream (that is,
+	 * serialize it).
+	 * 
+	 * @serialData The length of the array backing the <tt>ArrayMatrix</tt>
+	 *             instance is emitted (int), followed by all of its keys and
+	 *             values (each an <tt>Object</tt>) in the proper order.
+	 */
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		// Write out element count, and any hidden stuff
+		int expectedModCount = modCount;
+		s.defaultWriteObject();
+
+		s.writeInt(this.size());
+		Iterator<Matrix.Entry<K, K, V>> i = isEmpty() ? null : entrySet().iterator();
+		if(i != null){
+			while(i.hasNext()){
+				Matrix.Entry<K, K, V> e = i.next();
+				s.writeObject(e.getRowKey());
+				s.writeObject(e.getColumnKey());
+				s.writeObject(e.getValue());
+			}
+		}
+
+		if (modCount != expectedModCount) {
+			throw new ConcurrentModificationException();
+		}
+
+	}
+
+	/**
+	 * Reconstitute the <tt>LinkedMatrix</tt> instance from a stream (that is,
+	 * deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.IOException, ClassNotFoundException {
+		// Read in size, and any hidden stuff
+		s.defaultReadObject();
+
+		// Read in array length and allocate array
+		int size = s.readInt();
+
+		// Read in all elements in the proper order.
+		for (int i = 0; i < size; i++) {
+			K row = (K) s.readObject();
+			K column = (K) s.readObject();
+			V value = (V) s.readObject();
+			put(row, column, value);
 		}
 	}
 

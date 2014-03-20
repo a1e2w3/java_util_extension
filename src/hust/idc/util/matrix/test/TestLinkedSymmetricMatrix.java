@@ -23,6 +23,9 @@ public class TestLinkedSymmetricMatrix extends TestMatrix {
 		}
 		printMatrix(matrix);
 
+		System.out.println("Clone Matrix: ");
+		printMatrix(((LinkedSymmetricMatrix<Integer, Integer>) matrix).clone());
+
 		Iterator<Entry<Integer, Integer, Integer>> iterator = matrix.entrySet()
 				.iterator();
 		while (iterator.hasNext()) {

@@ -330,7 +330,6 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			ArraySymmetricMatrix<K, V> v = (ArraySymmetricMatrix<K, V>) super
 					.clone();
 			v.clearViews();
-			v.size = 0;
 			v.initArrays(this.dimensionCapacity);
 
 			// clone keys
@@ -347,7 +346,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 						: new Entry(this.entrys[i].getValue(), rowHead,
 								v.heads.get(column));
 				if ((++column) > row) {
-					rowHead = heads.get(++row);
+					rowHead = (++row) < heads.size() ? heads.get(row) : null;
 					column = 0;
 				}
 			}
@@ -847,7 +846,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			}
 
 			if ((++column) > row) {
-				rowHead = heads.get(++row);
+				rowHead = (++row) < heads.size() ? heads.get(row) : null;
 				column = 0;
 			}
 		}

@@ -1146,7 +1146,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	 * 
 	 * @serialData The length of the array backing the <tt>ArrayMatrix</tt>
 	 *             instance is emitted (int), followed by all of its keys and
-	 *             elements (each an <tt>Object</tt>) in the proper order.
+	 *             values (each an <tt>Object</tt>) in the proper order.
 	 */
 	private void writeObject(java.io.ObjectOutputStream s)
 			throws java.io.IOException {
