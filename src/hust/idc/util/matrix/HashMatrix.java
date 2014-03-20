@@ -311,7 +311,6 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			}
 		}
 
-		++modCount;
 		head = new Head<RK>(key, hash, rowHeads[index]);
 		rowHeads[index] = head;
 		++rows;
@@ -340,7 +339,6 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			}
 		}
 
-		++modCount;
 		head = new Head<CK>(key, hash, columnHeads[index]);
 		columnHeads[index] = head;
 		++columns;
@@ -481,7 +479,6 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 	private V setValueAt(int rowIndex, int columnIndex, Head<RK> rowHead,
 			Head<CK> columnHead, V value) {
-		++modCount;
 		Entry entry = table[rowIndex][columnIndex];
 		while (entry != null) {
 			if (entry.matchHash(rowHead.hash, columnHead.hash)
@@ -492,6 +489,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			entry = entry.next;
 		}
 
+		++modCount;
 		table[rowIndex][columnIndex] = new Entry(value, rowHead, columnHead,
 				table[rowIndex][columnIndex]);
 		++size;

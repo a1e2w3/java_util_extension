@@ -194,8 +194,8 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			ensureDemension(Math.max(rowHead.index, columnHead.index));
 
 		int index = indexFor(rowHead.index, columnHead.index);
-		++modCount;
 		if (entrys[index] == null) {
+			++modCount;
 			if (rowHead.index < columnHead.index)
 				entrys[index] = new Entry(value, columnHead, rowHead);
 			else

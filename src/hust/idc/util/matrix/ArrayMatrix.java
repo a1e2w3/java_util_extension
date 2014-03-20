@@ -285,8 +285,8 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			ensureCapacity(rowHead.index + 1, columnHead.index + 1);
 		}
 
-		++modCount;
 		if (entrys[rowHead.index][columnHead.index] == null) {
+			++modCount;
 			entrys[rowHead.index][columnHead.index] = new Entry(value, rowHead,
 					columnHead);
 			++size;

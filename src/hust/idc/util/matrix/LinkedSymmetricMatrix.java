@@ -140,6 +140,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			// value will be set on the diagonal
 			EntryNode cur = rowHead.rowEntry;
 			if (cur == null) {
+				++modCount;
 				rowHead.rowEntry = new EntryNode(value, rowHead, columnHead);
 				++size;
 				rowHead.addSize(1);
@@ -151,6 +152,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			if (cur.columnHead == columnHead) {
 				return cur.setValue(value);
 			} else {
+				++modCount;
 				cur.right = new EntryNode(value, rowHead, columnHead);
 				++size;
 				rowHead.addSize(1);
@@ -159,7 +161,6 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 		} else if (rowHead.index > columnHead.index) {
 			// value will be set at (rowHead.index, columnHead.index)
-			++modCount;
 			EntryNode rowCur = rowHead.rowEntry, left = null;
 			while (rowCur != null && rowCur.columnHead.index < columnHead.index) {
 				left = rowCur;
@@ -174,6 +175,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			if (rowCur == null || rowCur.columnHead.index > columnHead.index) {
 				if (columnCur == null
 						|| columnCur.rowHead.index > rowHead.index) {
+					++modCount;
 					EntryNode newNode = new EntryNode(value, rowHead,
 							columnHead);
 					newNode.left = left;

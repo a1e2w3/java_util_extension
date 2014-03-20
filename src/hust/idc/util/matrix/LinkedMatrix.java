@@ -169,7 +169,6 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		if (rowHead == null || columnHead == null)
 			return null;
 
-		++modCount;
 		EntryNode rowCur = rowHead.entry(), left = null;
 		while (rowCur != null && rowCur.columnHead().index < columnHead.index) {
 			left = rowCur;
@@ -184,6 +183,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 
 		if (rowCur == null || rowCur.columnHead().index > columnHead.index) {
 			if (columnCur == null || columnCur.rowHead().index > rowHead.index) {
+				++modCount;
 				EntryNode newNode = new EntryNode(value, rowHead, columnHead);
 				newNode.left = left;
 				newNode.right = rowCur;

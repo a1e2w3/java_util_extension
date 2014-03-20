@@ -28,12 +28,12 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	 */
 	private static final float DEFAULT_LOAD_FACTOR = 0.75f;
 
-	private Entry table[][];
-	private Head<RK> rowKeys[];
-	private Head<CK> columnKeys[];
-	private final ReferenceQueue<Pair<RK, CK>> queue = new ReferenceQueue<Pair<RK, CK>>();
+	private transient Entry table[][];
+	private transient Head<RK> rowKeys[];
+	private transient Head<CK> columnKeys[];
+	private transient final ReferenceQueue<Pair<RK, CK>> queue = new ReferenceQueue<Pair<RK, CK>>();
 
-	private int size, rows, columns;
+	private transient int size, rows, columns;
 
 	/**
 	 * The next size value at which to resize (capacity * load factor).
@@ -45,7 +45,7 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	 */
 	private final float loadFactor;
 
-	private volatile int modCount = 0;
+	private transient volatile int modCount = 0;
 
 	/**
 	 * Constructs a new, empty <tt>WeakHashMap</tt> with the default initial
