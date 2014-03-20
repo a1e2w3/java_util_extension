@@ -38,26 +38,22 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		this(10);
 	}
 
-	@SuppressWarnings("unchecked")
 	public ArraySymmetricMatrix(int initialDemension) {
 		super();
 		if (initialDemension < 0)
 			throw new IllegalArgumentException("Illegal Demension: "
 					+ initialDemension);
 
-		dimensionCapacity = Math.min(MAXIMUM_CAPACITY, initialDemension);
-		heads = new ArrayList<Head>(dimensionCapacity);
-		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
+		initArrays(dimensionCapacity = Math.min(MAXIMUM_CAPACITY,
+				initialDemension));
 	}
 
-	@SuppressWarnings("unchecked")
 	public ArraySymmetricMatrix(
 			SymmetricMatrix<? extends K, ? extends V> otherMatrix) {
 		super();
 		int demension = otherMatrix == null ? 0 : otherMatrix.dimension();
-		dimensionCapacity = Math.max(10, demension + (demension << 1));
-		heads = new ArrayList<Head>(dimensionCapacity);
-		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
+		initArrays(dimensionCapacity = Math.max(10, demension
+				+ (demension << 1)));
 
 		this.putAll(otherMatrix);
 		// modCount = 0;
@@ -68,6 +64,12 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		this();
 		this.putAll(otherMatrix);
 		// modCount = 0;
+	}
+
+	@SuppressWarnings("unchecked")
+	void initArrays(int dimensionCapacity) {
+		heads = new ArrayList<Head>(dimensionCapacity);
+		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
 	}
 
 	private static int arraySize(int demension) {
@@ -314,6 +316,51 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		++modCount;
 	}
 
+	/**
+	 * Returns a shallow copy of this <tt>ArraySymmetricMatrix</tt> instance: the keys and
+	 * values themselves are not cloned.
+	 * 
+	 * @return a shallow copy of this matrix
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public ArraySymmetricMatrix<K, V> clone() {
+		// TODO Auto-generated method stub
+		try {
+			ArraySymmetricMatrix<K, V> v = (ArraySymmetricMatrix<K, V>) super
+					.clone();
+			v.clearViews();
+			v.size = 0;
+			v.initArrays(this.dimensionCapacity);
+
+			// clone keys
+			for (int i = 0; i < heads.size(); ++i) {
+				v.heads.add(new Head(this.heads.get(i).getKey(), i));
+			}
+
+			// clone values
+			int arrayLength = arraySize(this.dimension());
+			int row = 0, column = 0;
+			Head rowHead = heads.get(row);
+			for (int i = 0; i < arrayLength; ++i) {
+				v.entrys[i] = this.entrys[i] == null ? null
+						: new Entry(this.entrys[i].getValue(), rowHead,
+								v.heads.get(column));
+				if ((++column) > row) {
+					rowHead = heads.get(++row);
+					column = 0;
+				}
+			}
+
+			v.modCount = 0;
+			return v;
+		} catch (CloneNotSupportedException e) {
+			// this shouldn't happen, since we are Cloneable
+			e.printStackTrace();
+			throw new InternalError();
+		}
+	}
+
 	@Override
 	public Map<K, V> rowMap(K row) {
 		// TODO Auto-generated method stub
@@ -484,6 +531,13 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return head == null ? 0 : head.size;
 	}
 
+	@Override
+	void clearViews() {
+		super.clearViews();
+		keySet = null;
+		entrySet = null;
+	}
+
 	// View
 	protected transient volatile Set<Matrix.Entry<K, K, V>> entrySet = null;
 	protected transient volatile Set<K> keySet = null;
@@ -640,17 +694,10 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	private class Entry extends AbstractEntry<K, K, V> implements
-			Matrix.Entry<K, K, V>, java.io.Serializable {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = -6709401879909455962L;
+			Matrix.Entry<K, K, V> {
 		private V value;
 		private transient Head rowHead;
 		private transient Head columnHead;
-
-		private Entry() {
-		}
 
 		private Entry(V value, Head rowHead, Head columnHead) {
 			this.value = value;
@@ -698,20 +745,13 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 	}
 
-	private class Head implements java.io.Serializable {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = -9172460042129676112L;
+	private class Head {
 		private K key;
 		private int index;
 		private int size = 0;
 
 		// View
 		protected transient volatile Map<K, V> rowMapView = null;
-
-		private Head() {
-		}
 
 		private Head(K key, int index) {
 			this.key = key;
@@ -754,12 +794,19 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		int expectedModCount = modCount;
 		s.defaultWriteObject();
 
-		s.writeObject(heads);
+		// Write keys
+		s.writeInt(this.dimension());
+		for (int i = 0; i < heads.size(); ++i) {
+			s.writeObject(heads.get(i).getKey());
+		}
 
-		// Write out all elements in the proper order.
+		// Write out all values in the proper order.
 		int arrayLength = arraySize(dimension());
 		for (int i = 0; i < arrayLength; ++i) {
-			s.writeObject(entrys[i]);
+			boolean hasEntry = null != entrys[i];
+			s.writeBoolean(hasEntry);
+			if (hasEntry)
+				s.writeObject(entrys[i].getValue());
 		}
 
 		if (modCount != expectedModCount) {
@@ -779,22 +826,28 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		s.defaultReadObject();
 
 		// Read in array length and allocate array
-		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
+		initArrays(dimensionCapacity);
 
-		heads = (ArrayList<Head>) s.readObject();
+		// read keys
+		int dimension = s.readInt();
+		for (int i = 0; i < dimension; ++i) {
+			K key = (K) s.readObject();
+			heads.add(new Head(key, i));
+		}
 
 		// Read in all elements in the proper order.
-		int arrayLength = arraySize(dimension());
+		int arrayLength = arraySize(dimension);
 		int row = 0, column = 0;
-		for (int i = 0; i < arrayLength; i++) {
-			entrys[i] = (Entry) s.readObject();
-			if (null != entrys[i]) {
-				entrys[i].rowHead = heads.get(row);
-				entrys[i].columnHead = heads.get(column);
+		Head rowHead = heads.get(row);
+		for (int i = 0; i < arrayLength; ++i) {
+			boolean hasEntry = s.readBoolean();
+			if (hasEntry) {
+				V value = (V) s.readObject();
+				entrys[i] = new Entry(value, rowHead, heads.get(column));
 			}
 
 			if ((++column) > row) {
-				++row;
+				rowHead = heads.get(++row);
 				column = 0;
 			}
 		}

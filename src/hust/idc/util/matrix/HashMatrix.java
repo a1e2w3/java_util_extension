@@ -3,6 +3,7 @@ package hust.idc.util.matrix;
 import hust.idc.util.EmptyIterator;
 import hust.idc.util.pair.Pair;
 
+import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ConcurrentModificationException;
@@ -75,15 +76,13 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	 */
 	transient volatile int modCount;
 
-	@SuppressWarnings("unchecked")
 	public HashMatrix() {
 		super();
 		this.loadFactor = DEFAULT_LOAD_FACTOR;
 		rowThreshold = columnThreshold = (int) (DEFAULT_INITIAL_CAPACITY);
-		table = new HashMatrix.Entry[DEFAULT_INITIAL_CAPACITY][DEFAULT_INITIAL_CAPACITY];
-		rowHeads = new Head[DEFAULT_INITIAL_CAPACITY];
-		columnHeads = new Head[DEFAULT_INITIAL_CAPACITY];
+
 		this.rows = this.columns = this.size = 0;
+		initBuckets(DEFAULT_INITIAL_CAPACITY, DEFAULT_INITIAL_CAPACITY);
 		init();
 	}
 
@@ -91,7 +90,6 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		this(initialRows, initialColumns, DEFAULT_LOAD_FACTOR);
 	}
 
-	@SuppressWarnings("unchecked")
 	public HashMatrix(int initialRows, int initialColumns, float loadFactor) {
 		super();
 		if (initialRows < 0)
@@ -104,13 +102,11 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				.min(MAXIMUM_CAPACITY, initialRows));
 		int columnCapacity = ensureCapacity(Math.min(MAXIMUM_CAPACITY,
 				initialColumns));
-		table = new HashMatrix.Entry[rowCapacity][columnCapacity];
-		rowHeads = new Head[rowCapacity];
-		columnHeads = new Head[columnCapacity];
 		this.loadFactor = loadFactor;
 		rowThreshold = (int) (rowCapacity * loadFactor);
 		columnThreshold = (int) (columnCapacity * loadFactor);
 		this.rows = this.columns = this.size = 0;
+		initBuckets(rowCapacity, columnCapacity);
 		init();
 	}
 
@@ -120,14 +116,24 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 	public HashMatrix(
 			Matrix<? extends RK, ? extends CK, ? extends V> otherMatrix) {
-		this(otherMatrix.rows(), otherMatrix.columns());
-		this.putAll(otherMatrix);
+		this(Math.max((int) (otherMatrix.rows() / DEFAULT_LOAD_FACTOR) + 1,
+				DEFAULT_INITIAL_CAPACITY), Math.max(
+				(int) (otherMatrix.columns() / DEFAULT_LOAD_FACTOR) + 1,
+				DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
+		putAllForCreate(otherMatrix);
 	}
 
 	public HashMatrix(
 			Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> otherMatrix) {
 		this();
 		this.putAll(otherMatrix);
+	}
+	
+	@SuppressWarnings("unchecked")
+	void initBuckets(int rowCapacity, int columnCapacity){
+		table = new HashMatrix.Entry[rowCapacity][columnCapacity];
+		rowHeads = new Head[rowCapacity];
+		columnHeads = new Head[columnCapacity];
 	}
 
 	/**
@@ -486,9 +492,8 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			entry = entry.next;
 		}
 
-		entry = new Entry(value, rowHead, columnHead,
+		table[rowIndex][columnIndex] = new Entry(value, rowHead, columnHead,
 				table[rowIndex][columnIndex]);
-		table[rowIndex][columnIndex] = entry;
 		++size;
 		rowHead.increaseSize(1);
 		columnHead.increaseSize(1);
@@ -755,7 +760,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	 */
 	@SuppressWarnings("unchecked")
 	@Override
-	public Object clone() {
+	public HashMatrix<RK, CK, V> clone() {
 		// TODO Auto-generated method stub
 		HashMatrix<RK, CK, V> clone = null;
 		try {
@@ -766,7 +771,53 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			e.printStackTrace();
 		}
 
+		clone.clearViews();
+		clone.modCount = 0;
+		clone.size = 0;
+		clone.initBuckets(this.rowCapacity(), this.columnCapacity());
+		clone.init();
+		clone.putAllForCreate(this);
+
 		return clone;
+	}
+	
+	@Override
+	void clearViews(){
+		super.clearViews();
+		rowKeySet = null;
+		columnKeySet = null;
+		entrySet = null;
+	}
+
+	private void putAllForCreate(
+			Matrix<? extends RK, ? extends CK, ? extends V> m) {
+		// TODO Auto-generated method stub
+		for (Iterator<? extends Matrix.Entry<? extends RK, ? extends CK, ? extends V>> i = m
+				.entrySet().iterator(); i.hasNext();) {
+			Matrix.Entry<? extends RK, ? extends CK, ? extends V> e = i.next();
+			putForCreate(e.getRowKey(), e.getColumnKey(), e.getValue());
+		}
+	}
+
+	/**
+	 * This method is used instead of put by constructors and pseudoconstructors
+	 * (clone, readObject). It does not resize the table, check for
+	 * comodification, etc.
+	 */
+	private void putForCreate(RK rowKey, CK columnKey, V value) {
+		// TODO Auto-generated method stub
+		int rowHash = (rowKey == null) ? 0 : hash(rowKey.hashCode());
+		int rowIndex = indexFor(rowHash, this.rowCapacity());
+		Head<RK> rowHead = addRowHeadIfNotExists(rowKey, rowHash, rowIndex);
+
+		int columnHash = (columnKey == null) ? 0 : hash(columnKey.hashCode());
+		int columnIndex = indexFor(columnHash, this.columnCapacity());
+		Head<CK> columnHead = addColumnHeadIfNotExists(columnKey, columnHash,
+				columnIndex);
+
+		table[rowIndex][columnIndex] = new Entry(value, rowHead, columnHead,
+				table[rowIndex][columnIndex]);
+		++size;
 	}
 
 	@Override
@@ -1410,6 +1461,71 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		private boolean disposed() {
 			return size < 0;
+		}
+	}
+
+	/**
+     * Save the state of the <tt>HashMatrix</tt> instance to a stream (i.e.,
+     * serialize it).
+     *
+     * @serialData The <i>capacity</i> of the HashMatrix (the row and column of the
+     *		   bucket array) is emitted (int), followed by the
+     *		   <i>size</i> (an int, the number of keypair-value
+     *		   mappings), followed by the rowKey (Object), columnKey (Object) and value (Object)
+     *		   for each keypair-value mapping.  The keypair-value mappings are
+     *		   emitted in no particular order.
+     */
+	private void writeObject(java.io.ObjectOutputStream s) throws IOException {
+		Iterator<Matrix.Entry<RK, CK, V>> i = isEmpty() ? null : entrySet().iterator();
+
+		// Write out the threshold, loadfactor, and any hidden stuff
+		s.defaultWriteObject();
+
+		// Write out number of buckets
+		s.writeInt(this.rowCapacity());
+		s.writeInt(this.columnCapacity());
+
+		// Write out size (number of Mappings)
+		s.writeInt(size);
+
+		// Write out keys and values (alternating)
+		if (i != null) {
+			while (i.hasNext()) {
+				Matrix.Entry<RK, CK, V> e = i.next();
+				s.writeObject(e.getRowKey());
+				s.writeObject(e.getColumnKey());
+				s.writeObject(e.getValue());
+			}
+		}
+	}
+
+	/**
+	 * Reconstitute the <tt>HashMatrix</tt> instance from a stream (i.e.,
+	 * deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s) throws IOException,
+			ClassNotFoundException {
+		// Read in the threshold, loadfactor, and any hidden stuff
+		s.defaultReadObject();
+
+		// Read in number of buckets and allocate the bucket array;
+		int rowCapacity = s.readInt();
+		int columnCapacity = s.readInt();
+
+		initBuckets(rowCapacity, columnCapacity);
+
+		init(); // Give subclass a chance to do its thing.
+
+		// Read in size (number of Mappings)
+		int size = s.readInt();
+
+		// Read the keys and values, and put the mappings in the HashMap
+		for (int i = 0; i < size; i++) {
+			RK row = (RK) s.readObject();
+			CK column = (CK) s.readObject();
+			V value = (V) s.readObject();
+			putForCreate(row, column, value);
 		}
 	}
 

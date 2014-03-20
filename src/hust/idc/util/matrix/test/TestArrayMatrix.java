@@ -22,6 +22,9 @@ public class TestArrayMatrix extends TestMatrix {
 			}
 		}
 		printMatrix(matrix);
+		
+		System.out.println("Clone Matrix: ");
+		printMatrix(((ArrayMatrix<Integer, Integer, Integer>) matrix).clone());
 
 		Iterator<Entry<Integer, Integer, Integer>> iterator = matrix.entrySet()
 				.iterator();

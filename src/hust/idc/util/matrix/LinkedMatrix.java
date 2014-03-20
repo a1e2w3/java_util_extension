@@ -679,6 +679,14 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		HeadNode<CK> head = columnHead(column);
 		return head == null ? 0 : head.size;
 	}
+	
+	@Override
+	void clearViews(){
+		super.clearViews();
+		rowKeySet = null;
+		columnKeySet = null;
+		entrySet = null;
+	}
 
 	// View
 	protected transient volatile Set<RK> rowKeySet = null;

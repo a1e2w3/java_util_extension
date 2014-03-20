@@ -40,7 +40,6 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		this(initialDemension, initialDemension);
 	}
 
-	@SuppressWarnings("unchecked")
 	public ArrayMatrix(int initialRows, int initialColumns) {
 		super();
 		if (initialRows < 0)
@@ -51,12 +50,9 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		int rowCapacity = Math.min(MAXIMUM_CAPACITY, initialRows);
 		int columnCapacity = Math.min(MAXIMUM_CAPACITY, initialColumns);
-		rowKeys = new ArrayList<Head<RK>>(rowCapacity);
-		columnKeys = new ArrayList<Head<CK>>(columnCapacity);
-		entrys = new ArrayMatrix.Entry[rowCapacity][columnCapacity];
+		this.initArrays(rowCapacity, columnCapacity);
 	}
 
-	@SuppressWarnings("unchecked")
 	public ArrayMatrix(
 			Matrix<? extends RK, ? extends CK, ? extends V> otherMatrix) {
 		super();
@@ -65,12 +61,17 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		int initialRows = Math.max(10, row + (row << 1));
 		int initialColumns = Math.max(10, column + (column << 1));
 
-		rowKeys = new ArrayList<Head<RK>>(initialRows);
-		columnKeys = new ArrayList<Head<CK>>(initialColumns);
-		entrys = new ArrayMatrix.Entry[initialRows][initialColumns];
+		this.initArrays(initialRows, initialColumns);
 
-		this.putAll(otherMatrix);
+		this.putAll(otherMatrix, false);
 		// modCount = 0;
+	}
+
+	@SuppressWarnings("unchecked")
+	void initArrays(int rowCapacity, int columnCapacity){
+		rowKeys = new ArrayList<Head<RK>>(rowCapacity);
+		columnKeys = new ArrayList<Head<CK>>(columnCapacity);
+		entrys = new ArrayMatrix.Entry[rowCapacity][columnCapacity];
 	}
 
 	public void trimToSize() {
@@ -240,26 +241,47 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	@Override
 	public V put(RK row, CK column, V value) {
 		// TODO Auto-generated method stub
-		Head<RK> rowHead = this.addRowIfNotExists(row);
-		return setValueInRow(rowHead, column, value);
+		return put(row, column, value, true);
+	}
+	
+	@Override
+	public void putAll(Matrix<? extends RK, ? extends CK, ? extends V> matrix) {
+		// TODO Auto-generated method stub
+		putAll(matrix, true);
 	}
 
-	private V setValueInRow(Head<RK> rowHead, CK column, V value) {
+	private V put(RK row, CK column, V value, boolean resize){
+		Head<RK> rowHead = this.addRowIfNotExists(row);
+		return setValueInRow(rowHead, column, value, resize);
+	}
+	
+	private void putAll(Matrix<? extends RK, ? extends CK, ? extends V> matrix, boolean resize) {
+		// TODO Auto-generated method stub
+		Iterator<? extends Matrix.Entry<? extends RK, ? extends CK, ? extends V>> entryIt = matrix
+				.entrySet().iterator();
+		while (entryIt.hasNext()) {
+			Matrix.Entry<? extends RK, ? extends CK, ? extends V> entry = entryIt
+					.next();
+			put(entry.getRowKey(), entry.getColumnKey(), entry.getValue(), resize);
+		}
+	}
+
+	private V setValueInRow(Head<RK> rowHead, CK column, V value, boolean resize) {
 		if (null == rowHead)
 			return null;
 		Head<CK> columnHead = addColumnIfNotExists(column);
-		return this.setValue(rowHead, columnHead, value);
+		return this.setValue(rowHead, columnHead, value, resize);
 	}
 
-	private V setValueInColumn(Head<CK> columnHead, RK row, V value) {
+	private V setValueInColumn(Head<CK> columnHead, RK row, V value, boolean resize) {
 		if (null == columnHead)
 			return null;
 		Head<RK> rowHead = addRowIfNotExists(row);
-		return this.setValue(rowHead, columnHead, value);
+		return this.setValue(rowHead, columnHead, value, resize);
 	}
 
-	private V setValue(Head<RK> rowHead, Head<CK> columnHead, V value) {
-		if (checkIndexOutOfCapacity(rowHead.index, columnHead.index)) {
+	private V setValue(Head<RK> rowHead, Head<CK> columnHead, V value, boolean resize) {
+		if (resize && checkIndexOutOfCapacity(rowHead.index, columnHead.index)) {
 			ensureCapacity(rowHead.index + 1, columnHead.index + 1);
 		}
 
@@ -418,6 +440,39 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 		++modCount;
 		columnHead.dispose();
+	}
+
+	/**
+	 * Returns a shallow copy of this <tt>ArrayMatrix</tt> instance: the keys and
+	 * values themselves are not cloned.
+	 * 
+	 * @return a shallow copy of this matrix
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public ArrayMatrix<RK, CK, V> clone() {
+		// TODO Auto-generated method stub
+		try {
+			ArrayMatrix<RK, CK, V> v = (ArrayMatrix<RK, CK, V>) super.clone();
+			v.clearViews();
+			v.size = 0;
+		    v.initArrays(this.rowCapacity(), this.columnCapacity());
+		    v.putAll(this, false);
+		    v.modCount = 0;
+		    return v;
+		} catch (CloneNotSupportedException e) {
+		    // this shouldn't happen, since we are Cloneable
+			e.printStackTrace();
+		    throw new InternalError();
+		}
+	}
+	
+	@Override
+	void clearViews(){
+		super.clearViews();
+		rowKeySet = null;
+		columnKeySet = null;
+		entrySet = null;
 	}
 
 	// View
@@ -591,7 +646,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				head = ArrayMatrix.this.addRowIfNotExists(row);
 				head.viewMap = this;
 			}
-			return ArrayMatrix.this.setValueInRow(head, key, value);
+			return ArrayMatrix.this.setValueInRow(head, key, value, true);
 		}
 
 		// View
@@ -758,7 +813,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				head = ArrayMatrix.this.addColumnIfNotExists(column);
 				head.viewMap = this;
 			}
-			return ArrayMatrix.this.setValueInColumn(head, key, value);
+			return ArrayMatrix.this.setValueInColumn(head, key, value, true);
 		}
 
 		// View
@@ -997,18 +1052,10 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	private class Entry extends AbstractEntry<RK, CK, V> implements
-			Matrix.Entry<RK, CK, V>, Cloneable, java.io.Serializable {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 4908660465028835562L;
-
+			Matrix.Entry<RK, CK, V> {
 		private V value;
 		private transient Head<RK> rowHead;
 		private transient Head<CK> columnHead;
-
-		private Entry() {
-		}
 
 		private Entry(V value, Head<RK> rowHead, Head<CK> columnHead) {
 			this.value = value;
@@ -1052,20 +1099,13 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 	}
 
-	private class Head<K> implements Cloneable, java.io.Serializable {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 6651923880517474907L;
+	private class Head<K> {
 		private K key;
 		private int index;
 		private int size = 0;
 
 		// View
 		protected transient volatile Map<?, V> viewMap = null;
-
-		private Head() {
-		}
 
 		private Head(K key, int index) {
 			this.key = key;
@@ -1118,13 +1158,25 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		s.writeInt(this.rowCapacity());
 		s.writeInt(this.columnCapacity());
 
-		s.writeObject(rowKeys);
-		s.writeObject(columnKeys);
+		// Write row keys
+		s.writeInt(rows());
+		for(int i = 0; i < rowKeys.size(); ++i){
+			s.writeObject(rowKeys.get(i).getKey());
+		}
+		
+		// Write column keys
+		s.writeInt(columns());
+		for(int i = 0; i < columnKeys.size(); ++i){
+			s.writeObject(columnKeys.get(i).getKey());
+		}
 
-		// Write out all elements in the proper order.
+		// Write out all values in the proper order.
 		for (int i = 0; i < rows(); ++i) {
 			for (int j = 0; j < columns(); ++j) {
-				s.writeObject(entrys[i][j]);
+				boolean hasEntry = null != entrys[i][j];
+				s.writeBoolean(hasEntry);
+				if(hasEntry)
+					s.writeObject(entrys[i][j].getValue());
 			}
 		}
 
@@ -1147,19 +1199,31 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		// Read in array length and allocate array
 		int rowCapacity = s.readInt();
 		int columnCapacity = s.readInt();
-
-		rowKeys = (ArrayList<Head<RK>>) s.readObject();
-		columnKeys = (ArrayList<Head<CK>>) s.readObject();
-		entrys = new ArrayMatrix.Entry[rowCapacity][columnCapacity];
+		
+		this.initArrays(rowCapacity, columnCapacity);
+		
+		// read row keys
+		int rows = s.readInt();
+		for(int i = 0; i < rows; ++i){
+			RK rowKey = (RK) s.readObject();
+			rowKeys.add(new Head<RK>(rowKey, i));
+		}
+		
+		// read column keys
+		int columns = s.readInt();
+		for(int i = 0; i < columns; ++i){
+			CK columnKey = (CK) s.readObject();
+			columnKeys.add(new Head<CK>(columnKey, i));
+		}
 
 		// Read in all elements in the proper order.
-		for (int i = 0; i < rowKeys.size(); i++) {
+		for (int i = 0; i < rows; i++) {
 			Head<RK> rowHead = rowKeys.get(i);
-			for (int j = 0; j < columnKeys.size(); ++j) {
-				entrys[i][j] = (Entry) s.readObject();
-				if (null != entrys[i][j]) {
-					entrys[i][j].rowHead = rowHead;
-					entrys[i][j].columnHead = columnKeys.get(j);
+			for (int j = 0; j < columns; ++j) {
+				boolean hasEntry = s.readBoolean();
+				if(hasEntry){
+					V value = (V) s.readObject();
+					entrys[i][j] = new Entry(value, rowHead, columnKeys.get(j));
 				}
 			}
 		}

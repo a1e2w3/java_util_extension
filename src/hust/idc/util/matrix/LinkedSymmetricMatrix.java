@@ -497,16 +497,23 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 	}
+	
+	@Override
+	void clearViews() {
+		super.clearViews();
+		keySet = null;
+		entrySet = null;
+	}
 
 	// View
-	protected transient volatile Set<K> rowKeySet = null;
+	protected transient volatile Set<K> keySet = null;
 	protected transient volatile Set<Entry<K, K, V>> entrySet = null;
 
 	@Override
 	public Set<K> rowKeySet() {
 		// TODO Auto-generated method stub
-		if (rowKeySet == null) {
-			rowKeySet = new AbstractSet<K>() {
+		if (keySet == null) {
+			keySet = new AbstractSet<K>() {
 
 				@Override
 				public Iterator<K> iterator() {
@@ -578,7 +585,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 			};
 		}
-		return rowKeySet;
+		return keySet;
 	}
 
 	@Override

@@ -206,6 +206,11 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 		// TODO Auto-generated method stub
 		entrySet().clear();
 	}
+	
+	void clearViews(){
+		values = null;
+		keyPairSet = null;
+	}
 
 	// Views
 
