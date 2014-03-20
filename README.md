@@ -12,6 +12,28 @@ FibonacciHeap.  An extension of class "Collection" in jdk which can be used as p
 remove operation in iterator of BinaryHeap and BinomialHeap have not been implemented yet, since the operation will 
 change the heap structure and it is hard to keep the iterate order.  
 
+A HashMap collaborate with a heap can implement a map sorted by values. The HashMap provide the random access and the 
+Heap maintain the order of keys. The following code gives an example.
+
+public class MapSortedByValues<K, V> extends AbstractMap<K, V> implements Queue {
+	Map<K, V> map;
+	Heap<K> heap;
+	final Comparator<K> keyComp = new Comparator<K> {
+		public int compare(K o1, K o2){
+			return valueComp.compare(map.get(o1), map.get(o2));
+		}
+	}
+	final Comparator<V> valueComp;
+	
+	public MapSortedByValues(Comparator<V> comparator){
+		this.valueComp = comparator;
+		heap = new BinomialHeap<K>(this.keyComp);
+		map = new HashMap<K, V>();
+	}
+	
+}
+
+
 Package matrix provide a new kind of map that associate two different key types to a single value, one key is called 
 row key and the other is column key. For example, if we need to maintain the access authorities to many documents of 
 many different users, we could use a matrix to contain the authorities, let the user id be the row key and the doc id 
