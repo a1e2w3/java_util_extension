@@ -30,7 +30,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	 * either of the constructors with arguments. MUST be a power of two <=
 	 * 1<<30.
 	 */
-	private static final int MAXIMUM_CAPACITY = 1 << 30;
+	static final int MAXIMUM_CAPACITY = 1 << 30;
 
 	public ArrayMatrix() {
 		this(10);
@@ -1090,7 +1090,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		protected void dispose() {
+		void dispose() {
 			super.dispose();
 			this.value = null;
 			this.rowHead = null;

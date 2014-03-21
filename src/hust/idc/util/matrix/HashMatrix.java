@@ -138,7 +138,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 	/**
 	 * Initialization hook for subclasses. This method is called in all
-	 * constructors and pseudo-constructors (clone, readObject) after HashMap
+	 * constructors and pseudo-constructors (clone, readObject) after HashMatrix
 	 * has been initialized but before any entries have been inserted. (In the
 	 * absence of this method, readObject would require explicit knowledge of
 	 * subclasses.)
@@ -418,7 +418,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		Head<CK>[] newColumnHeads = new Head[newColumnCapacity];
 		transferColumns(newColumnHeads);
 		columnHeads = newColumnHeads;
-		rowThreshold = (int) (newColumnCapacity * loadFactor);
+		columnThreshold = (int) (newColumnCapacity * loadFactor);
 
 		Entry[][] newTable = new HashMatrix.Entry[newRowCapacity][newColumnCapacity];
 		transferEntrys(newTable);
@@ -549,8 +549,8 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 					removeColumnHead(columnIndex, entry.columnHead);
 
 				V oldValue = entry.getValue();
-				entry.dispose();
 				entry.recordRemoval(this);
+				entry.dispose();
 				return oldValue;
 			}
 			prev = entry;
@@ -615,6 +615,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				Entry entry = table[i][j];
 				while (entry != null) {
 					Entry next = entry.next;
+					entry.recordRemoval(this);
 					entry.dispose();
 					entry = next;
 				}
@@ -686,8 +687,8 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						if (entry.columnHead.increaseSize(-1) == 0)
 							removeColumnHead(j, entry.columnHead);
 
-						entry.dispose();
 						entry.recordRemoval(this);
+						entry.dispose();
 					}
 				}
 			}
@@ -740,8 +741,8 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						if (entry.rowHead.increaseSize(-1) == 0)
 							removeRowHead(j, entry.rowHead);
 
-						entry.dispose();
 						entry.recordRemoval(this);
+						entry.dispose();
 					}
 				}
 			}
@@ -1318,15 +1319,12 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	private class Entry extends AbstractEntry<RK, CK, V> {
-		private V value;
-		private transient Head<RK> rowHead;
-		private transient Head<CK> columnHead;
-		private transient Entry next = null;
+		V value;
+		transient Head<RK> rowHead;
+		transient Head<CK> columnHead;
+		transient Entry next = null;
 
-		private Entry() {
-		}
-
-		private Entry(V value, Head<RK> rowHead, Head<CK> columnHead, Entry next) {
+		Entry(V value, Head<RK> rowHead, Head<CK> columnHead, Entry next) {
 			this.value = value;
 			this.rowHead = rowHead;
 			this.columnHead = columnHead;
@@ -1359,15 +1357,15 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return oldValue;
 		}
 
-		private int rowHash() {
+		int rowHash() {
 			return rowHead == null ? 0 : rowHead.hash;
 		}
 
-		private int columnHash() {
+		int columnHash() {
 			return columnHead == null ? 0 : columnHead.hash;
 		}
 
-		private boolean matchHash(int rowHash, int columnHash) {
+		boolean matchHash(int rowHash, int columnHash) {
 			return this.rowHash() == rowHash && this.columnHash() == columnHash;
 		}
 
@@ -1400,6 +1398,15 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						&& eq(this.getValue(), other.getValue());
 			}
 		}
+		
+		@Override
+		void dispose(){
+			super.dispose();
+			rowHead = null;
+			columnHead = null;
+			next = null;
+			value = null;
+		}
 
 		/**
 		 * This method is invoked whenever the value in an entry is overwritten
@@ -1416,11 +1423,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 	}
 
-	private class Head<K> implements Cloneable, java.io.Serializable {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = -8053074932676809381L;
+	private class Head<K> {
 		private final K key;
 		private final int hash;
 		private int size = 0;
@@ -1428,36 +1431,28 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		private transient volatile Map<?, V> viewMap = null;
 
-		private Head() {
-			this(null, 0, null);
-		}
-
-		private Head(K key, Head<K> next) {
-			this(key, key == null ? 0 : key.hashCode(), next);
-		}
-
-		private Head(K key, int hash, Head<K> next) {
+		Head(K key, int hash, Head<K> next) {
 			this.key = key;
 			this.hash = hash;
 			this.next = next;
 		}
 
-		private K getKey() {
+		K getKey() {
 			return key;
 		}
 
-		private int increaseSize(int incr) {
+		int increaseSize(int incr) {
 			size = Math.max(0, size + incr);
 			return size;
 		}
 
-		private void dispose() {
+		void dispose() {
 			size = -1;
 			next = null;
 			viewMap = null;
 		}
 
-		private boolean disposed() {
+		boolean disposed() {
 			return size < 0;
 		}
 	}
@@ -1527,7 +1522,6 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 	}
 
-	// These methods are used when serializing HashSets
 	int rowCapacity() {
 		return rowHeads.length;
 	}

@@ -754,7 +754,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			return rowHead == columnHead;
 		}
 
-		protected void dispose() {
+		void dispose() {
 			super.dispose();
 			this.value = null;
 			this.rowHead = null;

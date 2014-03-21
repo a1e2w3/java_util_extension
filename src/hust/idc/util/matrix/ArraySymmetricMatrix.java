@@ -731,7 +731,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		@Override
-		protected void dispose() {
+		void dispose() {
 			super.dispose();
 			this.value = null;
 			this.rowHead = null;

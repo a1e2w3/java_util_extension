@@ -982,7 +982,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 
 		@Override
-		protected void dispose() {
+		void dispose() {
 			super.dispose();
 			this.value = null;
 			this.rowHead = null;
