@@ -743,7 +743,6 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		@Override
 		public CK getColumnKey() {
 			// TODO Auto-generated method stub
-			Pair<RK, CK> pair = getKeyPair();
 			return WeakHashMatrix.<CK> unmaskNull(maskedColumnKey());
 		}
 		

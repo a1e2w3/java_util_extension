@@ -68,10 +68,10 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	final float loadFactor;
 
 	/**
-	 * The number of times this HashMap has been structurally modified
+	 * The number of times this HashMatrix has been structurally modified
 	 * Structural modifications are those that change the number of mappings in
-	 * the HashMap or otherwise modify its internal structure (e.g., rehash).
-	 * This field is used to make iterators on Collection-views of the HashMap
+	 * the HashMatrix or otherwise modify its internal structure (e.g., rehash).
+	 * This field is used to make iterators on Collection-views of the HashMatrix
 	 * fail-fast. (See ConcurrentModificationException).
 	 */
 	transient volatile int modCount;
@@ -772,7 +772,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		clone.clearViews();
 		clone.modCount = 0;
-		clone.size = 0;
+		clone.rows = clone.columns = clone.size = 0;
 		clone.initBuckets(this.rowCapacity(), this.columnCapacity());
 		clone.init();
 		clone.putAllForCreate(this);
@@ -1424,12 +1424,12 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	private class Head<K> {
-		private final K key;
-		private final int hash;
-		private int size = 0;
-		private transient Head<K> next = null;
+		final K key;
+		final int hash;
+		int size = 0;
+		transient Head<K> next = null;
 
-		private transient volatile Map<?, V> viewMap = null;
+		transient volatile Map<?, V> viewMap = null;
 
 		Head(K key, int hash, Head<K> next) {
 			this.key = key;
