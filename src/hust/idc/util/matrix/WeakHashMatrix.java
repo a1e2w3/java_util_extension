@@ -1,20 +1,19 @@
 package hust.idc.util.matrix;
 
 import hust.idc.util.AbstractMapEntry;
-import hust.idc.util.matrix.AbstractMatrix.AbstractEntry;
 import hust.idc.util.pair.AbstractImmutablePair;
 import hust.idc.util.pair.ObjectPair;
 import hust.idc.util.pair.Pair;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.WeakHashMap;
 
 public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		implements Matrix<RK, CK, V> {
@@ -519,15 +518,223 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	}
 
 	@Override
-	public Map<CK, V> rowMap(RK row) {
+	public Map<CK, V> rowMap(final RK row) {
 		// TODO Auto-generated method stub
-		return super.rowMap(row);
+		final Object k = maskNull(row);
+		final int hash = HashMatrix.hash(k.hashCode());
+		return new AbstractMap<CK, V>(){
+
+			@Override
+			public V put(CK key, V value) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.put(row, key, value);
+			}
+
+			@Override
+			public Set<Map.Entry<CK, V>> entrySet() {
+				// TODO Auto-generated method stub
+				return new AbstractSet<Map.Entry<CK, V>>(){
+
+					@Override
+					public Iterator<Map.Entry<CK, V>> iterator() {
+						// TODO Auto-generated method stub
+						return new RowIterator(row);
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return WeakHashMatrix.this.rowValueCount(row);
+					}
+					
+				};
+			}
+			
+		};
+	}
+	
+	private final class RowIterator extends FastFailedIterator<Map.Entry<CK, V>>{
+		private final Object maskedRow;
+		private final int rowHash;
+		private final int rowIndex;
+		private volatile int column;
+		Entry entry = null;
+		Entry lastReturned = null;
+
+		/**
+		 * Strong reference needed to avoid disappearance of key between hasNext
+		 * and next
+		 */
+		Pair<RK, CK> nextKey = null;
+
+		/**
+		 * Strong reference needed to avoid disappearance of key between
+		 * nextEntry() and any use of the entry
+		 */
+		Pair<RK, CK> currentKey = null;
+		
+		private RowIterator(RK unmaskedRow){
+			super();
+			this.maskedRow = maskNull(unmaskedRow);
+			this.rowHash = HashMatrix.hash(this.maskedRow.hashCode());
+			this.rowIndex = HashMatrix.indexFor(rowHash, rowCapacity());
+			this.column = columnCapacity();
+		}
+		
+		/** The common parts of next() across different types of iterators */
+		protected Entry nextEntry() {
+			checkModCount();
+			if (nextKey == null && !hasNext())
+				throw new NoSuchElementException();
+
+			lastReturned = entry;
+			entry = entry.next;
+			currentKey = nextKey;
+			nextKey = null;
+			return lastReturned;
+		}
+		
+		@Override
+		public boolean hasNext() {
+			// TODO Auto-generated method stub
+			Entry[][] t = table;
+
+			while (nextKey == null) {
+				Entry e = entry;
+				int columnIndex = column;
+				while (match(e) && columnIndex > 0)
+					e = t[rowIndex][--columnIndex];
+				entry = e;
+				column = columnIndex;
+				if (e == null) {
+					currentKey = null;
+					return false;
+				}
+				nextKey = e.get(); // hold on to key in strong ref
+				if (nextKey == null)
+					entry = entry.next;
+			}
+			return true;
+		}
+		
+		private boolean match(Entry e){
+			return e != null && e.rowHash == this.rowHash && maskedRow.equals(e.maskedRowKey());
+		}
+
+		@Override
+		public Map.Entry<CK, V> next() {
+			// TODO Auto-generated method stub
+			return nextEntry().rowMapEntry();
+		}
+
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			if (lastReturned == null)
+				throw new IllegalStateException();
+			checkModCount();
+
+			WeakHashMatrix.this.remove(currentKey);
+			resetModCount();
+			lastReturned = null;
+			currentKey = null;
+		}
+		
 	}
 
 	@Override
 	public Map<RK, V> columnMap(CK column) {
 		// TODO Auto-generated method stub
 		return super.columnMap(column);
+	}
+	
+	private final class ColumnIterator extends FastFailedIterator<Map.Entry<RK, V>>{
+		private final Object maskedColumn;
+		private final int columnHash;
+		private final int columnIndex;
+		private volatile int row;
+		Entry entry = null;
+		Entry lastReturned = null;
+
+		/**
+		 * Strong reference needed to avoid disappearance of key between hasNext
+		 * and next
+		 */
+		Pair<RK, CK> nextKey = null;
+
+		/**
+		 * Strong reference needed to avoid disappearance of key between
+		 * nextEntry() and any use of the entry
+		 */
+		Pair<RK, CK> currentKey = null;
+		
+		private ColumnIterator(CK unmaskedColumn){
+			super();
+			this.maskedColumn = maskNull(unmaskedColumn);
+			this.columnHash = HashMatrix.hash(this.maskedColumn.hashCode());
+			this.columnIndex = HashMatrix.indexFor(columnHash, columnCapacity());
+			this.row = rowCapacity();
+		}
+		
+		/** The common parts of next() across different types of iterators */
+		protected Entry nextEntry() {
+			checkModCount();
+			if (nextKey == null && !hasNext())
+				throw new NoSuchElementException();
+
+			lastReturned = entry;
+			entry = entry.next;
+			currentKey = nextKey;
+			nextKey = null;
+			return lastReturned;
+		}
+		
+		private boolean match(Entry e){
+			return e != null && e.columnHash == this.columnHash && maskedColumn.equals(e.maskedColumnKey());
+		}
+		
+		@Override
+		public boolean hasNext() {
+			// TODO Auto-generated method stub
+			Entry[][] t = table;
+
+			while (nextKey == null) {
+				Entry e = entry;
+				int rowIndex = row;
+				while (match(e) && rowIndex > 0)
+					e = t[--rowIndex][columnIndex];
+				entry = e;
+				row = rowIndex;
+				if (e == null) {
+					currentKey = null;
+					return false;
+				}
+				nextKey = e.get(); // hold on to key in strong ref
+				if (nextKey == null)
+					entry = entry.next;
+			}
+			return true;
+		}
+
+		@Override
+		public Map.Entry<RK, V> next() {
+			// TODO Auto-generated method stub
+			return nextEntry().columnMapEntry();
+		}
+
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			if (lastReturned == null)
+				throw new IllegalStateException();
+			checkModCount();
+
+			WeakHashMatrix.this.remove(currentKey);
+			resetModCount();
+			lastReturned = null;
+			currentKey = null;
+		}
+		
 	}
 
 	@Override
@@ -626,12 +833,16 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		int expectedModCount;
 
 		FastFailedIterator() {
-			expectedModCount = WeakHashMatrix.this.modCount;
+			resetModCount();
 		}
 
 		void checkModCount() {
 			if (modCount != expectedModCount)
 				throw new ConcurrentModificationException();
+		}
+		
+		void resetModCount(){
+			expectedModCount = WeakHashMatrix.this.modCount;
 		}
 	}
 
@@ -655,8 +866,8 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 
 		private EntryIterator() {
 			super();
-			row = (size() == 0 ? 0 : table.length);
-			column = (row == 0 ? 0 : table[0].length);
+			row = rowCapacity();
+			column = columnCapacity();
 		}
 
 		public boolean hasNext() {
@@ -711,7 +922,7 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			checkModCount();
 
 			WeakHashMatrix.this.remove(currentKey);
-			expectedModCount = modCount;
+			resetModCount();
 			lastReturned = null;
 			currentKey = null;
 		}

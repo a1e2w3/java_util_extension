@@ -249,6 +249,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		final int hash;
 		int size;
 		transient Head next;
+		transient volatile int modCount;
 
 		transient volatile Map<?, V> viewMap = null;
 

@@ -911,12 +911,16 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		int expectedModCount;
 
 		FastFailedIterator() {
-			expectedModCount = HashMatrix.this.modCount;
+			resetModCount();
 		}
 
 		void checkModCount() {
 			if (modCount != expectedModCount)
 				throw new ConcurrentModificationException();
+		}
+		
+		void resetModCount(){
+			expectedModCount = HashMatrix.this.modCount;
 		}
 	}
 
@@ -961,7 +965,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			RK key = current.getKey();
 			current = null;
 			HashMatrix.this.removeRow(key);
-			expectedModCount = HashMatrix.this.modCount;
+			resetModCount();
 		}
 
 	}
@@ -1007,7 +1011,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			CK key = current.getKey();
 			current = null;
 			HashMatrix.this.removeColumn(key);
-			expectedModCount = HashMatrix.this.modCount;
+			resetModCount();
 		}
 
 	}
@@ -1065,7 +1069,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			CK column = current.getColumnKey();
 			current = null;
 			HashMatrix.this.remove(row, column);
-			expectedModCount = HashMatrix.this.modCount;
+			resetModCount();
 		}
 
 	}
@@ -1107,6 +1111,11 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		private RowMapView(RK row, Head<RK> head) {
 			this.row = row;
 			this.head = head;
+			modCount = head == null ? 0 : head.modCount;
+		}
+		
+		private int modCount(){
+			return head == null ? 0 : head.modCount;
 		}
 
 		@Override
@@ -1145,20 +1154,28 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return entrySet;
 		}
 
-		private final class EntryIterator extends
-				FastFailedIterator<Map.Entry<CK, V>> {
+		private final class EntryIterator implements
+				Iterator<Map.Entry<CK, V>> {
 			private HashMatrix<RK, CK, V>.Entry current = null, next;
 			private final int rowIndex = indexFor(head.hash, rowHeads.length);
-			private int columnIndex = 0;
+			private volatile int columnIndex = 0;
+			
+			private int expectedModCount;
 
 			private EntryIterator() {
-				super();
+				expectedModCount = RowMapView.this.modCount();
 				getNext();
+			}
+			
+			void checkModCount() {
+				if (RowMapView.this.modCount() != expectedModCount)
+					throw new ConcurrentModificationException();
 			}
 
 			private void getNext() {
 				while (columnIndex < columnHeads.length) {
 					if (table[rowIndex][columnIndex] != null
+							&& table[rowIndex][columnIndex].rowHash() == head.hash
 							&& eq(row, table[rowIndex][columnIndex].getRowKey())) {
 						next = table[rowIndex][columnIndex++];
 						break;
@@ -1201,7 +1218,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				HashMatrix.this.remove(row, column);
 				if (head.disposed())
 					head = null;
-				expectedModCount = HashMatrix.this.modCount;
+				expectedModCount = RowMapView.this.modCount();
 			}
 
 		}
@@ -1214,6 +1231,10 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		private ColumnMapView(CK column, Head<CK> head) {
 			this.column = column;
 			this.head = head;
+		}
+		
+		private int modCount(){
+			return head == null ? 0 : head.modCount;
 		}
 
 		@Override
@@ -1252,22 +1273,29 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return entrySet;
 		}
 
-		private final class EntryIterator extends
-				FastFailedIterator<Map.Entry<RK, V>> {
+		private final class EntryIterator implements Iterator<Map.Entry<RK, V>> {
 
 			private HashMatrix<RK, CK, V>.Entry current = null, next;
 			private int rowIndex = 0;
 			private final int columnIndex = indexFor(head.hash,
 					columnHeads.length);
+			
+			private int expectedModCount;
 
 			private EntryIterator() {
-				super();
+				expectedModCount = ColumnMapView.this.modCount();
 				getNext();
+			}
+			
+			void checkModCount() {
+				if (ColumnMapView.this.modCount() != expectedModCount)
+					throw new ConcurrentModificationException();
 			}
 
 			private void getNext() {
 				while (rowIndex < rowHeads.length) {
 					if (table[rowIndex][columnIndex] != null
+							&& table[rowIndex][columnIndex].columnHash() == head.hash  
 							&& eq(column,
 									table[rowIndex][columnIndex].getColumnKey())) {
 						next = table[rowIndex++][columnIndex];
@@ -1312,7 +1340,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 				if (head.disposed())
 					head = null;
-				expectedModCount = HashMatrix.this.modCount;
+				expectedModCount = ColumnMapView.this.modCount();
 			}
 
 		}
@@ -1427,6 +1455,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		final K key;
 		final int hash;
 		int size = 0;
+		transient volatile int modCount;
 		transient Head<K> next = null;
 
 		transient volatile Map<?, V> viewMap = null;
@@ -1442,6 +1471,9 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		int increaseSize(int incr) {
+			if(0 == incr)
+				return size;
+			++modCount;
 			size = Math.max(0, size + incr);
 			return size;
 		}
