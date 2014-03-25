@@ -520,8 +520,6 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	@Override
 	public Map<CK, V> rowMap(final RK row) {
 		// TODO Auto-generated method stub
-		final Object k = maskNull(row);
-		final int hash = HashMatrix.hash(k.hashCode());
 		return new AbstractMap<CK, V>(){
 
 			@Override
@@ -643,9 +641,37 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	}
 
 	@Override
-	public Map<RK, V> columnMap(CK column) {
+	public Map<RK, V> columnMap(final CK column) {
 		// TODO Auto-generated method stub
-		return super.columnMap(column);
+		return new AbstractMap<RK, V>(){
+
+			@Override
+			public V put(RK key, V value) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.put(key, column, value);
+			}
+
+			@Override
+			public Set<Map.Entry<RK, V>> entrySet() {
+				// TODO Auto-generated method stub
+				return new AbstractSet<Map.Entry<RK, V>>(){
+
+					@Override
+					public Iterator<java.util.Map.Entry<RK, V>> iterator() {
+						// TODO Auto-generated method stub
+						return new ColumnIterator(column);
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return WeakHashMatrix.this.columnValueCount(column);
+					}
+					
+				};
+			}
+			
+		};
 	}
 	
 	private final class ColumnIterator extends FastFailedIterator<Map.Entry<RK, V>>{
