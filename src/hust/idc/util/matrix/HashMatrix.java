@@ -362,7 +362,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		Entry[][] newTable = new HashMatrix.Entry[newCapacity][this
 				.columnCapacity()];
-		transferEntrys(newTable);
+		transferEntries(newTable);
 		table = newTable;
 	}
 
@@ -382,7 +382,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		columnThreshold = (int) (newCapacity * loadFactor);
 
 		Entry[][] newTable = new HashMatrix.Entry[this.rowCapacity()][newCapacity];
-		transferEntrys(newTable);
+		transferEntries(newTable);
 		table = newTable;
 	}
 
@@ -421,7 +421,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		columnThreshold = (int) (newColumnCapacity * loadFactor);
 
 		Entry[][] newTable = new HashMatrix.Entry[newRowCapacity][newColumnCapacity];
-		transferEntrys(newTable);
+		transferEntries(newTable);
 		table = newTable;
 	}
 
@@ -455,7 +455,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 	}
 
-	void transferEntrys(Entry[][] newTable) {
+	void transferEntries(Entry[][] newTable) {
 		// TODO Auto-generated method stub
 		int rowCapacity = newTable.length;
 		int columnCapacity = newTable[0].length;
@@ -915,7 +915,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		void checkModCount() {
-			if (modCount != expectedModCount)
+			if (HashMatrix.this.modCount != expectedModCount)
 				throw new ConcurrentModificationException();
 		}
 		
@@ -1175,8 +1175,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			private void getNext() {
 				while (columnIndex < columnHeads.length) {
 					if (table[rowIndex][columnIndex] != null
-							&& table[rowIndex][columnIndex].rowHash() == head.hash
-							&& eq(row, table[rowIndex][columnIndex].getRowKey())) {
+							&& table[rowIndex][columnIndex].rowHead == head) {
 						next = table[rowIndex][columnIndex++];
 						break;
 					}
@@ -1295,9 +1294,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			private void getNext() {
 				while (rowIndex < rowHeads.length) {
 					if (table[rowIndex][columnIndex] != null
-							&& table[rowIndex][columnIndex].columnHash() == head.hash  
-							&& eq(column,
-									table[rowIndex][columnIndex].getColumnKey())) {
+							&& table[rowIndex][columnIndex].columnHead == head) {
 						next = table[rowIndex++][columnIndex];
 						break;
 					}

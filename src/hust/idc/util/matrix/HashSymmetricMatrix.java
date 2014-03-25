@@ -1,9 +1,15 @@
 package hust.idc.util.matrix;
 
+import hust.idc.util.EmptyIterator;
 import hust.idc.util.pair.Pair;
 
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
@@ -65,22 +71,23 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	 * ConcurrentModificationException).
 	 */
 	transient volatile int modCount;
-	
-	public HashSymmetricMatrix(){
+
+	public HashSymmetricMatrix() {
 		this(DEFAULT_INITIAL_CAPACITY, DEFAULT_LOAD_FACTOR);
 	}
-	
-	public HashSymmetricMatrix(int initialDimensions){
+
+	public HashSymmetricMatrix(int initialDimensions) {
 		this(initialDimensions, DEFAULT_LOAD_FACTOR);
 	}
-	
-	public HashSymmetricMatrix(int initialDimensions, float loadFactor){
+
+	public HashSymmetricMatrix(int initialDimensions, float loadFactor) {
 		super();
 		if (initialDimensions < 0)
-			throw new IllegalArgumentException("Illegal Dimension: " + initialDimensions);
+			throw new IllegalArgumentException("Illegal Dimension: "
+					+ initialDimensions);
 
-		int dimensionCapacity = ensureCapacity(Math
-				.min(MAXIMUM_CAPACITY, initialDimensions));
+		int dimensionCapacity = ensureCapacity(Math.min(MAXIMUM_CAPACITY,
+				initialDimensions));
 		this.loadFactor = loadFactor;
 		threshold = (int) (dimensionCapacity * loadFactor);
 		this.dimension = this.size = 0;
@@ -90,8 +97,11 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 	public HashSymmetricMatrix(
 			Matrix<? extends K, ? extends K, ? extends V> otherMatrix) {
-		this(Math.max((int) (Math.max(otherMatrix.rows(), otherMatrix.columns()) / DEFAULT_LOAD_FACTOR) + 1,
-				DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
+		this(
+				Math.max(
+						(int) (Math.max(otherMatrix.rows(),
+								otherMatrix.columns()) / DEFAULT_LOAD_FACTOR) + 1,
+						DEFAULT_INITIAL_CAPACITY), DEFAULT_LOAD_FACTOR);
 		putAllForCreate(otherMatrix);
 	}
 
@@ -100,23 +110,23 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		this();
 		this.putAll(otherMatrix);
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	void initBuckets(int dimension){
+	void initBuckets(int dimension) {
 		table = new HashSymmetricMatrix.Entry[arraySize(dimension)];
 		heads = new HashSymmetricMatrix.Head[dimension];
 	}
 
 	/**
 	 * Initialization hook for subclasses. This method is called in all
-	 * constructors and pseudo-constructors (clone, readObject) after HashMatrix
-	 * has been initialized but before any entries have been inserted. (In the
-	 * absence of this method, readObject would require explicit knowledge of
-	 * subclasses.)
+	 * constructors and pseudo-constructors (clone, readObject) after
+	 * HashSymmetricMatrix has been initialized but before any entries have been
+	 * inserted. (In the absence of this method, readObject would require
+	 * explicit knowledge of subclasses.)
 	 */
 	void init() {
 	}
-	
+
 	private int ensureCapacity(int minCapacity) {
 		// TODO Auto-generated method stub
 		int capacity = 1;
@@ -124,9 +134,15 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			capacity <<= 1;
 		return capacity;
 	}
-	
-	private static int arraySize(int demension) {
+
+	static int arraySize(int demension) {
 		return demension == 0 ? 0 : (demension * (demension + 1)) >> 1;
+	}
+
+	static int tableIndexFor(int row, int column) {
+		if (row < column)
+			return tableIndexFor(column, row);
+		return arraySize(row) + column;
 	}
 
 	@Override
@@ -141,10 +157,379 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return dimension;
 	}
 
+	Head getHead(Object key) {
+		int hash = (key == null ? 0 : HashMatrix.hash(key.hashCode()));
+		int index = HashMatrix.indexFor(hash, heads.length);
+		return getHead(key, hash, index);
+	}
+
+	Head getHead(Object key, int hash, int index) {
+		Head head = heads[index];
+		if (null == key) {
+			while (head != null) {
+				if (hash == head.hash && null == head.getKey())
+					return head;
+				head = head.next;
+			}
+		} else {
+			while (head != null) {
+				if (hash == head.hash && key.equals(head.getKey()))
+					return head;
+				head = head.next;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public boolean containsRow(Object row) {
+		// TODO Auto-generated method stub
+		return getHead(row) != null;
+	}
+
+	@Override
+	public boolean containsKey(Object row, Object column) {
+		// TODO Auto-generated method stub
+		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
+		int columnHash = (column == null ? 0 : HashMatrix.hash(column
+				.hashCode()));
+		int columnIndex = HashMatrix.indexFor(columnHash, heads.length);
+
+		Entry entry = table[tableIndexFor(rowIndex, columnIndex)];
+		while (entry != null) {
+			if (entry.matchHash(rowHash, columnHash)
+					&& entry.match(row, column))
+				return true;
+			entry = entry.next;
+		}
+		return false;
+	}
+
+	@Override
+	public V get(Object row, Object column) {
+		// TODO Auto-generated method stub
+		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
+		int columnHash = (column == null ? 0 : HashMatrix.hash(column
+				.hashCode()));
+		int columnIndex = HashMatrix.indexFor(columnHash, heads.length);
+
+		Entry entry = table[tableIndexFor(rowIndex, columnIndex)];
+		while (entry != null) {
+			if (entry.matchHash(rowHash, columnHash)
+					&& entry.match(row, column))
+				return entry.getValue();
+			entry = entry.next;
+		}
+		return null;
+	}
+
+	private Head addHeadIfNotExists(K key) {
+		int hash = (key == null ? 0 : HashMatrix.hash(key.hashCode()));
+		int index = HashMatrix.indexFor(hash, heads.length);
+		return addHeadIfNotExists(key, hash, index);
+	}
+
+	private Head addHeadIfNotExists(K key, int hash, int index) {
+		Head head = heads[index];
+		if (null == key) {
+			while (head != null) {
+				if (hash == head.hash && null == head.getKey())
+					return head;
+				head = head.next;
+			}
+		} else {
+			while (head != null) {
+				if (hash == head.hash && key.equals(head.getKey()))
+					return head;
+				head = head.next;
+			}
+		}
+
+		head = new Head(key, hash, heads[index]);
+		heads[index] = head;
+		++dimension;
+		return head;
+	}
+
+	@SuppressWarnings("unchecked")
+	void resize() {
+		if (this.dimensionCapacity() == MAXIMUM_CAPACITY) {
+			threshold = Integer.MAX_VALUE;
+			return;
+		}
+
+		++modCount;
+		int newDimension = this.dimension() << 1;
+		Head[] newHeads = new HashSymmetricMatrix.Head[newDimension];
+		this.transferHeads(newHeads);
+
+		Entry[] newTable = new HashSymmetricMatrix.Entry[arraySize(newDimension)];
+		this.transferEntries(newTable);
+	}
+
+	void transferHeads(Head[] dest) {
+		for (int i = 0; i < this.dimensionCapacity(); ++i) {
+			Head head = heads[i];
+			while (head != null) {
+				Head next = head.next;
+				int newIndex = HashMatrix.indexFor(head.hash, dest.length);
+				head.next = dest[newIndex];
+				dest[newIndex] = head;
+				head = next;
+			}
+			heads[i] = null;
+		}
+	}
+
+	void transferEntries(Entry[] dest) {
+		for (int i = 0; i < table.length; ++i) {
+			Entry entry = table[i];
+			while (entry != null) {
+				Entry next = entry.next;
+				int rowIndex = HashMatrix.indexFor(entry.rowHash(),
+						this.dimensionCapacity());
+				int columnIndex = HashMatrix.indexFor(entry.columnHash(),
+						this.dimensionCapacity());
+				int newIndex = tableIndexFor(rowIndex, columnIndex);
+				entry.next = dest[newIndex];
+				dest[newIndex] = entry;
+				entry = next;
+			}
+			table[i] = null;
+		}
+	}
+
+	private V setValueAt(int rowIndex, int columnIndex, Head rowHead,
+			Head columnHead, V value) {
+		int tableIndex = tableIndexFor(rowIndex, columnIndex);
+		Entry entry = table[tableIndex];
+		while (entry != null) {
+			if (entry.matchHash(rowHead.hash, columnHead.hash)
+					&& entry.match(rowHead.getKey(), columnHead.getKey())) {
+				entry.recordAccess(this);
+				return entry.setValue(value);
+			}
+			entry = entry.next;
+		}
+
+		++modCount;
+		table[tableIndex] = new Entry(value, rowHead, columnHead,
+				table[tableIndex]);
+		++size;
+		rowHead.increaseSize(1);
+		if (!table[tableIndex].isDiagonal())
+			columnHead.increaseSize(1);
+		return null;
+	}
+
+	@Override
+	public V put(K row, K column, V value) {
+		// TODO Auto-generated method stub
+		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
+		Head rowHead = this.addHeadIfNotExists(row, rowHash, rowIndex);
+
+		int columnHash = (column == null ? 0 : HashMatrix.hash(column
+				.hashCode()));
+		int columnIndex = HashMatrix.indexFor(columnHash, heads.length);
+		Head columnHead = this.addHeadIfNotExists(column, columnHash,
+				columnIndex);
+
+		if (this.dimension() >= threshold) {
+			resize();
+		}
+
+		return setValueAt(rowIndex, columnIndex, rowHead, columnHead, value);
+	}
+
+	@Override
+	public V remove(Object row, Object column) {
+		// TODO Auto-generated method stub
+		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
+
+		int columnHash = (column == null ? 0 : HashMatrix.hash(column
+				.hashCode()));
+		int columnIndex = HashMatrix.indexFor(columnHash, heads.length);
+
+		int tableIndex = tableIndexFor(rowIndex, columnIndex);
+		Entry entry = table[tableIndex], prev = null;
+		while (entry != null) {
+			if (entry.matchHash(rowHash, columnHash)
+					&& entry.match(row, column)) {
+				++modCount;
+				// remove entry from the
+				if (null == prev)
+					table[tableIndex] = entry.next;
+				else
+					prev.next = entry.next;
+				--size;
+
+				if (entry.rowHead.increaseSize(-1) == 0)
+					removeHead(rowIndex, entry.rowHead);
+				if (!entry.isDiagonal()
+						&& entry.columnHead.increaseSize(-1) == 0)
+					removeHead(columnIndex, entry.columnHead);
+
+				V oldValue = entry.getValue();
+				entry.recordRemoval(this);
+				entry.dispose();
+				return oldValue;
+			}
+			prev = entry;
+			entry = entry.next;
+		}
+		return null;
+	}
+
+	private void removeHead(int index, Head head) {
+		// TODO Auto-generated method stub
+		Head h = heads[index], prev = null;
+		while (h != null) {
+			if (head == h) {
+				removeHead(index, head, prev);
+				return;
+			}
+			prev = h;
+			h = h.next;
+		}
+	}
+
+	private void removeHead(int index, Head head, Head prev) {
+		// TODO Auto-generated method stub
+		++modCount;
+		if (prev == null)
+			heads[index] = head.next;
+		else
+			prev.next = head.next;
+		--dimension;
+		head.dispose();
+	}
+
+	@Override
+	public void removeRow(K row) {
+		// TODO Auto-generated method stub
+		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
+
+		// find the rowHead and its prev
+		Head head = heads[rowIndex], prev = null, rowHead = null;
+		if (row == null) {
+			while (head != null) {
+				if (head.hash == rowHash && head.getKey() == null) {
+					rowHead = head;
+					break;
+				}
+				prev = head;
+				head = head.next;
+			}
+		} else {
+			while (head != null) {
+				if (head.hash == rowHash && row.equals(head.getKey())) {
+					rowHead = head;
+					break;
+				}
+				prev = head;
+				head = head.next;
+			}
+		}
+		if (rowHead == null)
+			return;
+
+		if (rowHead.size > 0) {
+			// remove all entry of this row
+			for (int j = 0; j < this.dimensionCapacity(); ++j) {
+				int tableIndex = tableIndexFor(rowIndex, j);
+				Entry entry = table[tableIndex], prevEntry = null;
+				while (entry != null) {
+					if (entry.rowHead == rowHead) {
+						if (prevEntry == null)
+							table[tableIndex] = entry.next;
+						else
+							prevEntry.next = entry.next;
+						--size;
+						if (!entry.isDiagonal()
+								&& entry.columnHead.increaseSize(-1) == 0)
+							removeHead(j, entry.columnHead);
+
+						entry.recordRemoval(this);
+						entry.dispose();
+					}
+				}
+			}
+		}
+
+		removeHead(rowIndex, rowHead, prev);
+	}
+
+	@Override
+	public void clear() {
+		// TODO Auto-generated method stub
+		++modCount;
+		for (int i = 0; i < this.table.length; ++i) {
+			Entry entry = table[i];
+			while (entry != null) {
+				Entry next = entry.next;
+				entry.recordRemoval(this);
+				entry.dispose();
+				entry = next;
+			}
+			table[i] = null;
+		}
+
+		for (int j = 0; j < this.heads.length; ++j) {
+			Head head = heads[j];
+			while (head != null) {
+				Head next = head.next;
+				head.dispose();
+				head = next;
+			}
+			heads[j] = null;
+		}
+		this.dimension = this.size = 0;
+	}
+
+	@Override
+	void clearViews() {
+		// TODO Auto-generated method stub
+		super.clearViews();
+		this.entrySet = null;
+		this.keySet = null;
+	}
+
 	private void putAllForCreate(
 			Matrix<? extends K, ? extends K, ? extends V> otherMatrix) {
 		// TODO Auto-generated method stub
-		
+		for (Iterator<? extends Matrix.Entry<? extends K, ? extends K, ? extends V>> i = otherMatrix
+				.entrySet().iterator(); i.hasNext();) {
+			Matrix.Entry<? extends K, ? extends K, ? extends V> e = i.next();
+			putForCreate(e.getRowKey(), e.getColumnKey(), e.getValue());
+		}
+	}
+
+	/**
+	 * This method is used instead of put by constructors and pseudoconstructors
+	 * (clone, readObject). It does not resize the table, check for
+	 * comodification, etc.
+	 */
+	private void putForCreate(K rowKey, K columnKey, V value) {
+		// TODO Auto-generated method stub
+		int rowHash = (rowKey == null) ? 0 : HashMatrix.hash(rowKey.hashCode());
+		int rowIndex = HashMatrix.indexFor(rowHash, this.dimensionCapacity());
+		Head rowHead = addHeadIfNotExists(rowKey, rowHash, rowIndex);
+
+		int columnHash = (columnKey == null) ? 0 : HashMatrix.hash(columnKey
+				.hashCode());
+		int columnIndex = HashMatrix.indexFor(columnHash,
+				this.dimensionCapacity());
+		Head columnHead = addHeadIfNotExists(columnKey, columnHash, columnIndex);
+
+		int tableIndex = tableIndexFor(rowIndex, columnIndex);
+		table[tableIndex] = new Entry(value, rowHead, columnHead,
+				table[tableIndex]);
+		++size;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -170,39 +555,336 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return clone;
 	}
 
+	private final class RowMapView extends AbstractMap<K, V> {
+		private transient volatile Head head;
+		private final transient K row;
+
+		private RowMapView(K row, Head head) {
+			this.row = row;
+			this.head = head;
+			modCount = head == null ? 0 : head.modCount;
+		}
+
+		private int modCount() {
+			return head == null ? 0 : head.modCount;
+		}
+
+		@Override
+		public V put(K key, V value) {
+			// TODO Auto-generated method stub
+			if (null == head) {
+				head = HashSymmetricMatrix.this.addHeadIfNotExists(row);
+				head.viewMap = this;
+			}
+			return HashSymmetricMatrix.this.put(row, key, value);
+		}
+
+		private transient volatile Set<Map.Entry<K, V>> entrySet = null;
+
+		@Override
+		public Set<Map.Entry<K, V>> entrySet() {
+			// TODO Auto-generated method stub
+			if (null == entrySet) {
+				entrySet = new AbstractSet<Map.Entry<K, V>>() {
+					@Override
+					public Iterator<Map.Entry<K, V>> iterator() {
+						// TODO Auto-generated method stub
+						if (head == null)
+							return new EmptyIterator<Map.Entry<K, V>>();
+						else
+							return new EntryIterator();
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return head == null ? 0 : head.size;
+					}
+				};
+			}
+			return entrySet;
+		}
+
+		private final class EntryIterator implements Iterator<Map.Entry<K, V>> {
+			private HashSymmetricMatrix<K, V>.Entry current = null, next;
+			private final int rowIndex = HashMatrix.indexFor(head.hash,
+					heads.length);
+			private volatile int columnIndex = 0;
+
+			private int expectedModCount;
+
+			private EntryIterator() {
+				expectedModCount = RowMapView.this.modCount();
+				getNext();
+			}
+
+			void checkModCount() {
+				if (RowMapView.this.modCount() != expectedModCount)
+					throw new ConcurrentModificationException();
+			}
+
+			private boolean match(HashSymmetricMatrix<K, V>.Entry entry) {
+				if (entry == null)
+					return false;
+				else
+					return head == entry.rowHead || head == entry.columnHead;
+			}
+
+			private void getNext() {
+				while (columnIndex < heads.length) {
+					int tableIndex = tableIndexFor(rowIndex, columnIndex);
+					if (match(table[tableIndex])) {
+						next = table[tableIndex];
+						++columnIndex;
+						break;
+					}
+					++columnIndex;
+				}
+			}
+
+			@Override
+			public boolean hasNext() {
+				// TODO Auto-generated method stub
+				return next != null;
+			}
+
+			@Override
+			public Map.Entry<K, V> next() {
+				// TODO Auto-generated method stub
+				checkModCount();
+				if (null == next)
+					throw new NoSuchElementException();
+				current = next;
+				while ((next = next.next) != null) {
+					if (eq(row, next.getRowKey()))
+						break;
+				}
+				if (next == null) {
+					getNext();
+				}
+				return head == current.rowHead ? current.rowMapEntry() : current.columnMapEntry();
+			}
+
+			@Override
+			public void remove() {
+				// TODO Auto-generated method stub
+				if (null == current)
+					throw new IllegalStateException();
+				checkModCount();
+				K column = head == current.rowHead ? current.getColumnKey() : current.getRowKey();
+				current = null;
+				HashSymmetricMatrix.this.remove(row, column);
+				if (head.disposed())
+					head = null;
+				expectedModCount = RowMapView.this.modCount();
+			}
+
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Map<K, V> rowMap(K row) {
+		// TODO Auto-generated method stub
+		Head head = getHead(row);
+		if (head == null) {
+			return new RowMapView(row, null);
+		}
+		if (head.viewMap == null) {
+			head.viewMap = new RowMapView(row, head);
+		}
+		return (Map<K, V>) head.viewMap;
+	}
+
+	@Override
+	protected int rowValueCount(Object row) {
+		// TODO Auto-generated method stub
+		Head head = getHead(row);
+		return null == head ? 0 : head.size;
+	}
+
 	// View
 	protected transient volatile Set<K> keySet = null;
 	protected transient volatile Set<Matrix.Entry<K, K, V>> entrySet = null;
 
 	@Override
-	public Set<hust.idc.util.matrix.Matrix.Entry<K, K, V>> entrySet() {
+	public Set<K> rowKeySet() {
+		// TODO Auto-generated method stub
+		if (keySet == null) {
+			keySet = new AbstractSet<K>() {
+
+				@Override
+				public Iterator<K> iterator() {
+					// TODO Auto-generated method stub
+					return new KeyIterator();
+				}
+
+				@Override
+				public int size() {
+					// TODO Auto-generated method stub
+					return HashSymmetricMatrix.this.dimension();
+				}
+
+			};
+		}
+		return keySet;
+	}
+
+	@Override
+	public Set<Matrix.Entry<K, K, V>> entrySet() {
 		// TODO Auto-generated method stub
 		if (entrySet == null) {
+			entrySet = new AbstractSet<Matrix.Entry<K, K, V>>() {
 
+				@Override
+				public Iterator<Matrix.Entry<K, K, V>> iterator() {
+					// TODO Auto-generated method stub
+					return new EntryIterator();
+				}
+
+				@Override
+				public int size() {
+					// TODO Auto-generated method stub
+					return HashSymmetricMatrix.this.size;
+				}
+
+			};
 		}
 		return entrySet;
 	}
 
-	private class Entry extends AbstractEntry<K, K, V> {
+	private abstract class FastFailedIterator<E> implements Iterator<E> {
+		int expectedModCount;
+
+		FastFailedIterator() {
+			resetModCount();
+		}
+
+		void checkModCount() {
+			if (HashSymmetricMatrix.this.modCount != expectedModCount)
+				throw new ConcurrentModificationException();
+		}
+
+		void resetModCount() {
+			expectedModCount = HashSymmetricMatrix.this.modCount;
+		}
+	}
+
+	private final class KeyIterator extends FastFailedIterator<K> {
+		private Head current = null, next = null;
+		private int index = 0;
+
+		private KeyIterator() {
+			super();
+			while (index < heads.length && (next = heads[index++]) == null)
+				;
+		}
+
+		@Override
+		public boolean hasNext() {
+			// TODO Auto-generated method stub
+			return null != next;
+		}
+
+		@Override
+		public K next() {
+			// TODO Auto-generated method stub
+			checkModCount();
+			if (null == next)
+				throw new NoSuchElementException();
+			current = next;
+			if ((next = next.next) == null) {
+				while (index < heads.length && (next = heads[index++]) == null)
+					;
+			}
+			return current.getKey();
+		}
+
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			if (null == current)
+				throw new IllegalStateException();
+			checkModCount();
+			K key = current.getKey();
+			current = null;
+			HashSymmetricMatrix.this.removeRow(key);
+			resetModCount();
+		}
+
+	}
+
+	private final class EntryIterator extends
+			FastFailedIterator<Matrix.Entry<K, K, V>> {
+		private Entry current = null, next;
+		private int index = 0;
+
+		private EntryIterator() {
+			super();
+			getNext();
+		}
+
+		private void getNext() {
+			for (; index < HashSymmetricMatrix.this.table.length
+					&& (next = table[index++]) == null;)
+				;
+		}
+
+		@Override
+		public boolean hasNext() {
+			// TODO Auto-generated method stub
+			return next != null;
+		}
+
+		@Override
+		public Matrix.Entry<K, K, V> next() {
+			// TODO Auto-generated method stub
+			checkModCount();
+			if (null == next)
+				throw new NoSuchElementException();
+			current = next;
+			if ((next = next.next) == null)
+				getNext();
+			return current;
+		}
+
+		@Override
+		public void remove() {
+			// TODO Auto-generated method stub
+			if (null == current)
+				throw new IllegalStateException();
+			checkModCount();
+			K row = current.getRowKey();
+			K column = current.getColumnKey();
+			current = null;
+			HashSymmetricMatrix.this.remove(row, column);
+			resetModCount();
+		}
+
+	}
+
+	private class Entry extends AbstractSymmetricMatrixEntry<K, V> {
 		V value;
 		transient Head rowHead, columnHead;
 		transient Entry next;
 
-		Entry(V value, Entry next) {
+		Entry(V value, Head rowHead, Head columnHead, Entry next) {
 			this.value = value;
+			this.rowHead = rowHead;
+			this.columnHead = columnHead;
 			this.next = next;
 		}
 
 		@Override
 		public K getRowKey() {
 			// TODO Auto-generated method stub
-			return null;
+			return rowHead.getKey();
 		}
 
 		@Override
 		public K getColumnKey() {
 			// TODO Auto-generated method stub
-			return null;
+			return columnHead.getKey();
 		}
 
 		@Override
@@ -217,6 +899,23 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			V oldValue = this.value;
 			this.value = value;
 			return oldValue;
+		}
+
+		int rowHash() {
+			return rowHead.hash;
+		}
+
+		int columnHash() {
+			return columnHead.hash;
+		}
+
+		boolean matchHash(int rowHash, int columnHash) {
+			return (this.rowHash() == rowHash && this.columnHash() == columnHash)
+					|| (this.rowHash() == columnHash && this.columnHash() == rowHash);
+		}
+
+		boolean isDiagonal() {
+			return rowHead == columnHead;
 		}
 
 		@Override
@@ -292,7 +991,27 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	 *             mappings are emitted in no particular order.
 	 */
 	private void writeObject(java.io.ObjectOutputStream s) throws IOException {
+		Iterator<Matrix.Entry<K, K, V>> i = isEmpty() ? null : entrySet()
+				.iterator();
 
+		// Write out the threshold, loadfactor, and any hidden stuff
+		s.defaultWriteObject();
+
+		// Write out number of buckets
+		s.writeInt(this.dimensionCapacity());
+
+		// Write out size (number of Mappings)
+		s.writeInt(size);
+
+		// Write out keys and values (alternating)
+		if (i != null) {
+			while (i.hasNext()) {
+				Matrix.Entry<K, K, V> e = i.next();
+				s.writeObject(e.getRowKey());
+				s.writeObject(e.getColumnKey());
+				s.writeObject(e.getValue());
+			}
+		}
 	}
 
 	/**
@@ -302,9 +1021,28 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	@SuppressWarnings("unchecked")
 	private void readObject(java.io.ObjectInputStream s) throws IOException,
 			ClassNotFoundException {
+		// Read in the threshold, loadfactor, and any hidden stuff
+		s.defaultReadObject();
 
+		// Read in number of buckets and allocate the bucket array;
+		int dimensionCapacity = s.readInt();
+
+		initBuckets(dimensionCapacity);
+
+		init(); // Give subclass a chance to do its thing.
+
+		// Read in size (number of Mappings)
+		int size = s.readInt();
+
+		// Read the keys and values, and put the mappings in the HashMap
+		for (int i = 0; i < size; i++) {
+			K row = (K) s.readObject();
+			K column = (K) s.readObject();
+			V value = (V) s.readObject();
+			putForCreate(row, column, value);
+		}
 	}
-	
+
 	int dimensionCapacity() {
 		return heads.length;
 	}

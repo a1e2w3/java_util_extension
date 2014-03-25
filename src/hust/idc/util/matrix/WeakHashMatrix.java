@@ -383,9 +383,8 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 
 		modCount++;
-		Entry e = tab[rowIndex][columnIndex];
 		tab[rowIndex][columnIndex] = new Entry(new ObjectPair<RK, CK>(rowMask,
-				columnMask), value, rowHash, columnHash, e);
+				columnMask), value, rowHash, columnHash, tab[rowIndex][columnIndex]);
 		if (++size >= threshold)
 			resize();
 		return null;

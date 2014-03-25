@@ -72,7 +72,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		entrys = new ArraySymmetricMatrix.Entry[arraySize(dimensionCapacity)];
 	}
 
-	private static int arraySize(int demension) {
+	static int arraySize(int demension) {
 		return demension == 0 ? 0 : (demension * (demension + 1)) >> 1;
 	}
 
@@ -118,7 +118,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return null;
 	}
 
-	private static int indexFor(int row, int column) {
+	static int indexFor(int row, int column) {
 		if (row < column)
 			return indexFor(column, row);
 		return arraySize(row) + column;
