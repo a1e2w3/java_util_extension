@@ -11,13 +11,13 @@ import java.util.Iterator;
 import java.util.Set;
 
 public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergeable<FibonacciHeap<? extends E>> {
-	private FibonacciHeapNode entry;
+	transient FibonacciHeapNode entry;
 	/**
 	 * used to iterate
 	 */
-	private Set<FibonacciHeapNode> nodes;
+	transient Set<FibonacciHeapNode> nodes;
 	
-	private static final double Ln_Phi = Math.log((Math.sqrt(5.0d) + 1) / 2);
+	static final double Ln_Phi = Math.log((Math.sqrt(5.0d) + 1) / 2);
 
 	public FibonacciHeap() {
 		super();
@@ -648,8 +648,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 	
 	private class FibonacciHeapNode extends AbstractHeapIndex implements HeapIndex<E> {
 		private E element;
-		private FibonacciHeapNode parent, child, left, right;
-		private int degree = 0;
+		transient FibonacciHeapNode parent, child, left, right;
+		transient int degree = 0;
 		private boolean mark = false;
 		
 		private FibonacciHeapNode(E element){
@@ -756,9 +756,9 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		
 	}
 	
-	private class FibonacciHeapIterator implements Iterator<E> {
-		private Iterator<FibonacciHeapNode> nodeIt;
-		private FibonacciHeapNode current = null;
+	private final class FibonacciHeapIterator implements Iterator<E> {
+		transient Iterator<FibonacciHeapNode> nodeIt;
+		transient FibonacciHeapNode current = null;
 		
 		public FibonacciHeapIterator() {
 			// TODO Auto-generated constructor stub

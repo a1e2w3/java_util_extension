@@ -48,44 +48,45 @@ import java.util.Queue;
  * @param <E> the type of elements held in this collection
  */
 public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E>, Cloneable {
-	private Comparator<? super E> comparator = null;
-	protected int modCount = 0;
+	transient Comparator<? super E> comparator = null;
 	
-	protected AbstractHeap(){
+	transient volatile int modCount = 0;
+	
+	public AbstractHeap(){
 		super();
 		this.setComparator(null);
 	}
 	
-	protected AbstractHeap(Comparator<? super E> comparator){
+	public AbstractHeap(Comparator<? super E> comparator){
 		super();
 		this.setComparator(comparator);
 	}
 	
-	protected AbstractHeap(E element){
+	public AbstractHeap(E element){
 		this();
 		if(element != null)
 			this.offer(element);
 	}
 	
-	protected AbstractHeap(E element, Comparator<? super E> comparator){
+	public AbstractHeap(E element, Comparator<? super E> comparator){
 		this(comparator);
 		if(element != null)
 			this.offer(element);
 	}
 	
-	protected AbstractHeap(Collection<? extends E> elements){
+	public AbstractHeap(Collection<? extends E> elements){
 		this();
 		if(elements != null)
 			this.addAll(elements);
 	}
 	
-	protected AbstractHeap(Collection<? extends E> elements, Comparator<? super E> comparator){
+	public AbstractHeap(Collection<? extends E> elements, Comparator<? super E> comparator){
 		this(comparator);
 		if(elements != null)
 			this.addAll(elements);
 	}
 	
-	protected AbstractHeap(Heap<E> heap){
+	public AbstractHeap(Heap<E> heap){
 		this(heap, null);
 		if(heap != null)
 			this.setComparator(heap.getComparator());

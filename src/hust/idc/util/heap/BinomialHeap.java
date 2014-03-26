@@ -8,10 +8,10 @@ import java.util.Iterator;
 
 public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		Mergeable<BinomialHeap<? extends E>> {
-	private BinomialHeapNode head;
+	transient BinomialHeapNode head;
 	// Cannot initilize to 0, this statement will be executed after super() in
 	// constructor and cover the current value.
-	private int size;
+	transient int size;
 
 	public BinomialHeap() {
 		super();
@@ -510,9 +510,9 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 
 	private class BinomialHeapNode extends AbstractHeapIndex implements
 			HeapIndex<E> {
-		private E element;
-		private BinomialHeapNode parent = null, child = null, sibling = null;
-		private int degree = 0;
+		E element;
+		transient BinomialHeapNode parent = null, child = null, sibling = null;
+		transient int degree = 0;
 
 		private BinomialHeapNode(E element) {
 			this.set(element);

@@ -45,8 +45,8 @@ import java.util.Queue;
  * @param <E> the element type
  */
 public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E> {
-	private ArrayList<E> elements;
-	private final BinaryHeapIndex entry = new BinaryHeapIndex(0);
+	transient ArrayList<E> elements;
+	transient final BinaryHeapIndex entry = new BinaryHeapIndex(0);
 	
 	public BinaryHeap(){
 		super();
@@ -359,8 +359,8 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E> {
 		
 	}
 	
-	private class BinaryHeapIterator implements Iterator<E> {
-		private Iterator<E> it;
+	private final class BinaryHeapIterator implements Iterator<E> {
+		transient Iterator<E> it;
 		
 		private BinaryHeapIterator(){
 			this.it = BinaryHeap.this.elements.iterator();
