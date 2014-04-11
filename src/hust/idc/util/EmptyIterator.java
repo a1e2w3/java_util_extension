@@ -10,6 +10,10 @@ import java.util.NoSuchElementException;
  * @param <E>
  */
 public class EmptyIterator<E> implements Iterator<E> {
+	public EmptyIterator(){
+		super();
+	}
+	
 	@Override
 	public boolean hasNext() {
 		// TODO Auto-generated method stub

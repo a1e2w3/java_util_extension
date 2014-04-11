@@ -1160,6 +1160,34 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 
 	}
+	
+//	private class Head<K> {
+//		K key;
+//		final int hash;
+//		int size;
+//		Head<K> next;
+//		
+//		Head(K key, int hash, Head<K> next){
+//			this.key = key;
+//			this.hash = hash;
+//			this.size = 0;
+//			this.next = next;
+//		}
+//		
+//		K getKey(){
+//			return key;
+//		}
+//		
+//		int increaseSize(int incr){
+//			return 0 == incr ? size : (size = Math.max(0, size + incr));
+//		}
+//		
+//		void dispose(){
+//			key = null;
+//			size = -1;
+//			next = null;
+//		}
+//	}
 
 	int rowCapacity() {
 		return table.length;
