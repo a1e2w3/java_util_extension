@@ -2,7 +2,7 @@ package hust.idc.util.pair;
 
 import java.io.Serializable;
 
-public class UnorderedObjectPair<E> extends AbstractUnorderedPair<E> implements Pair<E, E>, Serializable {
+public class UnorderedObjectPair<E> extends AbstractUnorderedPair<E> implements Serializable {
 	/**
 	 * 
 	 */

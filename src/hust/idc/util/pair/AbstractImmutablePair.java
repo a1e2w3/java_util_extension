@@ -24,6 +24,26 @@ public abstract class AbstractImmutablePair<T, S> extends AbstractPair<T, S> imp
 		throw new UnsupportedOperationException();
 	}
 	
-	
+	@Override
+	public Pair<S, T> convertPair() {
+		if (convertPair == null) {
+			convertPair = new AbstractImmutablePair<S, T>() {
+
+				@Override
+				public S getFirst() {
+					// TODO Auto-generated method stub
+					return AbstractImmutablePair.this.getSecond();
+				}
+
+				@Override
+				public T getSecond() {
+					// TODO Auto-generated method stub
+					return AbstractImmutablePair.this.getFirst();
+				}
+
+			};
+		}
+		return convertPair;
+	}
 
 }

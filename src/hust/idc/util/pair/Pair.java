@@ -9,8 +9,12 @@ public interface Pair<T, S> {
 	
 	S setSecond(S second);
 	
+	Pair<S, T> convertPair();
+	
 	boolean equals(Object o);
 	
 	int hashCode();
+	
+	boolean equalsWithOrder(Pair<? extends T, ? extends S> anotherPair);
 
 }

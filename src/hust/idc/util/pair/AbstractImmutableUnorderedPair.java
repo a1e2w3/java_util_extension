@@ -4,16 +4,10 @@ public abstract class AbstractImmutableUnorderedPair<E> extends
 		AbstractUnorderedPair<E> implements UnorderedPair<E>, ImmutablePair<E, E>, Pair<E, E> {
 
 	@Override
-	public E getFirst() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public abstract E getFirst();
 
 	@Override
-	public E getSecond() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+	public abstract E getSecond();
 	
 	@Override
 	public final E setFirst(E first) {
@@ -25,6 +19,28 @@ public abstract class AbstractImmutableUnorderedPair<E> extends
 	public final E setSecond(E second) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	public Pair<E, E> convertPair() {
+		if (convertPair == null) {
+			convertPair = new AbstractImmutableUnorderedPair<E>() {
+
+				@Override
+				public E getFirst() {
+					// TODO Auto-generated method stub
+					return AbstractImmutableUnorderedPair.this.getSecond();
+				}
+
+				@Override
+				public E getSecond() {
+					// TODO Auto-generated method stub
+					return AbstractImmutableUnorderedPair.this.getFirst();
+				}
+
+			};
+		}
+		return convertPair;
 	}
 
 }
