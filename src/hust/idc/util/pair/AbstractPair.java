@@ -58,16 +58,6 @@ public abstract class AbstractPair<T, S> implements Pair<T, S> {
 		return convertPair;
 	}
 
-	@Override
-	public int hashCode() {
-		// TODO Auto-generated method stub
-		final int prime = 31;
-		int result = 1;
-		result += ((getFirst() == null) ? 0 : getFirst().hashCode());
-		result += ((getSecond() == null) ? 0 : getSecond().hashCode());
-		return result * prime;
-	}
-
 	protected static boolean eq(Object obj1, Object obj2) {
 		return obj1 == null ? (obj2 == null) : obj1.equals(obj2);
 	}
@@ -77,24 +67,6 @@ public abstract class AbstractPair<T, S> implements Pair<T, S> {
 		// TODO Auto-generated method stub
 		return anotherPair != null && eq(getFirst(), anotherPair.getFirst())
 				&& eq(getSecond(), anotherPair.getSecond());
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		// TODO Auto-generated method stub
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof Pair<?, ?>)) {
-			return false;
-		}
-
-		Pair<?, ?> other = (Pair<?, ?>) obj;
-		return eq(getFirst(), other.getFirst())
-				&& eq(getSecond(), other.getSecond());
 	}
 
 	@Override

@@ -3,21 +3,20 @@ package hust.idc.util.pair;
 import java.io.Serializable;
 
 /**
- * Pair�࣬������equals��hashCode��������������Ϊӳ���Key��
- * Ӧȷ������A��B��������ӳ���Key����������equals��hashCode����
- * Pair֧��������ķ�ʽclone��ǰ��������A��B���ǿ����л��ģ�����ֻ��ǳ����
+ * ObjectPair类，重载了equals和hashCode方法，可用于作为映射的Key；
+ * 应确保类型A和B都可用做映射的Key，即重载了equals和hashCode方法
  * @author WangCong
  *
- * @param <T> ��һ�����������
- * @param <S> �ڶ������������
+ * @param <T> 第一个参数的类型
+ * @param <S> 第二个参数的类型
  */
-public class ObjectPair<T, S> extends AbstractPair<T, S> implements Pair<T, S>, Serializable, Cloneable {
+public class ObjectPair<T, S> extends AbstractPair<T, S> implements Pair<T, S>, Serializable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -6086892824234304856L;
-	private T first;
-	private S second;
+	T first;
+	S second;
 	
 	public ObjectPair(){
 		this(null, null);
@@ -53,6 +52,34 @@ public class ObjectPair<T, S> extends AbstractPair<T, S> implements Pair<T, S>, 
 		S old = this.second;
 		this.second = second;
 		return old;
+	}
+
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		final int prime = 31;
+		int result = 1;
+		result = result * prime + ((getFirst() == null) ? 0 : getFirst().hashCode());
+		result = result * prime + ((getSecond() == null) ? 0 : getSecond().hashCode());
+		return result * prime;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		// TODO Auto-generated method stub
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof ObjectPair<?, ?>)) {
+			return false;
+		}
+
+		ObjectPair<?, ?> other = (ObjectPair<?, ?>) obj;
+		return eq(getFirst(), other.getFirst())
+				&& eq(getSecond(), other.getSecond());
 	}
 
 }

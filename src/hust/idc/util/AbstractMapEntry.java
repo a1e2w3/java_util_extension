@@ -46,7 +46,7 @@ public abstract class AbstractMapEntry<K, V> implements Map.Entry<K, V> {
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return getKey() + "=" + getValue();
+		return (getKey() == this ? "this pair" : getKey()) + "=" + (getValue() == this ? "this pair" : getValue());
 	}
 
 }

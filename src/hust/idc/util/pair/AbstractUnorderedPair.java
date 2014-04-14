@@ -22,6 +22,18 @@ public abstract class AbstractUnorderedPair<E> extends AbstractPair<E, E>
 	}
 
 	/* (non-Javadoc)
+	 * @see css.util.Pair#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		final int prime = 31;
+		int result = (this.getFirst() == null) ? 0 : this.getFirst().hashCode();
+		result += (this.getSecond() == null) ? 0 : this.getSecond().hashCode();
+		return result * prime;
+	}
+
+	/* (non-Javadoc)
 	 * @see css.util.Pair#equals(java.lang.Object)
 	 */
 	@Override
@@ -33,27 +45,12 @@ public abstract class AbstractUnorderedPair<E> extends AbstractPair<E, E>
 		if (obj == null) {
 			return false;
 		}
-		if (!(obj instanceof Pair<?, ?>)) {
+		if (!(obj instanceof UnorderedPair<?>)) {
 			return false;
-		}
-		if(!(obj instanceof UnorderedPair<?>)){
-			return ((Pair<?, ?>) obj).equals(this);
 		}
 		UnorderedPair<?> other = (UnorderedPair<?>) obj;
 		return (eq(getFirst(), other.getFirst()) && eq(getSecond(), other.getSecond())) 
 				|| (eq(getFirst(), other.getSecond()) && eq(getSecond(), other.getFirst()));
-	}
-
-	/* (non-Javadoc)
-	 * @see css.util.Pair#hashCode()
-	 */
-	@Override
-	public int hashCode() {
-		// TODO Auto-generated method stub
-		final int prime = 31;
-		int result = (this.getFirst() == null) ? 0 : this.getFirst().hashCode();
-		result += (this.getSecond() == null) ? 0 : this.getSecond().hashCode();
-		return result * prime;
 	}
 
 }
