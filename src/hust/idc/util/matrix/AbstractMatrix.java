@@ -220,7 +220,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	 * stateless, so there's no reason to create more than one of each.
 	 */
 	protected transient volatile Collection<V> values = null;
-	protected transient volatile Set<? extends Pair<RK, CK>> keyPairSet = null;
+	protected transient volatile Set<Pair<RK, CK>> keyPairSet = null;
 
 	@Override
 	public Collection<V> values() {
@@ -274,7 +274,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	}
 
 	@Override
-	public Set<? extends Pair<RK, CK>> keyPairSet() {
+	public Set<Pair<RK, CK>> keyPairSet() {
 		// TODO Auto-generated method stub
 		if (keyPairSet == null) {
 			keyPairSet = new AbstractSet<Pair<RK, CK>>() {
