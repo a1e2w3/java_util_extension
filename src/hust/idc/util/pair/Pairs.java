@@ -1,6 +1,7 @@
 package hust.idc.util.pair;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Pairs {
 	private Pairs() {
@@ -24,9 +25,7 @@ public class Pairs {
 		final Pair<T, S> pair;
 
 		ImmutablePair(Pair<T, S> pair) {
-			if (pair == null)
-				throw new NullPointerException();
-			this.pair = pair;
+			this.pair = Objects.requireNonNull(pair);
 		}
 
 		@Override
@@ -59,9 +58,7 @@ public class Pairs {
 		final Pair<E, E> pair;
 
 		UnorderedPair(Pair<E, E> pair) {
-			if (pair == null)
-				throw new NullPointerException();
-			this.pair = pair;
+			this.pair = Objects.requireNonNull(pair);
 		}
 
 		@Override
@@ -93,9 +90,7 @@ public class Pairs {
 		final Pair<E, E> pair;
 		
 		ImmutableUnorderedPair(Pair<E, E> pair){
-			if (pair == null)
-				throw new NullPointerException();
-			this.pair = pair;
+			this.pair = Objects.requireNonNull(pair);
 		}
 
 		@Override
