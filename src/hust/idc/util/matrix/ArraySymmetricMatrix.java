@@ -125,9 +125,9 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public boolean containsRow(Object row) {
+	public boolean containsRowOrColumn(Object key) {
 		// TODO Auto-generated method stub
-		return null != getHead(row);
+		return null != getHead(key);
 	}
 
 	@Override
@@ -285,9 +285,9 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public void removeRow(K row) {
+	public void removeKey(K key) {
 		// TODO Auto-generated method stub
-		Head rowHead = getHead(row);
+		Head rowHead = getHead(key);
 		if (null == rowHead)
 			return;
 		for (int i = 0; i < this.dimension(); ++i) {
@@ -361,22 +361,22 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public Map<K, V> rowMap(K row) {
+	public Map<K, V> keyMap(K key) {
 		// TODO Auto-generated method stub
-		Head head = this.getHead(row);
+		Head head = this.getHead(key);
 		if (null == head)
-			return new RowMapView(row, head);
+			return new KeyMapView(key, head);
 		if (null == head.rowMapView) {
-			head.rowMapView = new RowMapView(row, head);
+			head.rowMapView = new KeyMapView(key, head);
 		}
 		return head.rowMapView;
 	}
 
-	private final class RowMapView extends AbstractMap<K, V> {
+	private final class KeyMapView extends AbstractMap<K, V> {
 		private transient volatile Head head;
 		private final transient K key;
 
-		private RowMapView(K key, Head head) {
+		private KeyMapView(K key, Head head) {
 			this.key = key;
 			this.head = head;
 		}
@@ -524,9 +524,9 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	protected int rowValueCount(Object row) {
+	protected int valueCount(Object key) {
 		// TODO Auto-generated method stub
-		Head head = getHead(row);
+		Head head = getHead(key);
 		return head == null ? 0 : head.size;
 	}
 
@@ -542,7 +542,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	protected transient volatile Set<K> keySet = null;
 
 	@Override
-	public Set<K> rowKeySet() {
+	public Set<K> keySet() {
 		// TODO Auto-generated method stub
 		if (keySet == null) {
 			keySet = new AbstractSet<K>() {

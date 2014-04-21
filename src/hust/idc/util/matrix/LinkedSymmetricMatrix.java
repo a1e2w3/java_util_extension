@@ -73,7 +73,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public boolean containsRow(Object row) {
+	public boolean containsRowOrColumn(Object row) {
 		// TODO Auto-generated method stub
 		return getHead(row) != null;
 	}
@@ -316,12 +316,12 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public void removeRow(K row) {
+	public void removeKey(K key) {
 		// TODO Auto-generated method stub
-		this.removeRow(getHead(row));
+		this.removeKey(getHead(key));
 	}
 
-	private void removeRow(HeadNode head) {
+	private void removeKey(HeadNode head) {
 		if (head == null)
 			return;
 		EntryNode node = head.rowEntry, next = null;
@@ -382,30 +382,30 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	protected int rowValueCount(Object row) {
+	protected int valueCount(Object key) {
 		// TODO Auto-generated method stub
-		HeadNode head = getHead(row);
+		HeadNode head = getHead(key);
 		return head == null ? 0 : head.size;
 	}
 
 	@Override
-	public Map<K, V> rowMap(final K row) {
+	public Map<K, V> keyMap(final K key) {
 		// TODO Auto-generated method stub
-		HeadNode head = this.getHead(row);
+		HeadNode head = this.getHead(key);
 		if (null == head)
-			return new RowMap(row, head);
+			return new KeyMapView(key, head);
 
 		if (null == head.rowMapView) {
-			head.rowMapView = new RowMap(row, head);
+			head.rowMapView = new KeyMapView(key, head);
 		}
 		return head.rowMapView;
 	}
 
-	private class RowMap extends AbstractMap<K, V> {
+	private class KeyMapView extends AbstractMap<K, V> {
 		private final transient K row;
 		private transient volatile HeadNode head;
 
-		private RowMap(K key, HeadNode head) {
+		private KeyMapView(K key, HeadNode head) {
 			this.row = key;
 			this.head = head;
 		}
@@ -541,7 +541,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	protected transient volatile Set<Entry<K, K, V>> entrySet = null;
 
 	@Override
-	public Set<K> rowKeySet() {
+	public Set<K> keySet() {
 		// TODO Auto-generated method stub
 		if (keySet == null) {
 			keySet = new AbstractSet<K>() {
@@ -599,7 +599,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 								throw new IllegalStateException();
 
 							HeadNode prev = curHead.prev;
-							LinkedSymmetricMatrix.this.removeRow(curHead);
+							LinkedSymmetricMatrix.this.removeKey(curHead);
 							curHead = prev;
 							currentRemoved = true;
 							expectedModCount = LinkedSymmetricMatrix.this.modCount;

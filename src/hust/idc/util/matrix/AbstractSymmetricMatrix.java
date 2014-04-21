@@ -1,10 +1,14 @@
 package hust.idc.util.matrix;
 
-import java.util.Map;
-import java.util.Set;
-
 import hust.idc.util.pair.AbstractImmutableUnorderedPair;
 import hust.idc.util.pair.Pair;
+
+import java.util.AbstractMap;
+import java.util.AbstractSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
 public abstract class AbstractSymmetricMatrix<K, V> extends
 		AbstractMatrix<K, K, V> implements SymmetricMatrix<K, V>, Matrix<K, K, V> {
@@ -17,44 +21,223 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 	public abstract int dimension();
 
 	@Override
-	public int rows() {
+	public final int rows() {
 		// TODO Auto-generated method stub
 		return dimension();
 	}
 
 	@Override
-	public int columns(){
+	public final int columns(){
 		return dimension();
 	}
-
+	
 	@Override
-	public boolean containsColumn(Object column) {
+	public boolean containsRowOrColumn(Object key) {
 		// TODO Auto-generated method stub
-		return containsRow(column);
+		Iterator<Entry<K, K, V>> entryIt = entrySet().iterator();
+		if (key == null) {
+			while (entryIt.hasNext()) {
+				Entry<K, K, V> entry = entryIt.next();
+				if (null == entry.getRowKey() || null == entry.getColumnKey())
+					return true;
+			}
+		} else {
+			while (entryIt.hasNext()) {
+				Entry<K, K, V> entry = entryIt.next();
+				if (key.equals(entry.getRowKey()) || key.equals(entry.getColumnKey()))
+					return true;
+			}
+		}
+		return false;
+	}
+	
+	@Override
+	public final boolean containsRow(Object row) {
+		// TODO Auto-generated method stub
+		return containsRowOrColumn(row);
 	}
 
 	@Override
-	public void removeColumn(K column) {
+	public final boolean containsColumn(Object column) {
 		// TODO Auto-generated method stub
-		removeRow(column);
+		return containsRowOrColumn(column);
+	}
+	
+	@Override
+	public void removeKey(K key){
+		keyMap(key).clear();
+	}
+	
+	@Override
+	public final void removeRow(K row) {
+		// TODO Auto-generated method stub
+		removeKey(row);
 	}
 
 	@Override
-	public Map<K, V> columnMap(K column) {
+	public final void removeColumn(K column) {
 		// TODO Auto-generated method stub
-		return rowMap(column);
+		removeKey(column);
+	}
+	
+	protected int valueCount(Object key){
+		int count = 0;
+		Iterator<Entry<K, K, V>> entryIt = entrySet().iterator();
+		if (null == key) {
+			while (entryIt.hasNext()) {
+				Entry<K, K, V> entry = entryIt.next();
+				if (null == entry.getRowKey() || null == entry.getColumnKey()) {
+					++count;
+				}
+			}
+		} else {
+			while (entryIt.hasNext()) {
+				Entry<K, K, V> entry = entryIt.next();
+				if (key.equals(entry.getRowKey()) || key.equals(entry.getColumnKey())) {
+					++count;
+				}
+			}
+		}
+		return count;
 	}
 
 	@Override
-	protected int columnValueCount(Object column) {
+	public Map<K, V> keyMap(final K key){
+		return new AbstractMap<K, V>() {
+
+			@Override
+			public V put(K innerKey, V value) {
+				// TODO Auto-generated method stub
+				return AbstractSymmetricMatrix.this.put(key, innerKey, value);
+			}
+
+			@Override
+			public Set<Map.Entry<K, V>> entrySet() {
+				// TODO Auto-generated method stub
+				return new AbstractSet<Map.Entry<K, V>>() {
+
+					@Override
+					public Iterator<Map.Entry<K, V>> iterator() {
+						// TODO Auto-generated method stub
+						return new Iterator<Map.Entry<K, V>>() {
+							Iterator<Matrix.Entry<K, K, V>> iterator = AbstractSymmetricMatrix.this
+									.entrySet().iterator();
+							Matrix.Entry<K, K, V> next = null;
+							boolean keyInRow = false;
+
+							private void getNext() {
+								next = null;
+								if (null == key) {
+									while (iterator.hasNext()) {
+										Matrix.Entry<K, K, V> entry = iterator
+												.next();
+										if (null == entry.getRowKey()) {
+											next = entry;
+											keyInRow = true;
+											break;
+										} else if(null == entry.getColumnKey()){
+											next = entry;
+											keyInRow = false;
+											break;
+										}
+									}
+								} else {
+									while (iterator.hasNext()) {
+										Matrix.Entry<K, K, V> entry = iterator
+												.next();
+										if (key.equals(entry.getRowKey())) {
+											next = entry;
+											keyInRow = true;
+											break;
+										} else if (key.equals(entry.getColumnKey())) {
+											next = entry;
+											keyInRow = false;
+											break;
+										}
+									}
+								}
+							}
+
+							@Override
+							public boolean hasNext() {
+								// TODO Auto-generated method stub
+								if (next == null && iterator.hasNext())
+									this.getNext();
+								return next != null;
+							}
+
+							@Override
+							public java.util.Map.Entry<K, V> next() {
+								// TODO Auto-generated method stub
+								if (next == null && iterator.hasNext())
+									this.getNext();
+								if (next == null)
+									throw new NoSuchElementException();
+								Map.Entry<K, V> entry = keyInRow ? next.rowMapEntry() : next.columnMapEntry();
+								next = null;
+								return entry;
+							}
+
+							@Override
+							public void remove() {
+								// TODO Auto-generated method stub
+								iterator.remove();
+							}
+
+						};
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return AbstractSymmetricMatrix.this.valueCount(key);
+					}
+
+				};
+			}
+
+		};
+	}
+	
+	@Override
+	public final Map<K, V> rowMap(K row) {
 		// TODO Auto-generated method stub
-		return rowValueCount(column);
+		return keyMap(row);
 	}
 
 	@Override
-	public Set<K> columnKeySet() {
+	protected final int rowValueCount(Object row) {
 		// TODO Auto-generated method stub
-		return rowKeySet();
+		return valueCount(row);
+	}
+	
+	@Override
+	public final Map<K, V> columnMap(K column) {
+		// TODO Auto-generated method stub
+		return keyMap(column);
+	}
+
+	@Override
+	protected final int columnValueCount(Object column) {
+		// TODO Auto-generated method stub
+		return valueCount(column);
+	}
+	
+	@Override 
+	public Set<K> keySet() {
+		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	public final Set<K> rowKeySet() {
+		// TODO Auto-generated method stub
+		return keySet();
+	}
+
+	@Override
+	public final Set<K> columnKeySet() {
+		// TODO Auto-generated method stub
+		return keySet();
 	}
 
 	@Override
