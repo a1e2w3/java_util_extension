@@ -15,23 +15,23 @@ change the heap structure and it is hard to keep the iterate order.
 A HashMap collaborate with a heap can implement a map sorted by values. The HashMap provide the random access and the 
 Heap maintain the order of keys. The following code gives an example.
 
-public class MapSortedByValues<K, V> extends AbstractMap<K, V> implements Queue {
-	Map<K, V> map;
-	Heap<K> heap;
-	final Comparator<K> keyComp = new Comparator<K> {
-		public int compare(K o1, K o2){
-			return valueComp.compare(map.get(o1), map.get(o2));
+	public class MapSortedByValues<K, V> extends AbstractMap<K, V> implements Queue<K> {
+		Map<K, V> map;
+		Heap<K> heap;
+		final Comparator<K> keyComp = new Comparator<K> {
+			public int compare(K o1, K o2){
+				return valueComp.compare(map.get(o1), map.get(o2));
+			}
 		}
-	}
-	final Comparator<V> valueComp;
+		final Comparator<V> valueComp;
 	
-	public MapSortedByValues(Comparator<V> comparator){
-		this.valueComp = comparator;
-		heap = new BinomialHeap<K>(this.keyComp);
-		map = new HashMap<K, V>();
-	}
+		public MapSortedByValues(Comparator<V> comparator){
+			this.valueComp = comparator;
+			heap = new BinomialHeap<K>(this.keyComp);
+			map = new HashMap<K, V>();
+		}
 	
-}
+	}
 
 
 Package matrix provide a new kind of map that associate two different key types to a single value, one key is called 
