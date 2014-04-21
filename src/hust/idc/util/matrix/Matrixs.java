@@ -15,9 +15,9 @@ import java.util.Set;
 public class Matrixs {
 
 	@SuppressWarnings("rawtypes")
-	public static final Matrix EMPTY_MATRIX = new EmptyMatrix<>();
+	public static final Matrix EMPTY_MATRIX = new EmptyMatrix();
 	@SuppressWarnings("rawtypes")
-	public static final SymmetricMatrix EMPTY_SYMMETRIC_MATRIX = new EmptySymmetricMatrix<>();
+	public static final SymmetricMatrix EMPTY_SYMMETRIC_MATRIX = new EmptySymmetricMatrix();
 
 	private Matrixs() {
 		// cannot be instantiate
@@ -248,7 +248,7 @@ public class Matrixs {
 		public Set<K> keySet() {
 			synchronized (mutex) {
 				if (keySet == null)
-					keySet = new SynchronizedSet<>(m.keySet(), mutex);
+					keySet = new SynchronizedSet<K>(m.keySet(), mutex);
 				return keySet;
 			}
 		}
@@ -256,7 +256,7 @@ public class Matrixs {
 		public Set<Map.Entry<K, V>> entrySet() {
 			synchronized (mutex) {
 				if (entrySet == null)
-					entrySet = new SynchronizedSet<>(m.entrySet(), mutex);
+					entrySet = new SynchronizedSet<Map.Entry<K, V>>(m.entrySet(), mutex);
 				return entrySet;
 			}
 		}
@@ -264,7 +264,7 @@ public class Matrixs {
 		public Collection<V> values() {
 			synchronized (mutex) {
 				if (values == null)
-					values = new SynchronizedCollection<>(m.values(), mutex);
+					values = new SynchronizedCollection<V>(m.values(), mutex);
 				return values;
 			}
 		}
@@ -485,7 +485,7 @@ public class Matrixs {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
 				if (rowKeySet == null)
-					rowKeySet = new SynchronizedSet<>(m.rowKeySet(), mutex);
+					rowKeySet = new SynchronizedSet<RK>(m.rowKeySet(), mutex);
 				return rowKeySet;
 			}
 		}
@@ -495,7 +495,7 @@ public class Matrixs {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
 				if (columnKeySet == null)
-					columnKeySet = new SynchronizedSet<>(m.columnKeySet(),
+					columnKeySet = new SynchronizedSet<CK>(m.columnKeySet(),
 							mutex);
 				return columnKeySet;
 			}
@@ -506,7 +506,7 @@ public class Matrixs {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
 				if (values == null)
-					values = new SynchronizedCollection<>(m.values(), mutex);
+					values = new SynchronizedCollection<V>(m.values(), mutex);
 				return values;
 			}
 		}
@@ -532,7 +532,7 @@ public class Matrixs {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
 				if (entrySet == null)
-					entrySet = new SynchronizedSet<>(m.entrySet(), mutex);
+					entrySet = new SynchronizedSet<Matrix.Entry<RK, CK, V>>(m.entrySet(), mutex);
 				return entrySet;
 			}
 		}
@@ -542,7 +542,7 @@ public class Matrixs {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
 				if (keyPairSet == null)
-					keyPairSet = new SynchronizedSet<>(m.keyPairSet(), mutex);
+					keyPairSet = new SynchronizedSet<Pair<RK, CK>>(m.keyPairSet(), mutex);
 				return keyPairSet;
 			}
 		}
@@ -638,7 +638,7 @@ public class Matrixs {
 		public Set<K> keySet() {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
-				return new SynchronizedSet<>(sm.keySet(), mutex);
+				return new SynchronizedSet<K>(sm.keySet(), mutex);
 			}
 		}
 
