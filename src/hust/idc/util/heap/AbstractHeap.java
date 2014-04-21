@@ -403,7 +403,7 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements Heap<E
 	 * @see EmptyIterator
 	 */
 	protected Iterator<E> emptyIterator(){
-		return new EmptyIterator<E>();
+		return EmptyIterator.<E>getInstance();
 	}
 	
 	/**

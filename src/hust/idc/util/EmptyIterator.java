@@ -10,8 +10,16 @@ import java.util.NoSuchElementException;
  * @param <E>
  */
 public class EmptyIterator<E> implements Iterator<E> {
-	public EmptyIterator(){
+	@SuppressWarnings({ "rawtypes" })
+	private static final EmptyIterator EMPTY_ITERATOR = new EmptyIterator();
+	
+	private EmptyIterator(){
 		super();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static final <E> EmptyIterator<E> getInstance(){
+		return (EmptyIterator<E>) EMPTY_ITERATOR;
 	}
 	
 	@Override

@@ -590,7 +590,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					public Iterator<Map.Entry<K, V>> iterator() {
 						// TODO Auto-generated method stub
 						if (head == null)
-							return new EmptyIterator<Map.Entry<K, V>>();
+							return EmptyIterator.<Map.Entry<K, V>>getInstance();
 						else
 							return new EntryIterator();
 					}

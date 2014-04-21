@@ -763,7 +763,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		public FibonacciHeapIterator() {
 			// TODO Auto-generated constructor stub
 			if(FibonacciHeap.this.nodes == null){
-				this.nodeIt = new EmptyIterator<FibonacciHeapNode>();
+				this.nodeIt = EmptyIterator.<FibonacciHeapNode>getInstance();
 			} else{
 				this.nodeIt = FibonacciHeap.this.nodes.iterator();
 			}

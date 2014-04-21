@@ -1139,7 +1139,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 					public Iterator<Map.Entry<CK, V>> iterator() {
 						// TODO Auto-generated method stub
 						if (head == null)
-							return new EmptyIterator<Map.Entry<CK, V>>();
+							return EmptyIterator.<Map.Entry<CK, V>>getInstance();
 						else
 							return new EntryIterator();
 					}
@@ -1257,7 +1257,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 					public Iterator<Map.Entry<RK, V>> iterator() {
 						// TODO Auto-generated method stub
 						if (null == head)
-							return new EmptyIterator<Map.Entry<RK, V>>();
+							return EmptyIterator.<Map.Entry<RK, V>>getInstance();
 						else
 							return new EntryIterator();
 					}
