@@ -1,10 +1,11 @@
-package java.util;
-
-import hust.idc.util.heap.Heap;
+package hust.idc.util.heap;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Comparator;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 public class Heaps {
 	private Heaps() {
