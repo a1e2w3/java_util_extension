@@ -7,12 +7,12 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
 
-class Queues {
+public final class Queues {
 	private Queues() {
 
 	}
 
-	static <E> Queue<E> synchronizedQueue(Queue<E> q) {
+	public static <E> Queue<E> synchronizedQueue(Queue<E> q) {
 		return new SynchronizedQueue<E>(q);
 	}
 
