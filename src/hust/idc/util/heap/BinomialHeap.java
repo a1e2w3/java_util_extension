@@ -67,8 +67,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	public boolean offer(E e) {
 		// TODO Auto-generated method stub
 		if (this.isEmpty()) {
-			BinomialHeapNode node = new BinomialHeapNode(e);
-			this.head = node;
+			this.head = new BinomialHeapNode(e);
 			++modCount;
 			++size;
 			return true;
