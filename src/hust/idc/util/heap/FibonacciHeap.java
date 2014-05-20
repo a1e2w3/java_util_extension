@@ -3,20 +3,31 @@ package hust.idc.util.heap;
 import hust.idc.util.EmptyIterator;
 import hust.idc.util.Mergeable;
 
+import java.io.Serializable;
+import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
-public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergeable<FibonacciHeap<? extends E>> {
-	transient FibonacciHeapNode entry;
+public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
+		Mergeable<FibonacciHeap<E>>, Cloneable, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1775006086768839688L;
+	transient FibonacciHeapEntry minRoot;
 	/**
 	 * used to iterate
 	 */
-	transient Set<FibonacciHeapNode> nodes;
-	
+	transient Set<FibonacciHeapEntry> nodes;
+
+	transient volatile int modCount = 0;
+
 	static final double Ln_Phi = Math.log((Math.sqrt(5.0d) + 1) / 2);
 
 	public FibonacciHeap() {
@@ -40,84 +51,41 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		// TODO Auto-generated constructor stub
 	}
 
-	public FibonacciHeap(E element, Comparator<? super E> comparator) {
-		super(element, comparator);
-		// TODO Auto-generated constructor stub
-	}
-
-	public FibonacciHeap(E element) {
-		super(element);
-		// TODO Auto-generated constructor stub
-	}
-
 	public FibonacciHeap(Heap<E> heap) {
 		super(heap);
 		// TODO Auto-generated constructor stub
 	}
 
-	@Override
-	public boolean rebuild() {
-		// TODO Auto-generated method stub
-		FibonacciHeap<E> newHeap = new FibonacciHeap<E>(this.getComparator());
-		Iterator<E> iterator = this.iterator();
-		while(iterator.hasNext()){
-			newHeap.offer(iterator.next());
-		}
-		newHeap.consolidate(null);
-		this.clear();
-		this.entry = newHeap.entry();
-		this.nodes = newHeap.nodes;
-		++modCount;
-		return true;
-	}
-
-	@Override
-	protected FibonacciHeap<E> copy() {
-		// TODO Auto-generated method stub
-		FibonacciHeap<E> newHeap = new FibonacciHeap<E>(this.getComparator());
-		if(this.entry == null){
-			return newHeap;
-		}
-		newHeap.entry = copyHeap(this.entry(), newHeap.new FibonacciHeapNode(null));
-//		newHeap.entry = copySubHeap(this.entry(), newHeap.new FibonacciHeapNode(null));
-//		FibonacciHeapNode current = this.entry().rightSibling();
-//		while(current != this.entry()){
-//			FibonacciHeapNode newRoot = copySubHeap(current, newHeap.new FibonacciHeapNode(null));
-//			newHeap.insertSubHeap(null, newRoot);
-//			current = current.rightSibling();
-//		}
-		newHeap.nodes = newHeap.getNodeSet(newHeap.entry(), null);
-//		System.out.println("new heap size : " + newHeap.size());
-		return newHeap;
-	}
-	
-	private Set<FibonacciHeapNode> getNodeSet(FibonacciHeapNode root, Set<FibonacciHeapNode> nodeSet){
-		if(root == null)
+	private Set<FibonacciHeapEntry> getNodeSet(FibonacciHeapEntry root,
+			Set<FibonacciHeapEntry> nodeSet) {
+		if (root == null)
 			return null;
-		if(nodeSet == null)
-			nodeSet = new HashSet<FibonacciHeapNode>();
-		FibonacciHeapNode current = root, next = null;
+		if (nodeSet == null)
+			nodeSet = new HashSet<FibonacciHeapEntry>();
+		FibonacciHeapEntry current = root, next = null;
 		nodeSet.add(current);
-		while(current != null){
+		while (current != null) {
 			next = current.child();
-			if(next != null){
+			if (next != null) {
 				current = next;
 				nodeSet.add(current);
 				continue;
-			} 
+			}
 			next = current.rightSibling();
-			FibonacciHeapNode entry = current.parent() == null ? this.entry() : current.parent().child();
-			if(next != entry){
+			FibonacciHeapEntry entry = current.parent() == null ? this.minRoot
+					: current.parent().child();
+			if (next != entry) {
 				current = next;
 				nodeSet.add(current);
 				continue;
 			} else {
-				FibonacciHeapNode ancestor = current.parent();
+				FibonacciHeapEntry ancestor = current.parent();
 				boolean found = false;
-				while(ancestor != null){
+				while (ancestor != null) {
 					next = ancestor.rightSibling();
-					entry = ancestor.parent() == null ? this.entry() : ancestor.parent().child();
-					if(next != entry){
+					entry = ancestor.parent() == null ? this.minRoot : ancestor
+							.parent().child();
+					if (next != entry) {
 						current = next;
 						nodeSet.add(current);
 						found = true;
@@ -125,25 +93,25 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 					}
 					ancestor = ancestor.parent();
 				}
-				if(found){
+				if (found) {
 					continue;
 				}
 				current = null;
 			}
 		}
-		
+
 		return nodeSet;
 	}
 
 	@Override
 	public boolean offer(E e) {
 		// TODO Auto-generated method stub
-		if(e == null)
+		if (e == null)
 			return false;
-		FibonacciHeapNode newNode = new FibonacciHeapNode(e);
-		this.entry = this.insertSubHeap(null, newNode);
-		if(this.nodes == null){
-			this.nodes = new HashSet<FibonacciHeapNode>();
+		FibonacciHeapEntry newNode = new FibonacciHeapEntry(e);
+		this.minRoot = this.insertSubHeap(null, newNode);
+		if (this.nodes == null) {
+			this.nodes = new HashSet<FibonacciHeapEntry>();
 		}
 		this.nodes.add(newNode);
 		++modCount;
@@ -154,212 +122,307 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 	public E poll() {
 		return this.poll(true);
 	}
-	
+
 	@Override
 	public boolean remove(Object o) {
 		// TODO Auto-generated method stub
-		try{
+		try {
 			@SuppressWarnings("unchecked")
-			FibonacciHeapNode node = (FibonacciHeapNode) this.indexOf((E) o);
-			if(this.nodes != null)
+			FibonacciHeapEntry node = (FibonacciHeapEntry) this.getEntry((E) o);
+			if (this.nodes != null)
 				this.nodes.remove(node);
-			return this.removeNode(node);
-		} catch(Exception e){
+			return this.removeEntry(node);
+		} catch (Exception e) {
 			return false;
 		}
 	}
-	
-	private E poll(boolean consolidate){
+
+	private E poll(boolean consolidate) {
 		// TODO Auto-generated method stub
-		if(this.isEmpty())
+		if (this.isEmpty())
 			return null;
-		FibonacciHeapNode poll = this.entry();
-		if(this.entry().leftSibling() == this.entry())
-			this.entry = null;
+		FibonacciHeapEntry poll = this.minRoot;
+		if (this.minRoot.leftSibling() == this.minRoot)
+			this.minRoot = null;
 		else
-			this.entry = this.entry().leftSibling();
-		
-		//remove peek node
+			this.minRoot = this.minRoot.leftSibling();
+
+		// remove peek node
 		this.cutSubHeap(poll);
 		this.nodes.remove(poll);
-		
-		if(poll.child() != null){
-			FibonacciHeapNode child = poll.child();
+
+		if (poll.child() != null) {
+			FibonacciHeapEntry child = poll.child();
 			child.parent = null;
-			FibonacciHeapNode current = child.rightSibling();
-			while(current != child){
+			FibonacciHeapEntry current = child.rightSibling();
+			while (current != child) {
 				current.parent = null;
 				current = current.rightSibling();
 			}
-			
-			if(this.entry() == null)
-				this.entry = child;
-			else{
+
+			if (this.minRoot == null)
+				this.minRoot = child;
+			else {
 				current = child.leftSibling();
-				child.left = this.entry();
-				current.right = this.entry().rightSibling();
-				this.entry.right.left = current;
-				this.entry.right = child;
+				child.left = this.minRoot;
+				current.right = this.minRoot.rightSibling();
+				this.minRoot.right.left = current;
+				this.minRoot.right = child;
 			}
 		}
-		
+
 		// merge root list
-		if(consolidate){
-			this.entry = this.consolidate(null);
+		if (consolidate) {
+			this.minRoot = this.consolidate(null);
 		} else {
 			++modCount;
 		}
-		
-		this.entry = this.peekNode();
+
+		this.minRoot = this.peekNode();
 		return poll.element();
 	}
-	
-	public void consolidate(){
-		this.consolidate(null);
-		this.entry = this.peekNode();
+
+	protected transient volatile Collection<HeapEntry<E>> entrys = null;
+	protected transient volatile Collection<HeapEntry<E>> roots = null;
+
+	@Override
+	public Collection<HeapEntry<E>> entrys() {
+		// TODO Auto-generated method stub
+		if (entrys == null) {
+			entrys = new AbstractCollection<HeapEntry<E>>() {
+
+				@Override
+				public Iterator<hust.idc.util.heap.Heap.HeapEntry<E>> iterator() {
+					// TODO Auto-generated method stub
+					return new FibonacciHeapIterator();
+				}
+
+				@Override
+				public int size() {
+					// TODO Auto-generated method stub
+					return FibonacciHeap.this.nodes == null ? 0
+							: FibonacciHeap.this.nodes.size();
+				}
+
+			};
+		}
+		return entrys;
 	}
 
-	private FibonacciHeapNode consolidate(FibonacciHeapNode parent){
-		FibonacciHeapNode entry = parent == null ? this.entry() : parent.child();
-		if(entry == null)
-			return entry;
-		if(entry.rightSibling() == entry)
-			return entry;
-		
-		int size = this.size();
-//		System.out.println("size : " + size);
-		int maxDegree = size == 0 ? 1 : (int) (Math.log(size) / Ln_Phi) + 2;
-	    FibonacciHeapNode y = null;
-	    ArrayList<FibonacciHeapNode> array = new ArrayList<FibonacciHeapNode>(maxDegree);
-	    ArrayList<FibonacciHeapNode> rootList = new ArrayList<FibonacciHeapNode>();
-	    for(int i = 0; i < maxDegree; ++i)
-	    	array.add(null);
-	    FibonacciHeapNode current = entry.rightSibling();
-	    rootList.add(entry);
-	    while(current != entry){
-	    	rootList.add(current);
-	    	current = current.rightSibling();
-	    }
+	@Override
+	public Collection<HeapEntry<E>> roots() {
+		// TODO Auto-generated method stub
+		if (roots == null) {
+			roots = new AbstractCollection<HeapEntry<E>>() {
 
-	    //�ϲ���ͬ�ȵĸ�ڵ㣬ʹÿ������Ķ�����Ψһ
-	    for(int i = 0; i < rootList.size(); ++i){
-	    	current = rootList.get(i);
-	    	if(current.parent() != parent)
-	    		continue;
-	    	while(array.get(current.degree()) != null){
-	    		y = array.get(current.degree());
-	    		if(this.compare(y, current) > 0){
-	    			//swap current and y
-	    			FibonacciHeapNode temp = current;
-	    			current = y;
-	    			y = temp;
-	    		}
-	    		if(y == entry)
-	    			entry = current;
-	    		this.fibonacciLink(current, y);
-	    		array.set(current.degree() - 1, null);
-	    	}
-	    	array.set(current.degree(), current);
-	    }
+				@Override
+				public Iterator<HeapEntry<E>> iterator() {
+					// TODO Auto-generated method stub
+					return new Iterator<HeapEntry<E>>() {
+						private int expectedModCount = FibonacciHeap.this.modCount;
+						private HeapEntry<E> next = FibonacciHeap.this.minRoot;
+
+						private final void checkForComodification() {
+							if (expectedModCount != FibonacciHeap.this.modCount)
+								throw new ConcurrentModificationException();
+						}
+
+						@Override
+						public boolean hasNext() {
+							// TODO Auto-generated method stub
+							return next != null;
+						}
+
+						@Override
+						public HeapEntry<E> next() {
+							// TODO Auto-generated method stub
+							checkForComodification();
+							if (next == null)
+								throw new NoSuchElementException();
+							HeapEntry<E> cur = next;
+							next = cur.rightSibling();
+							if (next == FibonacciHeap.this.minRoot)
+								next = null;
+							return cur;
+						}
+
+						@Override
+						public void remove() {
+							// TODO Auto-generated method stub
+							throw new UnsupportedOperationException();
+						}
+
+					};
+				}
+
+				@Override
+				public int size() {
+					// TODO Auto-generated method stub
+					int count = 0;
+					Iterator<HeapEntry<E>> rootIt = iterator();
+					while (rootIt.hasNext()) {
+						rootIt.next();
+						++count;
+					}
+					return count;
+				}
+
+			};
+		}
+		return roots;
+	}
+
+	public void consolidate() {
+		this.consolidate(null);
+		this.minRoot = this.peekNode();
+	}
+
+	private FibonacciHeapEntry consolidate(FibonacciHeapEntry parent) {
+		FibonacciHeapEntry entry = parent == null ? this.minRoot : parent
+				.child();
+		if (entry == null)
+			return entry;
+		if (entry.rightSibling() == entry)
+			return entry;
+
+		int size = this.size();
+		// System.out.println("size : " + size);
+		int maxDegree = size == 0 ? 1 : (int) (Math.log(size) / Ln_Phi) + 2;
+		FibonacciHeapEntry y = null;
+		// Buckets
+		ArrayList<FibonacciHeapEntry> array = new ArrayList<FibonacciHeapEntry>(
+				maxDegree);
+		// new root list
+		ArrayList<FibonacciHeapEntry> rootList = new ArrayList<FibonacciHeapEntry>();
+		for (int i = 0; i < maxDegree; ++i)
+			array.add(null);
+		FibonacciHeapEntry current = entry.rightSibling();
+		rootList.add(entry);
+		while (current != entry) {
+			rootList.add(current);
+			current = current.rightSibling();
+		}
+
+		for (int i = 0; i < rootList.size(); ++i) {
+			current = rootList.get(i);
+			if (current.parent() != parent)
+				continue;
+			while (array.get(current.degree()) != null) {
+				y = array.get(current.degree());
+				if (this.compare(y, current) > 0) {
+					// swap current and y
+					FibonacciHeapEntry temp = current;
+					current = y;
+					y = temp;
+				}
+				if (y == entry)
+					entry = current;
+				this.fibonacciLink(current, y);
+				array.set(current.degree() - 1, null);
+			}
+			array.set(current.degree(), current);
+		}
 
 		++modCount;
-	    return entry;
+		return entry;
 	}
-	
-	private void cutSubHeap(FibonacciHeapNode root){
-		if(root == null)
-			return ;
-		if(root.leftSibling() == root){
-			if(root.parent() == null){
-				this.entry = null;
-			}
-			else{
+
+	private void cutSubHeap(FibonacciHeapEntry root) {
+		if (root == null)
+			return;
+		if (root.leftSibling() == root) {
+			if (root.parent() == null) {
+				this.minRoot = null;
+			} else {
 				root.parent.child = null;
 				root.parent.degree = 0;
 			}
-			return ;
-		} else if(root.parent() != null){
-			if(root.parent.child == root){
+			return;
+		} else if (root.parent() != null) {
+			if (root.parent.child == root) {
 				root.parent.child = root.leftSibling();
 			}
 			--root.parent.degree;
 		}
-		
+
 		root.left.right = root.rightSibling();
 		root.right.left = root.leftSibling();
-		if(root == this.entry()){
-			this.entry = root.leftSibling();
-			this.entry = this.peekNode();
+		if (root == this.minRoot) {
+			this.minRoot = root.leftSibling();
+			this.minRoot = this.peekNode();
 		}
-		
+
 		root.left = root;
 		root.right = root;
 	}
-	
-	private FibonacciHeapNode insertSubHeap(FibonacciHeapNode parent, FibonacciHeapNode root){
-		FibonacciHeapNode entry = parent == null ? this.entry() : parent.child();
-		if(root == null)
+
+	private FibonacciHeapEntry insertSubHeap(FibonacciHeapEntry parent,
+			FibonacciHeapEntry root) {
+		FibonacciHeapEntry entry = parent == null ? this.minRoot : parent
+				.child();
+		if (root == null)
 			return entry;
-		
+
 		root.parent = parent;
-		if(entry == null){
-			if(parent == null){
-				this.entry = root;
-				return this.entry();
-			}
-			else{
+		if (entry == null) {
+			if (parent == null) {
+				this.minRoot = root;
+				return this.minRoot;
+			} else {
 				parent.child = root;
 				root.left = root.right = root;
 				parent.degree = 1;
 				return parent.child();
 			}
 		}
-		
+
 		root.left = entry;
 		root.right = entry.rightSibling();
 		entry.right.left = root;
 		entry.right = root;
-		
-		if(parent != null){
+
+		if (parent != null) {
 			++parent.degree;
 		} else {
-			if(this.compare(root, this.entry()) > 0){
-				this.entry = root;
-				return this.entry();
+			if (this.compare(root, this.minRoot) > 0) {
+				this.minRoot = root;
+				return this.minRoot;
 			}
 		}
 		return entry;
 	}
-	
-	private void fibonacciLink(FibonacciHeapNode parent, FibonacciHeapNode child){
-		if(parent == null || child == null)
-			return ;
+
+	private void fibonacciLink(FibonacciHeapEntry parent,
+			FibonacciHeapEntry child) {
+		if (parent == null || child == null)
+			return;
 
 		this.cutSubHeap(child);
-		
-//		child.parent = parent;
-//		FibonacciHeapNode entryChild = parent.child();
-//		if(entryChild == null){
-//			parent.child = child;
-//			child.left = child.right = child;
-//			parent.degree = 1;
-//		} else {
-//			child.left = entryChild;
-//			child.right = entryChild.right;
-//			entryChild.right.left = child;
-//			entryChild.right = child;
-//			++parent.degree;
-//		}
+
+		// child.parent = parent;
+		// FibonacciHeapNode entryChild = parent.child();
+		// if(entryChild == null){
+		// parent.child = child;
+		// child.left = child.right = child;
+		// parent.degree = 1;
+		// } else {
+		// child.left = entryChild;
+		// child.right = entryChild.right;
+		// entryChild.right.left = child;
+		// entryChild.right = child;
+		// ++parent.degree;
+		// }
 		this.insertSubHeap(parent, child);
 		child.mark = false;
 	}
-	
-	private FibonacciHeapNode peekNode(){
-		if(this.isEmpty())
+
+	private FibonacciHeapEntry peekNode() {
+		if (this.isEmpty())
 			return null;
-		FibonacciHeapNode peek = this.entry(), current = this.entry().leftSibling();
-		while(current != this.entry()){
-			if(this.compare(peek, current) < 0){
+		FibonacciHeapEntry peek = this.minRoot, current = this.minRoot
+				.leftSibling();
+		while (current != this.minRoot) {
+			if (this.compare(peek, current) < 0) {
 				peek = current;
 			}
 			current = current.leftSibling();
@@ -370,30 +433,32 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 	@Override
 	public E peek() {
 		// TODO Auto-generated method stub
-		return this.entry() == null ? null : this.entry().element();
+		return this.minRoot == null ? null : this.minRoot.element();
 	}
 
 	@Override
 	public boolean increaseElement(E oldElement, E newElement) {
 		// TODO Auto-generated method stub
 		int result = this.compare(oldElement, newElement);
-		if(result > 0){
-			throw new IllegalArgumentException("new element is less than old element");
-		} else if(result == 0){
-			if(oldElement.equals(newElement))
+		if (result > 0) {
+			throw new IllegalArgumentException(
+					"new element is less than old element");
+		} else if (result == 0) {
+			if (oldElement.equals(newElement))
 				return false;
 		}
-		FibonacciHeapNode index = (FibonacciHeapNode) this.replaceNotHeaplify(oldElement, newElement);
-		if(index == null)
+		FibonacciHeapEntry index = (FibonacciHeapEntry) this
+				.replaceNotHeaplify(oldElement, newElement);
+		if (index == null)
 			return false;
-		
-		if(result < 0){
-			FibonacciHeapNode parent = index.parent();
-			if(parent == null)
+
+		if (result < 0) {
+			FibonacciHeapEntry parent = index.parent();
+			if (parent == null)
 				return true;
-			else if(this.compare(parent, index) > 0)
+			else if (this.compare(parent, index) > 0)
 				return true;
-			
+
 			this.cutSubHeap(index);
 			this.insertSubHeap(null, index);
 			index.mark = false;
@@ -402,11 +467,11 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		++modCount;
 		return true;
 	}
-	
-	private void cascadeCut(FibonacciHeapNode node){
-		FibonacciHeapNode parent = node.parent();
-		if(parent != null){
-			if(node.mark == false){
+
+	private void cascadeCut(FibonacciHeapEntry node) {
+		FibonacciHeapEntry parent = node.parent();
+		if (parent != null) {
+			if (node.mark == false) {
 				node.mark = true;
 			} else {
 				this.cutSubHeap(node);
@@ -418,184 +483,118 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 	}
 
 	@Override
-	protected AbstractHeapIndex indexOf(E element) {
-		// TODO Auto-generated method stub
-		if(this.isEmpty())
-			return null;
-		
-		AbstractHeapIndex index = this.find(element, this.entry());
-		if(index != null)
-			return index;
-		FibonacciHeapNode root = this.entry().rightSibling();
-		while(root != this.entry()){
-			index = this.find(element, root);
-			if(index != null)
-				return index;
-			root = root.rightSibling();
-		}
-		return null;
+	public int size() {
+		return (this.nodes == null || this.minRoot == null) ? 0 : this.nodes
+				.size();
 	}
 
-	@Override
-	protected FibonacciHeapNode getIndexByReference(
-			E element) {
-		// TODO Auto-generated method stub
-		if(this.isEmpty())
-			return null;
-		
-		FibonacciHeapNode index = this.getIndexByReference(this.entry(), element);
-		if(index != null)
-			return index;
-		FibonacciHeapNode root = this.entry().rightSibling();
-		while(root != this.entry()){
-			index = this.getIndexByReference(root, element);
-			if(index != null)
-				return index;
-			root = root.rightSibling();
-		}
-		return null;
-	}
-	
-	private FibonacciHeapNode getIndexByReference(FibonacciHeapNode root, E element){
-		if(root == null)
-			return null;
-		if(element == root.element())
-			return root;
-		
-		FibonacciHeapNode index = null;
-		Iterator<? extends AbstractHeapIndex> childrenIt = root.childIterator();
-		while(childrenIt.hasNext()){
-			@SuppressWarnings("unchecked")
-			FibonacciHeapNode child = (FibonacciHeapNode) childrenIt.next();
-			index = this.getIndexByReference(child, element);
-			if(index != null)
-				return null;
-		}
-		
-		return null;
-	}
-
-	@Override
-	protected FibonacciHeapNode entry() {
-		// TODO Auto-generated method stub
-		return this.entry;
-	}
-
-	@Override
-	public Iterator<E> iterator() {
-		// TODO Auto-generated method stub
-		if(this.isEmpty())
-			return this.emptyIterator();
-		return new FibonacciHeapIterator();
-	}
-
-	@Override
-	public int size(){
-		return (this.nodes == null || this.entry() == null) ? 0 : this.nodes.size();
-	}
-	
 	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
-		if(this.nodes != null){
+		if (this.nodes != null) {
 			this.nodes.clear();
 			this.nodes = null;
 		}
-		this.entry = null;
+		this.minRoot = null;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
-	public boolean union(FibonacciHeap<? extends E> otherElem){
+	public FibonacciHeap<E> clone() {
 		// TODO Auto-generated method stub
-		if(otherElem == null)
-			return false;
-		FibonacciHeapNode newEntry = copyHeap(otherElem.entry(), this.new FibonacciHeapNode(null));
-		// this.nodes might be null
-		this.nodes = this.getNodeSet(newEntry, this.nodes);
-		return this.unionInternal(null, newEntry);
-	}
-	
-	private static <E> FibonacciHeap<E>.FibonacciHeapNode copyHeap(FibonacciHeap<? extends E>.FibonacciHeapNode entry, FibonacciHeap<E>.FibonacciHeapNode newEntry){
-		if(entry == null || newEntry == null)
-			return null;
-		FibonacciHeap<E>.FibonacciHeapNode newNode = newEntry.copyNode();
-		newEntry = copySubHeap(entry, newEntry);
+		FibonacciHeap<E> clone;
+		try {
+			clone = (FibonacciHeap<E>) super.clone();
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalError();
+		}
 		
-		FibonacciHeap<? extends E>.FibonacciHeapNode current = entry.rightSibling();
-		while(current != entry){
-			FibonacciHeap<E>.FibonacciHeapNode newCurrent = copySubHeap(current, newNode.copyNode());
-			newCurrent.left = newEntry;
-			newCurrent.right = newEntry.rightSibling();
-			newEntry.right.left = newCurrent;
-			newEntry.right = newCurrent;
-			
-			current = current.rightSibling();
+		FibonacciHeapEntry newMinRoot = null, curRoot = null;
+		Iterator<HeapEntry<E>> rootIt = this.roots().iterator();
+		while(rootIt.hasNext()){
+			FibonacciHeapEntry root = (FibonacciHeapEntry) rootIt.next();
+			FibonacciHeapEntry newRoot = this.cloneBinomialTree(root);
+			if(curRoot == null){
+				newMinRoot = newRoot;
+			} else {
+				newRoot.right = curRoot.right;
+				newRoot.left = curRoot;
+				curRoot.right.left = newRoot;
+				curRoot.right = newRoot;
+			}
+			curRoot = newRoot;
 		}
-
-		// shallow copy of element, 
-		// if want to deep copy the element, clone the element in method
-		// FibonacciHeapNode.element() or FibonacciHeapNode.set()
-		newEntry.set(entry.element());
-		newEntry.degree = entry.degree();
-		return newEntry;
+		
+		clone.minRoot = newMinRoot;
+		clone.nodes = clone.getNodeSet(clone.minRoot, null);
+		clone.modCount = 0;
+		clone.entrys = null;
+		clone.roots = null;
+		return clone;
 	}
 	
-	private static <E> FibonacciHeap<E>.FibonacciHeapNode copySubHeap(FibonacciHeap<? extends E>.FibonacciHeapNode root, FibonacciHeap<E>.FibonacciHeapNode newRoot){
-		if(root == null || newRoot == null)
-			return null;
-		newRoot.parent = null;
-		if(root.child() != null){
-			newRoot.child = copySubHeap(root.child(), newRoot.copyNode());
-			newRoot.child.parent = newRoot;
-			FibonacciHeap<? extends E>.FibonacciHeapNode current = root.child().rightSibling();
-			FibonacciHeap<E>.FibonacciHeapNode newCurrent = newRoot.child();
-			while(current != root.child()){
-				FibonacciHeap<E>.FibonacciHeapNode newChild = copySubHeap(current, newRoot.copyNode());
-				newChild.parent = newRoot;
-				newChild.left = newCurrent;
-				newChild.right = newCurrent.rightSibling();
-				newCurrent.right.left = newChild;
-				newCurrent.right = newChild;
-				newCurrent = newChild;
-				current = current.rightSibling();
+	private FibonacciHeapEntry cloneBinomialTree(FibonacciHeapEntry root){
+		FibonacciHeapEntry newRoot = new FibonacciHeapEntry(root.element());
+		FibonacciHeapEntry curChild = null;
+		Iterator<HeapEntry<E>> childIt = root.children().iterator();
+		while(childIt.hasNext()){
+			FibonacciHeapEntry child = (FibonacciHeapEntry) childIt.next();
+			FibonacciHeapEntry newChild = cloneBinomialTree(child);
+			newChild.parent = newRoot;
+			if(curChild == null){
+				newRoot.child = newChild;
+			} else {
+				newChild.right = curChild.right;
+				newChild.left = curChild;
+				curChild.right.left = newChild;
+				curChild.right = newChild;
 			}
+			curChild = newChild;
 		}
-
-		// shallow copy of element, 
-		// if want to deep copy the element, clone the element in method
-		// FibonacciHeapNode.element() or FibonacciHeapNode.set()
-		newRoot.set(root.element());
 		newRoot.degree = root.degree();
-		newRoot.mark = root.mark;
 		return newRoot;
 	}
 
-	private boolean unionInternal(FibonacciHeapNode parent, FibonacciHeapNode otherEntry) {
+	@Override
+	public boolean union(FibonacciHeap<E> otherElem) {
+		// TODO Auto-generated method stub
+		if (otherElem == null)
+			return false;
+		// this.nodes might be null
+		this.nodes = this.getNodeSet(otherElem.minRoot, this.nodes);
+		return this.unionInternal(null, otherElem.minRoot);
+	}
+
+	private boolean unionInternal(FibonacciHeapEntry parent,
+			FibonacciHeapEntry otherEntry) {
 		// TODO Auto-generated method stub
 		// merge root list
-		if(otherEntry == null)
+		if (otherEntry == null)
 			return false;
-		
-		if(this.entry() == null){
-			if(parent == null){
-				this.entry = otherEntry;
-			} else{
+
+		if (this.minRoot == null) {
+			if (parent == null) {
+				this.minRoot = otherEntry;
+			} else {
 				parent.child = otherEntry;
 			}
 		} else {
-			FibonacciHeapNode entry = parent == null ? this.entry() : parent.child();
-			FibonacciHeapNode current = otherEntry.rightSibling();
+			FibonacciHeapEntry entry = parent == null ? this.minRoot : parent
+					.child();
+			FibonacciHeapEntry current = otherEntry.rightSibling();
 			current.parent = parent;
-			if(parent!= null)
+			if (parent != null)
 				++parent.degree;
-			while(current != otherEntry){
+			while (current != otherEntry) {
 				current.parent = entry.parent();
-				if(parent!= null)
+				if (parent != null)
 					++parent.degree;
 				current = current.rightSibling();
 			}
-			
-			FibonacciHeapNode tail = otherEntry.leftSibling();
+
+			FibonacciHeapEntry tail = otherEntry.leftSibling();
 			otherEntry.left = entry;
 			tail.right = entry.rightSibling();
 			entry.right.left = tail;
@@ -605,82 +604,61 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		++modCount;
 		return true;
 	}
-	
-	private boolean removeNode(FibonacciHeapNode node){
-		if(node == null)
+
+	private boolean removeEntry(FibonacciHeapEntry node) {
+		if (node == null)
 			return false;
 
 		this.cutSubHeap(node);
-		
-		if(node.child() != null){
+
+		if (node.child() != null) {
 			// insert node's children to root list
-			FibonacciHeapNode child = node.child();
+			FibonacciHeapEntry child = node.child();
 			child.parent = null;
-			FibonacciHeapNode current = child.rightSibling();
-			while(current != child){
+			FibonacciHeapEntry current = child.rightSibling();
+			while (current != child) {
 				current.parent = null;
 				current = current.rightSibling();
 			}
-			
-			if(this.entry() == null)
-				this.entry = child;
-			else{
+
+			if (this.minRoot == null)
+				this.minRoot = child;
+			else {
 				current = child.leftSibling();
-				child.left = this.entry();
-				current.right = this.entry().rightSibling();
-				this.entry.right.left = current;
-				this.entry.right = child;
+				child.left = this.minRoot;
+				current.right = this.minRoot.rightSibling();
+				this.minRoot.right.left = current;
+				this.minRoot.right = child;
 			}
 		}
-		
-		if(node.parent != null){
+
+		if (node.parent != null) {
 			this.cascadeCut(node.parent());
 		}
 		this.consolidate(null);
-		this.entry = this.peekNode();
+		this.minRoot = this.peekNode();
 		return true;
 	}
-	
-//	@Override
-//	public String toString(){
-//		return this.sort().toString() + " / " + super.toString();
-//	}
-	
-	private class FibonacciHeapNode extends AbstractHeapIndex implements HeapIndex<E> {
+
+	// @Override
+	// public String toString(){
+	// return this.sort().toString() + " / " + super.toString();
+	// }
+
+	private class FibonacciHeapEntry extends AbstractHeapEntry implements
+			HeapEntry<E> {
 		private E element;
-		transient FibonacciHeapNode parent, child, left, right;
+		transient FibonacciHeapEntry parent, child, left, right;
 		transient int degree = 0;
 		private boolean mark = false;
-		
-		private FibonacciHeapNode(E element){
+
+		private FibonacciHeapEntry(E element) {
+			super();
 			this.element = element;
 			this.parent = null;
 			this.child = null;
 			this.left = this;
 			this.right = this;
-		}
-		
-		private FibonacciHeapNode copyNode(){
-			return new FibonacciHeapNode(this.element());
-		}
-
-		@Override
-		public boolean exists() {
-			// TODO Auto-generated method stub
-			FibonacciHeapNode root = this.getRoot();
-			FibonacciHeapNode rootCur = FibonacciHeap.this.entry();
-			while(rootCur != root && rootCur.rightSibling() != FibonacciHeap.this.entry()){
-				rootCur = rootCur.rightSibling();
-			}
-			return root == rootCur;
-		}
-		
-		private FibonacciHeapNode getRoot(){
-			FibonacciHeapNode ancestor = this;
-			while(ancestor.parent() != null){
-				ancestor = ancestor.parent();
-			}
-			return ancestor;
 		}
 
 		@Override
@@ -692,32 +670,90 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		@Override
 		public boolean set(E element) {
 			// TODO Auto-generated method stub
-			if(element == null)
+			if (element == null)
 				return false;
 			this.element = element;
 			return true;
 		}
 
 		@Override
-		public FibonacciHeapNode leftSibling() {
+		public FibonacciHeapEntry leftSibling() {
 			// TODO Auto-generated method stub
 			return this.left;
 		}
 
 		@Override
-		public FibonacciHeapNode rightSibling() {
+		public FibonacciHeapEntry rightSibling() {
 			// TODO Auto-generated method stub
 			return this.right;
 		}
 
 		@Override
-		public FibonacciHeapNode child() {
+		public FibonacciHeapEntry child() {
 			// TODO Auto-generated method stub
 			return this.child;
 		}
+		
+		@Override
+		public Collection<HeapEntry<E>> children() {
+			// TODO Auto-generated method stub
+			if (children == null) {
+				children = new AbstractCollection<HeapEntry<E>>() {
+
+					@Override
+					public Iterator<HeapEntry<E>> iterator() {
+						// TODO Auto-generated method stub
+						return new Iterator<HeapEntry<E>>() {
+							private int expectedModCount = FibonacciHeap.this.modCount;
+							private HeapEntry<E> next = FibonacciHeapEntry.this.child();
+
+							@Override
+							public boolean hasNext() {
+								// TODO Auto-generated method stub
+								return next != null;
+							}
+
+							private final void checkForComodification() {
+								if (expectedModCount != FibonacciHeap.this.modCount)
+									throw new ConcurrentModificationException();
+							}
+
+							@Override
+							public HeapEntry<E> next() {
+								// TODO Auto-generated method stub
+								checkForComodification();
+								if(next == null)
+									throw new NoSuchElementException();
+								HeapEntry<E> cur = next;
+								next = cur.rightSibling();
+								if(next == FibonacciHeapEntry.this.child())
+									next = null;
+								return cur;
+							}
+
+							@Override
+							public void remove() {
+								// TODO Auto-generated method stub
+								throw new UnsupportedOperationException(
+										"unsupported operation: HeapEntry.children().iterator().remove()");
+							}
+
+						};
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return FibonacciHeapEntry.this.degree;
+					}
+
+				};
+			}
+			return children;
+		}
 
 		@Override
-		public FibonacciHeapNode parent() {
+		public FibonacciHeapEntry parent() {
 			// TODO Auto-generated method stub
 			return this.parent;
 		}
@@ -726,8 +762,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		public boolean heaplifyUp() {
 			// TODO Auto-generated method stub
 			boolean modified = super.heaplifyUp();
-			if(modified || this.parent() == null){
-				FibonacciHeap.this.entry = FibonacciHeap.this.peekNode();
+			if (modified || this.parent() == null) {
+				FibonacciHeap.this.minRoot = FibonacciHeap.this.peekNode();
 			}
 			return modified;
 		}
@@ -736,8 +772,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 		public boolean heaplifyDown() {
 			// TODO Auto-generated method stub
 			boolean modified = super.heaplifyDown();
-			if(modified || this.parent() == null){
-				FibonacciHeap.this.entry = FibonacciHeap.this.peekNode();
+			if (modified || this.parent() == null) {
+				FibonacciHeap.this.minRoot = FibonacciHeap.this.peekNode();
 			}
 			return modified;
 		}
@@ -748,49 +784,90 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>, Mergea
 			return this.degree;
 		}
 
-//		@Override
-//		public int hashCode() {
-//			// TODO Auto-generated method stub
-//			return this.element == null ? 0 : this.element.hashCode();
-//		}
-		
 	}
-	
-	private final class FibonacciHeapIterator implements Iterator<E> {
-		transient Iterator<FibonacciHeapNode> nodeIt;
-		transient FibonacciHeapNode current = null;
-		
+
+	private final class FibonacciHeapIterator implements Iterator<HeapEntry<E>> {
+		transient Iterator<FibonacciHeapEntry> entryIt;
+		transient FibonacciHeapEntry current = null;
+
 		public FibonacciHeapIterator() {
 			// TODO Auto-generated constructor stub
-			if(FibonacciHeap.this.nodes == null){
-				this.nodeIt = EmptyIterator.<FibonacciHeapNode>getInstance();
-			} else{
-				this.nodeIt = FibonacciHeap.this.nodes.iterator();
+			if (FibonacciHeap.this.nodes == null) {
+				this.entryIt = EmptyIterator.<FibonacciHeapEntry> getInstance();
+			} else {
+				this.entryIt = FibonacciHeap.this.nodes.iterator();
 			}
 		}
 
 		@Override
 		public boolean hasNext() {
 			// TODO Auto-generated method stub
-			return nodeIt != null && nodeIt.hasNext();
+			return entryIt != null && entryIt.hasNext();
 		}
 
 		@Override
-		public E next() {
+		public HeapEntry<E> next() {
 			// TODO Auto-generated method stub
-			this.current = nodeIt.next();
-			return this.current.element();
+			this.current = entryIt.next();
+			return this.current;
 		}
 
 		@Override
-		public void remove(){
-			if(this.current == null)
+		public void remove() {
+			if (this.current == null)
 				throw new IllegalStateException();
-			nodeIt.remove();
-			FibonacciHeap.this.removeNode(this.current);
+			entryIt.remove();
+			FibonacciHeap.this.removeEntry(this.current);
 			this.current = null;
 		}
-		
+
+	}
+
+	/**
+	 * Save the state of the <tt>FibonacciHeap</tt> instance to a stream (that
+	 * is, serialize it).
+	 * 
+	 * @serialData The size of the heap backing the <tt>FibonacciHeap</tt>
+	 *             instance is emitted (int), followed by all of its elements
+	 *             (each an <tt>Object</tt>) in the proper order.
+	 */
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		// Write out element count, and any hidden stuff
+		int expectedModCount = modCount;
+		s.defaultWriteObject();
+
+		s.writeInt(this.size());
+
+		// Write out all elements in the proper order.
+		Iterator<E> iterator = this.iterator();
+		while (iterator.hasNext()) {
+			s.writeObject(iterator.next());
+		}
+
+		if (modCount != expectedModCount) {
+			throw new ConcurrentModificationException();
+		}
+	}
+
+	/**
+	 * Reconstitute the <tt>FibonacciHeap</tt> instance from a stream (that is,
+	 * deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.IOException, ClassNotFoundException {
+		// Read in any hidden stuff
+		s.defaultReadObject();
+
+		// Read in size
+		int size = s.readInt();
+
+		// Read in all elements in the proper order.
+		for (int i = 0; i < size; i++) {
+			E element = (E) s.readObject();
+			this.offer(element);
+		}
 	}
 
 }

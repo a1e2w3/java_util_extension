@@ -37,25 +37,20 @@ public class TestBinaryHeaplify {
 		System.out.println("35");
 		System.out.println("Original heap: ");
 		System.out.println("Heap Builded: " + intHeap);
-		System.out.println("Heap Sorted: " + intHeap.sort());
 		element.set(200);
 
 		System.out.println("35¡ú200, without heaplify: ");
 		System.out.println("Heap Builded: " + intHeap);
-		System.out.println("Heap Sorted: " + intHeap.sort());
 		intHeap.heaplifyAt(element);
 		System.out.println("35¡ú200, heaplified: ");
 		System.out.println("Heap Builded: " + intHeap);
-		System.out.println("Heap Sorted: " + intHeap.sort());
 		
 		element.set(-1);
 		System.out.println("200¡ú-1, without heaplify: ");
 		System.out.println("Heap Builded: " + intHeap);
-		System.out.println("Heap Sorted: " + intHeap.sort());
 		intHeap.heaplifyAt(element);
 		System.out.println("200¡ú-1, heaplified: ");
 		System.out.println("Heap Builded: " + intHeap);
-		System.out.println("Heap Sorted: " + intHeap.sort());
 
 	}
 

@@ -2,7 +2,9 @@ package hust.idc.util.heap;
 
 import hust.idc.util.Sortable;
 
-import java.util.ArrayList;
+import java.io.Serializable;
+import java.util.AbstractCollection;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.ConcurrentModificationException;
@@ -11,379 +13,564 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 
 /**
- * A Complete-Binary-Tree Based implementation of the <tt>Heap</tt> interface, Implements
- * almost all optional heap operations, except remove an element through iterator.remove().
- * And it permits all elements except <tt>null</tt>, since <tt>null</tt> is used as a special return value 
- * by the <tt>poll</tt> method to indicate that the heap contains no elements.<p>
+ * A Complete-Binary-Tree Based implementation of the <tt>Heap</tt> interface,
+ * Implements almost all optional heap operations, except remove an element
+ * through iterator.remove(). And it permits all elements except <tt>null</tt>,
+ * since <tt>null</tt> is used as a special return value by the <tt>poll</tt>
+ * method to indicate that the heap contains no elements.
+ * <p>
  * 
- * Binary Heap hold all element in a specific order by an array list. Each element in the array list was 
- * seemed as a node in heap, the index of root node was 0. For a node which index is i, its left child 
- * would be held at index (2 * i) + 1 and right child would be(2 * i) + 2, if they existed.<p>
+ * Binary Heap hold all element in a specific order by an array list. Each
+ * element in the array list was seemed as a node in heap, the index of root
+ * node was 0. For a node which index is i, its left child would be held at
+ * index (2 * i) + 1 and right child would be(2 * i) + 2, if they existed.
+ * <p>
  * 
- * In addition to implementing the <tt>Heap</tt> interface, this class provides methods to manipulate
- * the size of the array list that is used internally to store the element list. <p>
+ * In addition to implementing the <tt>Heap</tt> interface, this class provides
+ * methods to manipulate the size of the array list that is used internally to
+ * store the element list.
+ * <p>
  * 
- * The <tt>size</tt>, <tt>isEmpty</tt>, <tt>peek</tt>, and <tt>iterator</tt> operations run in constant
- * time.  The <tt>offer</tt>, <tt>add</tt>, <tt>poll</tt>, <tt>remove</tt> operation runs in <i>logarithmic time</i>,
- * that is, add(or poll, remove) an elements in the heap contains n elements requires O(log n) time. 
- * similarly, the <tt>contains</tt> operation runs in <i>logarithmic time</i>, too.<p>
+ * The <tt>size</tt>, <tt>isEmpty</tt>, <tt>peek</tt>, and <tt>iterator</tt>
+ * operations run in constant time. The <tt>offer</tt>, <tt>add</tt>,
+ * <tt>poll</tt>, <tt>remove</tt> operation runs in <i>logarithmic time</i>,
+ * that is, add(or poll, remove) an elements in the heap contains n elements
+ * requires O(log n) time. similarly, the <tt>contains</tt> operation runs in
+ * <i>logarithmic time</i>, too.
+ * <p>
  * 
- * <p>The iterators returned by this class's <tt>iterator</tt> method are not support 
- * <tt>iterator.remove</tt> operation, because the order of elements in the heap may be changed once any 
- * element is removed, the iterator cannot ensure the iterative sequence. And the iterators are 
- * <i>fail-fast</i>: if the list is structurally modified at any time after the iterator is created
- * the iterator will throw a {@link ConcurrentModificationException}.
+ * <p>
+ * The iterators returned by this class's <tt>iterator</tt> method are not
+ * support <tt>iterator.remove</tt> operation, because the order of elements in
+ * the heap may be changed once any element is removed, the iterator cannot
+ * ensure the iterative sequence. And the iterators are <i>fail-fast</i>: if the
+ * list is structurally modified at any time after the iterator is created the
+ * iterator will throw a {@link ConcurrentModificationException}.
  * 
  * @author WangCong
  * @version 1.2.0, 08/10/13
- * @see	    Collection
- * @see	    Queue
- * @see	    Sortable
- * @see	    Heap
- * @see	    AbstractHeap
+ * @see Collection
+ * @see Queue
+ * @see Sortable
+ * @see Heap
+ * @see AbstractHeap
  * @since 1.0
- * @param <E> the element type
+ * @param <E>
+ *            the element type
  */
-public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E> {
-	transient ArrayList<E> elements;
-	transient final BinaryHeapIndex entry = new BinaryHeapIndex(0);
-	
-	public BinaryHeap(){
+public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
+		Cloneable, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 7581128060475967485L;
+	transient BinaryHeapEntry[] elements;
+	int size;
+	transient volatile int modCount = 0;
+
+	private static final int DEFAULT_INITIAL_CAPACITY = 10;
+
+	public BinaryHeap() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	
-	public BinaryHeap(Comparator<? super E> comparator){
+
+	public BinaryHeap(Comparator<? super E> comparator) {
 		super(comparator);
 		// TODO Auto-generated constructor stub
 	}
-	
-	public BinaryHeap(E element, Comparator<? super E> comparator) {
-		super(element, comparator);
-		// TODO Auto-generated constructor stub
-	}
 
-	public BinaryHeap(E element) {
-		super(element);
-		// TODO Auto-generated constructor stub
-	}
-
-	public BinaryHeap(Collection<? extends E> elements){
-		super(elements);
-		// TODO Auto-generated constructor stub
-	}
-	
-	public BinaryHeap(Collection<? extends E> elements, Comparator<? super E> comparator){
-		super(elements, comparator);
-		// TODO Auto-generated constructor stub
-	}
-	
-	public BinaryHeap(Heap<E> heap) {
-		super(heap);
-		// TODO Auto-generated constructor stub
-	}
-
-	public BinaryHeap(int initialCompacity){
+	public BinaryHeap(Collection<? extends E> elements) {
 		super();
 		// TODO Auto-generated constructor stub
-		this.elements = new ArrayList<E>(initialCompacity);
+		if (elements != null && !elements.isEmpty()) {
+			@SuppressWarnings("unchecked")
+			E[] array = (E[]) elements.toArray();
+			this.elements = this.initArray(array.length);
+			for(int i = 0; i < this.elements.length; ++i)
+				this.elements[i] = new BinaryHeapEntry(array[i], i);
+			this.buildHeap();
+		}
+	}
+
+	public BinaryHeap(Collection<? extends E> elements,
+			Comparator<? super E> comparator) {
+		super(comparator);
+		// TODO Auto-generated constructor stub
+		if (elements != null && !elements.isEmpty()) {
+			@SuppressWarnings("unchecked")
+			E[] array = (E[]) elements.toArray();
+			this.elements = this.initArray(array.length);
+			for(int i = 0; i < this.elements.length; ++i)
+				this.elements[i] = new BinaryHeapEntry(array[i], i);
+			this.buildHeap();
+		}
 	}
 	
-	/* (non-Javadoc)
+	public BinaryHeap(Heap<E> heap){
+		super(heap == null ? null : heap.getComparator());
+		if (heap != null && !heap.isEmpty()) {
+			@SuppressWarnings("unchecked")
+			E[] array = (E[]) heap.toArray();
+			this.elements = this.initArray(array.length);
+			for(int i = 0; i < this.elements.length; ++i)
+				this.elements[i] = new BinaryHeapEntry(array[i], i);
+			this.buildHeap();
+		}
+	}
+
+	public BinaryHeap(int initialCapacity) {
+		this(initialCapacity, null);
+	}
+
+	public BinaryHeap(int initialCapacity, Comparator<? super E> comparator) {
+		super(comparator);
+		// TODO Auto-generated constructor stub
+		if (initialCapacity < 0)
+			throw new IllegalArgumentException("Illegal Capacity: "
+					+ initialCapacity);
+		this.elements = this.initArray(initialCapacity);
+	}
+
+	@SuppressWarnings("unchecked")
+	private BinaryHeapEntry[] initArray(int capacity) {
+		return new BinaryHeap.BinaryHeapEntry[capacity];
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.util.ArrayLisy#ensureCapacity()
 	 */
-	public void ensureCapacity(int minCapacity){
-		if(this.elements == null){
-			this.elements = new ArrayList<E>(minCapacity);
-		} else {
-			this.elements.ensureCapacity(minCapacity);
+	public void ensureCapacity(int minCapacity) {
+		if (minCapacity > 0)
+			this.ensureCapacityInternal(minCapacity);
+
+	}
+
+	private void ensureCapacityInternal(int minCapacity) {
+		++modCount;
+		if (this.elements == null) {
+			this.elements = this.initArray(minCapacity);
+		} else if (minCapacity - this.elements.length > 0) {
+			this.grow(minCapacity);
 		}
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * The maximum size of array to allocate. Some VMs reserve some header words
+	 * in an array. Attempts to allocate larger arrays may result in
+	 * OutOfMemoryError: Requested array size exceeds VM limit
+	 */
+	private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
+	private void grow(int minCapacity) {
+		// overflow-conscious code
+		int oldCapacity = elements == null ? 1 : elements.length;
+		int newCapacity = oldCapacity + (oldCapacity >> 1);
+		if (newCapacity - minCapacity < 0)
+			newCapacity = minCapacity;
+		if (newCapacity - MAX_ARRAY_SIZE > 0)
+			newCapacity = hugeCapacity(minCapacity);
+		// minCapacity is usually close to size, so this is a win:
+		if (elements != null)
+			elements = Arrays.copyOf(elements, newCapacity);
+	}
+
+	private static int hugeCapacity(int minCapacity) {
+		if (minCapacity < 0) // overflow
+			throw new OutOfMemoryError();
+		return (minCapacity > MAX_ARRAY_SIZE) ? Integer.MAX_VALUE
+				: MAX_ARRAY_SIZE;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see java.util.ArrayLisy#trimToSize()
 	 */
-	public void trimToSize(){
-		if(this.elements != null)
-			this.elements.trimToSize();
+	public void trimToSize() {
+		if (this.elements != null) {
+			modCount++;
+			int oldCapacity = elements.length;
+			if (size < oldCapacity) {
+				elements = Arrays.copyOf(elements, size);
+			}
+		}
 	}
 
-	/* (non-Javadoc)
-	 * @see hust.idc.util.heap.Heap#rebuild()
-	 */
-	@Override
-	public boolean rebuild(){
-		if(this.size() <= 1)
+	private boolean buildHeap() {
+		if (this.size <= 1)
 			return false;
 		boolean modified = false;
-		for(int i = (this.size() << 1); i > 0; --i){
-			modified |= new BinaryHeapIndex(i).heaplifyDown();
+		for (int i = (this.size << 1); i > 0; --i) {
+			modified |= this.elements[i].heaplifyDown();
 		}
-		if(modified)
-			++modCount;
 		return modified;
 	}
 
+	protected transient volatile Collection<HeapEntry<E>> entrys = null;
+	protected transient volatile Collection<HeapEntry<E>> roots = null;
+
 	@Override
-	public int size() {
+	public Collection<HeapEntry<E>> entrys() {
 		// TODO Auto-generated method stub
-		return this.elements == null ? 0 : this.elements.size();
+		if (entrys == null) {
+			entrys = new AbstractCollection<HeapEntry<E>>() {
+
+				@Override
+				public Iterator<HeapEntry<E>> iterator() {
+					// TODO Auto-generated method stub
+					return new Iterator<HeapEntry<E>>() {
+						private int expectedModCount = BinaryHeap.this.modCount;
+						private int cur = -1;
+
+						private void checkForComodification() {
+							if (expectedModCount != BinaryHeap.this.modCount)
+								throw new ConcurrentModificationException();
+						}
+
+						@Override
+						public boolean hasNext() {
+							// TODO Auto-generated method stub
+							return cur + 1 < BinaryHeap.this.size;
+						}
+
+						@Override
+						public HeapEntry<E> next() {
+							// TODO Auto-generated method stub
+							checkForComodification();
+							if (++cur >= BinaryHeap.this.size)
+								throw new NoSuchElementException();
+							return BinaryHeap.this.elements[cur];
+						}
+
+						@Override
+						public void remove() {
+							// TODO Auto-generated method stub
+							throw new UnsupportedOperationException(
+									"unsupported operation: iterator.remove");
+						}
+					};
+				}
+
+				@Override
+				public int size() {
+					// TODO Auto-generated method stub
+					return BinaryHeap.this.size;
+				}
+			};
+		}
+		return entrys;
 	}
 
 	@Override
-	public Iterator<E> iterator() {
+	public Collection<Heap.HeapEntry<E>> roots() {
 		// TODO Auto-generated method stub
-		if(this.elements == null)
-			return this.emptyIterator();
-		else
-			return new BinaryHeapIterator();
+		if (roots == null) {
+			roots = new AbstractCollection<HeapEntry<E>>() {
+
+				@Override
+				public Iterator<HeapEntry<E>> iterator() {
+					// TODO Auto-generated method stub
+					return new Iterator<HeapEntry<E>>() {
+						private int expectedModCount = BinaryHeap.this.modCount;
+						private boolean hasNext = (BinaryHeap.this.size > 0);
+
+						private void checkForComodification() {
+							if (expectedModCount != BinaryHeap.this.modCount)
+								throw new ConcurrentModificationException();
+						}
+
+						@Override
+						public boolean hasNext() {
+							// TODO Auto-generated method stub
+							return hasNext;
+						}
+
+						@Override
+						public HeapEntry<E> next() {
+							// TODO Auto-generated method stub
+							checkForComodification();
+							if (hasNext) {
+								hasNext = false;
+								return BinaryHeap.this.elements[0];
+							} else {
+								throw new NoSuchElementException();
+							}
+						}
+
+						@Override
+						public void remove() {
+							// TODO Auto-generated method stub
+							throw new UnsupportedOperationException(
+									"unsupported operation: iterator.remove");
+						}
+					};
+				}
+
+				@Override
+				public int size() {
+					// TODO Auto-generated method stub
+					return BinaryHeap.this.size == 0 ? 0 : 1;
+				}
+			};
+		}
+		return roots;
 	}
 
 	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
-		if(this.elements != null && !this.elements.isEmpty()){
-			this.elements.clear();
+		if (this.elements != null && this.size > 0) {
 			++modCount;
+			for (int i = 0; i < size; ++i) {
+				this.elements[i] = null;
+			}
+			size = 0;
 		}
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public BinaryHeap<E> clone() {
+		// TODO Auto-generated method stub
+		BinaryHeap<E> clone = null;
+		try {
+			clone = (BinaryHeap<E>) super.clone();
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalError();
+		}
+
+		clone.elements = Arrays.copyOf(elements, size);
+		clone.modCount = 0;
+		clone.entrys = null;
+		clone.roots = null;
+		return clone;
 	}
 
 	@Override
 	public boolean offer(E e) {
 		// TODO Auto-generated method stub
-		if(e == null)
+		if (e == null)
 			return false;
-		if(this.elements == null){
-			this.elements = new ArrayList<E>();
+		if (this.elements == null) {
+			this.ensureCapacityInternal(DEFAULT_INITIAL_CAPACITY); // Increments
+																	// modCount!!
+		} else {
+			this.ensureCapacityInternal(size + 1); // Increments modCount!!
 		}
-		boolean modified = this.elements.add(e);
-		if(modified){
-			++modCount;
-			if(this.size() > 1)
-				new BinaryHeapIndex(this.size() - 1).heaplifyUp();
+		this.elements[size++] = new BinaryHeapEntry(e, size - 1);
+		if (size > 1) {
+			this.elements[size - 1].heaplifyUp();
 		}
-		return modified;
+		return true;
 	}
-	
+
+	public boolean addAll(Collection<? extends E> c) {
+		Object[] a = c.toArray();
+		int numNew = a.length;
+		ensureCapacityInternal(size + numNew); // Increments modCount
+		System.arraycopy(a, 0, elements, size, numNew);
+		size += numNew;
+		return numNew != 0;
+	}
 
 	@Override
 	public E poll() {
 		// TODO Auto-generated method stub
 		int size = this.size();
-		if(size <= 0)
+		if (size <= 0)
 			return null;
 		E element = this.peek();
-		if(size == 1){
-			this.elements.clear();
+		if (size == 1) {
+			this.elements[0] = null;
 		} else {
-			this.elements.set(0, this.elements.get(size - 1));
-			this.elements.remove(size - 1);
-			this.entry().heaplifyDown();
+			elements[0] = this.elements[size - 1];
+			this.elements[size - 1] = null;
+			this.elements[0].heaplifyDown();
 		}
-		++modCount;
 		return element;
 	}
 
 	@Override
 	public boolean remove(Object o) {
 		// TODO Auto-generated method stub
-		if(this.isEmpty())
+		if (this.isEmpty())
 			return false;
-		try{
+		try {
 			@SuppressWarnings("unchecked")
-			BinaryHeapIndex index = (BinaryHeapIndex) this.indexOf((E) o);
-			if(index == null)
+			BinaryHeapEntry index = (BinaryHeapEntry) this.getEntry((E) o);
+			if (index == null)
 				return false;
-			this.removeAtIndex(index);
+			this.removeEntry(index);
 			return true;
-		} catch(Exception e){
+		} catch (Exception e) {
 			return false;
 		}
 	}
-	
-	private void removeAtIndex(BinaryHeapIndex index){
-		if(index == null || !index.exists())
-			return ;
-		
-		int size = this.size();
-		if(size == 1){
-			this.clear();
-			return ;
+
+	private void removeEntry(BinaryHeapEntry entry) {
+		assert entry != null : "parameter is null in method removeEntry";
+
+		if (size == 1) {
+			this.elements[0] = null;
+			return;
 		}
-		
-		E elem = index.element();
-		index.set(this.elements.get(size - 1));
-		this.elements.remove(size - 1);
-		++modCount;
-		
-		int comp = this.compare(elem, index.element());
-		if(comp > 0){
-			index.heaplifyDown();
-		} else if(comp < 0){
-			index.heaplifyUp();
+
+		E elem = entry.element();
+		entry.set(this.elements[size - 1].element());
+		this.elements[size - 1] = null;
+
+		int comp = this.compare(elem, entry.element());
+		if (comp > 0) {
+			entry.heaplifyDown();
+		} else if (comp < 0) {
+			entry.heaplifyUp();
 		}
 	}
 
 	@Override
 	public E peek() {
 		// TODO Auto-generated method stub
-		if(this.isEmpty())
+		if (this.isEmpty())
 			return null;
 		else
-			return this.entry().element();
+			return this.elements[0].element();
 	}
 
-	@Override
-	protected AbstractHeapIndex indexOf(E element) {
-		// TODO Auto-generated method stub
-		if(this.isEmpty())
-			return null;
-		else
-			return this.find(element, this.entry());
-	}
+	private class BinaryHeapEntry extends AbstractHeapEntry implements
+			HeapEntry<E> {
+		private E element;
+		private transient final int index;
 
-	@Override
-	protected BinaryHeapIndex getIndexByReference(E element) {
-		// TODO Auto-generated method stub
-		if(this.isEmpty())
-			return null;
-		for(int i = 0; i < this.elements.size(); ++i){
-			if(this.elements.get(i) == element)
-				return new BinaryHeapIndex(i);
-		}
-		return null;
-	}
-
-	@Override
-	protected BinaryHeapIndex entry() {
-		// TODO Auto-generated method stub
-		if(this.isEmpty())
-			return null;
-		else
-			return this.entry;
-	}
-
-	@Override
-	protected BinaryHeap<E> copy() {
-		// TODO Auto-generated method stub
-		BinaryHeap<E> newHeap = new BinaryHeap<E>(this.getComparator());
-		newHeap.elements = new ArrayList<E>(this.elements);
-		return newHeap;
-	}
-	
-	private class BinaryHeapIndex extends AbstractHeapIndex implements HeapIndex<E> {
-		private final int index;
-		
-		private BinaryHeapIndex(int index){
+		private BinaryHeapEntry(E element, int index) {
+			super();
+			this.element = element;
 			this.index = index;
-		}
-
-		@Override
-		public boolean exists() {
-			// TODO Auto-generated method stub
-			return index >= 0 && index < BinaryHeap.this.size();
 		}
 
 		@Override
 		public boolean set(E element) {
 			// TODO Auto-generated method stub
-			if(element == null)
+			if (element == null)
 				return false;
-			if(!this.exists())
-				return false;
-			BinaryHeap.this.elements.set(index, element);
+			this.element = element;
 			return true;
 		}
 
 		@Override
 		public E element() {
 			// TODO Auto-generated method stub
-			if(this.exists())
-				return BinaryHeap.this.elements.get(index);
-			else
-				throw new NoSuchElementException();
+			return this.element;
 		}
 
 		@Override
-		public BinaryHeapIndex parent() {
+		public BinaryHeapEntry parent() {
 			// TODO Auto-generated method stub
-			if(index > 0)
-				return new BinaryHeapIndex((index - 1) >> 1);
+			if (index > 0)
+				return BinaryHeap.this.elements[(index - 1) >> 1];
 			else
 				return null;
 		}
 
 		@Override
-		public BinaryHeapIndex leftSibling() {
+		public BinaryHeapEntry leftSibling() {
 			// TODO Auto-generated method stub
-			if(index <= 1)
+			if (index <= 1)
 				return null;
-			else if(index % 2 == 0)
-				return new BinaryHeapIndex(index - 1);
+			else if (index % 2 == 0)
+				return BinaryHeap.this.elements[index - 1];
 			else
 				return null;
 		}
 
 		@Override
-		public BinaryHeapIndex rightSibling() {
+		public BinaryHeapEntry rightSibling() {
 			// TODO Auto-generated method stub
-			if(index <= 0)
+			if (index <= 0)
 				return null;
-			else if(index % 2 != 0){
-				BinaryHeapIndex right = new BinaryHeapIndex(index + 1);
-				return right.exists() ? right : null;
-			} else 
+			else if (index % 2 != 0) {
+				return index + 1 < BinaryHeap.this.elements.length ? BinaryHeap.this.elements[index + 1]
+						: null;
+			} else
 				return null;
 		}
 
 		@Override
-		public BinaryHeapIndex child() {
+		public BinaryHeapEntry child() {
 			// TODO Auto-generated method stub
-			if(index >= 0){
-				BinaryHeapIndex child = new BinaryHeapIndex(((index + 1) << 1) - 1);
-				return child.exists() ? child : null;
-			}
-			else
+			if (index >= 0) {
+				int childIndex = ((index + 1) << 1) - 1;
+				return childIndex < BinaryHeap.this.elements.length ? BinaryHeap.this.elements[childIndex]
+						: null;
+			} else
 				return null;
 		}
 
 		@Override
 		public int degree() {
 			// TODO Auto-generated method stub
-			BinaryHeapIndex child = this.child();
-			if(child == null)
+			BinaryHeapEntry child = this.child();
+			if (child == null)
 				return 0;
-			else 
+			else
 				return child.rightSibling() == null ? 1 : 2;
 		}
-		
-	}
-	
-	private final class BinaryHeapIterator implements Iterator<E> {
-		transient Iterator<E> it;
-		
-		private BinaryHeapIterator(){
-			this.it = BinaryHeap.this.elements.iterator();
-		}
 
 		@Override
-		public boolean hasNext() {
+		public Collection<hust.idc.util.heap.Heap.HeapEntry<E>> children() {
 			// TODO Auto-generated method stub
-			return it != null && it.hasNext();
+			return null;
 		}
 
-		@Override
-		public E next() {
-			// TODO Auto-generated method stub
-			return it.next();
-		}
-
-		@Override
-		public void remove() {
-			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException();
-		}
-		
 	}
 
+	/**
+	 * Save the state of the <tt>BinaryHeap</tt> instance to a stream (that is,
+	 * serialize it).
+	 * 
+	 * @serialData The length of the array backing the <tt>BinaryHeap</tt>
+	 *             instance is emitted (int), followed by all of its elements
+	 *             (each an <tt>Object</tt>) in the proper order.
+	 */
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		// Write out element count, and any hidden stuff
+		int expectedModCount = modCount;
+		s.defaultWriteObject();
+
+		// Write out array length
+		s.writeInt(elements.length);
+
+		// Write out all elements in the proper order.
+		for (int i = 0; i < size; i++)
+			s.writeObject(elements[i].element());
+
+		if (modCount != expectedModCount) {
+			throw new ConcurrentModificationException();
+		}
+	}
+
+	/**
+	 * Reconstitute the <tt>BinaryHeap</tt> instance from a stream (that is,
+	 * deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.IOException, ClassNotFoundException {
+		// Read in size, and any hidden stuff
+		s.defaultReadObject();
+		// Read in array length and allocate array
+		int arrayLength = s.readInt();
+		elements = new BinaryHeap.BinaryHeapEntry[arrayLength];
+
+		// Read in all elements in the proper order.
+		for (int i = 0; i < size; i++){
+			E element = (E)s.readObject();
+			elements[i] = new BinaryHeapEntry(element, i);
+		}
+	}
 }

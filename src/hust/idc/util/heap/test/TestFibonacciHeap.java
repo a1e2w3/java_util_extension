@@ -42,12 +42,6 @@ public class TestFibonacciHeap {
 		
 		System.out.println("Heap Builded: " + heap);
 		System.out.println("Heap Size: " + heap.size());
-		System.out.println("Heap Sort: " + heap.sort());
-		
-		Heap<Integer> cloneHeap = ((FibonacciHeap<Integer>)heap).clone();
-		System.out.println("Heap Copy: " + cloneHeap);
-		System.out.println("Copy Heap Size: " + cloneHeap.size());
-		System.out.println("Copy Heap Sort: " + cloneHeap.sort());
 		
 		System.out.println("Iterate: ");
 		Iterator<Integer> it = heap.iterator();
@@ -57,7 +51,6 @@ public class TestFibonacciHeap {
 		
 		System.out.println("Extract Max: " + heap.poll());
 		System.out.println("Heap Rebuilded: " + heap);
-		System.out.println("Heap Sort: " + heap.sort());
 		
 		System.out.println("Heap Contains Element 35? " + heap.contains(35));
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));
@@ -65,16 +58,13 @@ public class TestFibonacciHeap {
 		heap.decreaseElement(35, 30);
 		System.out.println("Decrease : 35 ¡ú 30");
 //		System.out.println("Heap Rebuilded: " + heap);
-		System.out.println("Heap Sort: " + heap.sort());
 		heap.increaseElement(35, 40);
 		System.out.println("Increase : 35 ¡ú 40");
 //		System.out.println("Heap Rebuilded: " + heap);
-		System.out.println("Heap Sort: " + heap.sort());
 		
 		heap.remove(30);
 		System.out.println("Remove : 30");
 		System.out.println("Heap Rebuilded: " + heap);
-		System.out.println("Heap Sort: " + heap.sort());
 		
 		System.out.println("Heap Contains Element 30? " + heap.contains(30));
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));

@@ -44,14 +44,12 @@ public class Matrixs {
 		final Object mutex; // Object on which to synchronize
 
 		SynchronizedCollection(Collection<E> c) {
-			if (c == null)
-				throw new NullPointerException();
-			this.c = c;
+			this.c = Objects.requireNonNull(c);
 			mutex = this;
 		}
 
 		SynchronizedCollection(Collection<E> c, Object mutex) {
-			this.c = c;
+			this.c = Objects.requireNonNull(c);
 			this.mutex = mutex;
 		}
 

@@ -4,9 +4,11 @@ package hust.idc.util.heap;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 public final class Heaps {
 	private Heaps() {
@@ -19,6 +21,116 @@ public final class Heaps {
 
 	static <E> Heap<E> synchronizedHeap(Heap<E> heap, Object mutex) {
 		return new SynchronizedHeap<E>(heap, mutex);
+	}
+	
+	/**
+	 * @serial include
+	 */
+	private static class SynchronizedCollection<E> implements Collection<E>,
+			Serializable {
+		private static final long serialVersionUID = 3053995032091335093L;
+
+		final Collection<E> c; // Backing Collection
+		final Object mutex; // Object on which to synchronize
+
+		@SuppressWarnings("unused")
+		SynchronizedCollection(Collection<E> c) {
+			this.c = Objects.requireNonNull(c);
+			mutex = this;
+		}
+
+		SynchronizedCollection(Collection<E> c, Object mutex) {
+			this.c = Objects.requireNonNull(c);
+			this.mutex = mutex;
+		}
+
+		public int size() {
+			synchronized (mutex) {
+				return c.size();
+			}
+		}
+
+		public boolean isEmpty() {
+			synchronized (mutex) {
+				return c.isEmpty();
+			}
+		}
+
+		public boolean contains(Object o) {
+			synchronized (mutex) {
+				return c.contains(o);
+			}
+		}
+
+		public Object[] toArray() {
+			synchronized (mutex) {
+				return c.toArray();
+			}
+		}
+
+		public <T> T[] toArray(T[] a) {
+			synchronized (mutex) {
+				return c.toArray(a);
+			}
+		}
+
+		public Iterator<E> iterator() {
+			return c.iterator(); // Must be manually synched by user!
+		}
+
+		public boolean add(E e) {
+			synchronized (mutex) {
+				return c.add(e);
+			}
+		}
+
+		public boolean remove(Object o) {
+			synchronized (mutex) {
+				return c.remove(o);
+			}
+		}
+
+		public boolean containsAll(Collection<?> coll) {
+			synchronized (mutex) {
+				return c.containsAll(coll);
+			}
+		}
+
+		public boolean addAll(Collection<? extends E> coll) {
+			synchronized (mutex) {
+				return c.addAll(coll);
+			}
+		}
+
+		public boolean removeAll(Collection<?> coll) {
+			synchronized (mutex) {
+				return c.removeAll(coll);
+			}
+		}
+
+		public boolean retainAll(Collection<?> coll) {
+			synchronized (mutex) {
+				return c.retainAll(coll);
+			}
+		}
+
+		public void clear() {
+			synchronized (mutex) {
+				c.clear();
+			}
+		}
+
+		public String toString() {
+			synchronized (mutex) {
+				return c.toString();
+			}
+		}
+
+		private void writeObject(ObjectOutputStream s) throws IOException {
+			synchronized (mutex) {
+				s.defaultWriteObject();
+			}
+		}
 	}
 
 	static class SynchronizedHeap<E> extends Queues.SynchronizedQueue<E> implements Heap<E>, Serializable {
@@ -38,33 +150,6 @@ public final class Heaps {
 			super(h, mutex);
 			this.heap = h;
 		}
-
-		@Override
-		public List<E> sort() {
-			// TODO Auto-generated method stub
-			synchronized (mutex) {
-				return heap.sort();
-			}
-		}
-
-		@Override
-		public boolean rebuild() {
-			// TODO Auto-generated method stub
-			synchronized (mutex) {
-				return heap.rebuild();
-			}
-		}
-
-		
-
-		@Override
-		public void setComparator(Comparator<? super E> comparator) {
-			// TODO Auto-generated method stub
-			synchronized (mutex) {
-				heap.setComparator(comparator);
-			}
-		}
-
 		@Override
 		public Comparator<? super E> getComparator() {
 			// TODO Auto-generated method stub
@@ -105,17 +190,32 @@ public final class Heaps {
 			}
 		}
 
-		@Override
-		public List<E> sortAndClear() {
-			// TODO Auto-generated method stub
-			synchronized (mutex) {
-				return heap.sortAndClear();
-			}
-		}
-
         private void writeObject(ObjectOutputStream s) throws IOException {
             synchronized (mutex) {s.defaultWriteObject();}
         }
+        
+    	protected transient volatile Collection<HeapEntry<E>> entrys = null;
+    	protected transient volatile Collection<HeapEntry<E>> roots = null;
+
+		@Override
+		public Collection<HeapEntry<E>> entrys() {
+			// TODO Auto-generated method stub
+			synchronized (mutex) {
+				if (entrys == null)
+					entrys = new SynchronizedCollection<HeapEntry<E>>(heap.entrys(), mutex);
+				return entrys;
+			}
+		}
+
+		@Override
+		public Collection<hust.idc.util.heap.Heap.HeapEntry<E>> roots() {
+			// TODO Auto-generated method stub
+			synchronized (mutex) {
+				if (roots == null)
+					roots = new SynchronizedCollection<HeapEntry<E>>(heap.roots(), mutex);
+				return roots;
+			}
+		}
 	}
 
 }

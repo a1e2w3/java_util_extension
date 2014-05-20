@@ -1,9 +1,9 @@
 package hust.idc.util.heap;
 
 import hust.idc.util.Sortable;
+
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 
@@ -61,16 +61,7 @@ import java.util.Queue;
  * @since 1.0
  * @param <E> the element type
  */
-public interface Heap<E> extends Sortable<E>, Queue<E> {
-	/**
-	 * Set a typical comparator of elements.  
-	 * {@link #rebuild()} should be called after reset the 
-	 * comparator if the heap is not empty to promise the heap
-	 * in a proper order.
-	 * 
-	 * @param comparator
-	 */
-	void setComparator(Comparator<? super E> comparator);
+public interface Heap<E> extends Queue<E> {
 	
 	/**
 	 * Return the comparator.
@@ -78,13 +69,6 @@ public interface Heap<E> extends Sortable<E>, Queue<E> {
 	 * @return the comparator
 	 */
 	Comparator<? super E> getComparator();
-	
-	/**
-	 * Rebuild the  structure of the heap.
-	 * 
-	 * @return <tt>false</tt>if the heap structure was not change.
-	 */
-	boolean rebuild();
 	
 	
 	/**
@@ -122,10 +106,50 @@ public interface Heap<E> extends Sortable<E>, Queue<E> {
 	 */
 	boolean heaplifyAt(E element) throws NoSuchElementException;
 	
+	Collection<HeapEntry<E>> entrys();
+	
+	Collection<HeapEntry<E>> roots();
+	
 	/**
-	 * Sort and clear the heap
-	 * @return the sorted elements
+	 * 1.An Entry to access one and exactly one element using method <tt>set(E)</tt> and <tt>element()</tt>;
+	 * 2.Get the relative position of the element in the heap and using <tt>parent</tt>, <tt>child</tt>, 
+	 *   <tt>leftSibling</tt>, <tt>rightSibling</tt> method to access nearby element
+	 * 3.Heaplify partially, using <tt>heaplifyUp</tt> method to bubble up a greater element to the top, 
+	 *   that process will be called when to add an element into the heap or to increase the key of an element.
+	 *   using <tt>heaplifyDown</tt> to take a less element down to the bottom, that process will be called 
+	 *   when to decrease the key of an element.
+	 * 4.using <tt>equals</tt> to check whether two index are point to the same position.
+	 *   
+	 * @author Wang Cong
+	 *
+	 * @param <E> Heap Element Type
 	 */
-	List<E> sortAndClear();
+	interface HeapEntry<E> {
+		
+		boolean isRoot();
+		
+		boolean isLeaf();
+		
+		E element();
+		
+		boolean set(E element);
+		
+		HeapEntry<E> parent();
+		
+		HeapEntry<E> leftSibling();
+		
+		HeapEntry<E> rightSibling();
+		
+		HeapEntry<E> child();
+		
+		Collection<HeapEntry<E>> children();
+		
+		boolean heaplifyUp();
+		
+		boolean heaplifyDown();
+		
+		int degree();
+
+	}
 
 }

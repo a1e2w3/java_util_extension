@@ -34,21 +34,16 @@ public class TestSynchronizedHeap {
 		heap.add(new Integer(35));
 		System.out.println("35");
 		System.out.println("Heap Builded: " + heap);
-		System.out.println("Heap Sort: " + heap.sort());
 		
 		System.out.println("Extract Max: " + heap.poll());
-		System.out.println("Heap Sort: " + heap.sort());
 		
 		System.out.println("Heap Contains Element 35? " + heap.contains(35));
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));
 
 		heap.decreaseElement(35, 30);
-		System.out.println("Heap Sort: " + heap.sort());
 		heap.increaseElement(35, 40);
-		System.out.println("Heap Sort: " + heap.sort());
 		
 		heap.remove(30);
-		System.out.println("Heap Sort: " + heap.sort());
 		
 		System.out.println("Heap Contains Element 30? " + heap.contains(30));
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));
