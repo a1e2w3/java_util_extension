@@ -10,35 +10,40 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
-		Mergeable<SkewHeap<E>> {
-	transient SkewHeapEntry root;
+public class LeftistTree<E> extends AbstractHeap<E> implements
+		Mergeable<LeftistTree<E>> {
+	transient LeftistTreeEntry root;
 	transient int size;
 	transient volatile int modCount = 0;
 
-	public SkewHeap() {
+	public LeftistTree() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
 
-	public SkewHeap(Collection<? extends E> elements,
+	public LeftistTree(Collection<? extends E> elements,
 			Comparator<? super E> comparator) {
 		super(elements, comparator);
 		// TODO Auto-generated constructor stub
 	}
 
-	public SkewHeap(Collection<? extends E> elements) {
+	public LeftistTree(Collection<? extends E> elements) {
 		super(elements);
 		// TODO Auto-generated constructor stub
 	}
 
-	public SkewHeap(Comparator<? super E> comparator) {
+	public LeftistTree(Comparator<? super E> comparator) {
 		super(comparator);
 		// TODO Auto-generated constructor stub
 	}
 
+	public LeftistTree(Heap<E> heap) {
+		super(heap);
+		// TODO Auto-generated constructor stub
+	}
+
 	@Override
-	public boolean union(SkewHeap<E> otherHeap) {
+	public boolean union(LeftistTree<E> otherHeap) {
 		// TODO Auto-generated method stub
 		if (otherHeap == null || otherHeap.isEmpty())
 			return false;
@@ -48,7 +53,8 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		return true;
 	}
 
-	private SkewHeapEntry unionInternal(SkewHeapEntry root1, SkewHeapEntry root2) {
+	private LeftistTreeEntry unionInternal(LeftistTreeEntry root1,
+			LeftistTreeEntry root2) {
 		if (root1 == null)
 			return root2;
 		if (root2 == null)
@@ -58,7 +64,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 
 		root2.parent = root1;
 		root1.rightChild = unionInternal(root1.rightChild, root2);
-		root1.swapChild();
+		root1.leftist();
 		return root1;
 	}
 
@@ -74,13 +80,13 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				@Override
 				public Iterator<HeapEntry<E>> iterator() {
 					// TODO Auto-generated method stub
-					return new SkewHeapEntryIterator();
+					return new LeftistTreeEntryIterator();
 				}
 
 				@Override
 				public int size() {
 					// TODO Auto-generated method stub
-					return SkewHeap.this.size;
+					return LeftistTree.this.size;
 				}
 
 			};
@@ -98,11 +104,11 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				public Iterator<HeapEntry<E>> iterator() {
 					// TODO Auto-generated method stub
 					return new Iterator<HeapEntry<E>>() {
-						private boolean hasNext = !SkewHeap.this.isEmpty();
-						private int expectedModCount = SkewHeap.this.modCount;
+						private boolean hasNext = !LeftistTree.this.isEmpty();
+						private int expectedModCount = LeftistTree.this.modCount;
 
 						private void checkForComodification() {
-							if (expectedModCount != SkewHeap.this.modCount)
+							if (expectedModCount != LeftistTree.this.modCount)
 								throw new ConcurrentModificationException();
 						}
 
@@ -119,7 +125,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 							if (!hasNext)
 								throw new NoSuchElementException();
 							hasNext = false;
-							return SkewHeap.this.root;
+							return LeftistTree.this.root;
 						}
 
 						@Override
@@ -135,7 +141,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				@Override
 				public int size() {
 					// TODO Auto-generated method stub
-					return SkewHeap.this.root == null ? 0 : 1;
+					return LeftistTree.this.root == null ? 0 : 1;
 				}
 
 			};
@@ -143,15 +149,15 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		return roots;
 	}
 	
-	private class SkewHeapEntryIterator extends HeapPreorderIterator {
-		private int expectedModCount = SkewHeap.this.modCount;
+	private class LeftistTreeEntryIterator extends HeapPreorderIterator {
+		private int expectedModCount = LeftistTree.this.modCount;
 		
-		private SkewHeapEntryIterator(){
+		private LeftistTreeEntryIterator(){
 			super();
 		}
 
 		private void checkForComodification() {
-			if (expectedModCount != SkewHeap.this.modCount)
+			if (expectedModCount != LeftistTree.this.modCount)
 				throw new ConcurrentModificationException();
 		}
 
@@ -159,8 +165,8 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		boolean removeCurrent() {
 			// TODO Auto-generated method stub
 			checkForComodification();
-			next = SkewHeap.this.removeEntry((SkewHeapEntry) current);
-			expectedModCount = SkewHeap.this.modCount;
+			next = LeftistTree.this.removeEntry((LeftistTreeEntry) current);
+			expectedModCount = LeftistTree.this.modCount;
 			return true;
 		}
 
@@ -175,10 +181,10 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	@Override
 	public boolean offer(E e) {
 		// TODO Auto-generated method stub
-		if (e == null)
+		if(e == null)
 			return false;
 		++modCount;
-		this.root = this.unionInternal(this.root, new SkewHeapEntry(e));
+		this.root = this.unionInternal(this.root, new LeftistTreeEntry(e));
 		++size;
 		return true;
 	}
@@ -198,7 +204,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		// TODO Auto-generated method stub
 		return this.root == null ? null : this.root.element();
 	}
-
+	
 	@Override
 	public boolean remove(Object o) {
 		// TODO Auto-generated method stub
@@ -206,7 +212,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			return false;
 		try {
 			@SuppressWarnings("unchecked")
-			SkewHeapEntry entry = (SkewHeapEntry) this.getEntry((E) o);
+			LeftistTreeEntry entry = (LeftistTreeEntry) this.getEntry((E) o);
 			if (entry == null)
 				return false;
 			this.removeEntry(entry);
@@ -216,7 +222,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 	}
 
-	private SkewHeapEntry removeEntry(SkewHeapEntry entry) {
+	private LeftistTreeEntry removeEntry(LeftistTreeEntry entry) {
 		assert entry != null : "parameter is null in method removeEntry";
 		++modCount;
 		if (entry.leftChild != null) {
@@ -226,7 +232,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			entry.rightChild.parent = null;
 		}
 
-		SkewHeapEntry newRoot = this.unionInternal(entry.rightChild,
+		LeftistTreeEntry newRoot = this.unionInternal(entry.rightChild,
 				entry.leftChild);
 		entry.leftChild = entry.rightChild = null;
 		if (entry.parent == null) {
@@ -238,8 +244,16 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				entry.parent.rightChild = newRoot;
 			entry.parent = null;
 		}
+		this.leftist(newRoot);
 		--size;
 		return newRoot;
+	}
+	
+	private void leftist(LeftistTreeEntry entry){
+		while(entry != null){
+			entry.leftist();
+			entry = entry.parent();
+		}
 	}
 
 	@Override
@@ -261,7 +275,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		size = 0;
 	}
 
-	private void clear(SkewHeapEntry root) {
+	private void clear(LeftistTreeEntry root) {
 		if (root == null)
 			return;
 		root.parent = null;
@@ -271,22 +285,34 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		root.leftChild = null;
 	}
 
-	private class SkewHeapEntry extends AbstractBinaryHeapEntry {
+	private class LeftistTreeEntry extends AbstractBinaryHeapEntry {
 		private E element;
-		private SkewHeapEntry parent;
-		private SkewHeapEntry leftChild, rightChild;
+		private int npl = 0;
+		private LeftistTreeEntry parent;
+		private LeftistTreeEntry leftChild, rightChild;
 
-		private SkewHeapEntry(E element) {
+		private LeftistTreeEntry(E element) {
 			super();
 			this.element = Objects.requireNonNull(element);
 			this.parent = null;
 			this.leftChild = this.rightChild = null;
 		}
 
-		private void swapChild() {
-			SkewHeapEntry temp = this.leftChild;
-			this.leftChild = this.rightChild;
-			this.rightChild = temp;
+		private void leftist() {
+			if (this.leftChildNPL() < this.rightChildNPL()) {
+				LeftistTreeEntry temp = this.leftChild;
+				this.leftChild = this.rightChild;
+				this.rightChild = temp;
+			}
+			this.npl = this.rightChildNPL() + 1;
+		}
+
+		private int leftChildNPL() {
+			return leftChild == null ? -1 : leftChild.npl;
+		}
+
+		private int rightChildNPL() {
+			return rightChild == null ? -1 : rightChild.npl;
 		}
 
 		@Override
@@ -296,19 +322,19 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 
 		@Override
-		public AbstractBinaryHeapEntry parent() {
+		public LeftistTreeEntry parent() {
 			// TODO Auto-generated method stub
 			return parent;
 		}
 
 		@Override
-		public AbstractBinaryHeapEntry leftChild() {
+		public LeftistTreeEntry leftChild() {
 			// TODO Auto-generated method stub
 			return leftChild;
 		}
 
 		@Override
-		public AbstractBinaryHeapEntry rightChild() {
+		public LeftistTreeEntry rightChild() {
 			// TODO Auto-generated method stub
 			return rightChild;
 		}
@@ -316,7 +342,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		@Override
 		public boolean set(E element) {
 			// TODO Auto-generated method stub
-			if(element == null)
+			if (element == null)
 				return false;
 			this.element = element;
 			return true;

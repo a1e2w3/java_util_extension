@@ -212,15 +212,15 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 			return true;
 		return index.heaplifyDown();
 	}
-	
+
 	@Override
-	public int size(){
+	public int size() {
 		return this.entrys().size();
 	}
-	
+
 	@Override
 	public abstract Collection<HeapEntry<E>> entrys();
-	
+
 	@Override
 	public abstract Collection<HeapEntry<E>> roots();
 
@@ -229,15 +229,16 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 
 	@Override
 	public abstract E poll();
-	
+
 	@Override
 	public abstract E peek();
 
 	@Override
 	public Iterator<E> iterator() {
 		// TODO Auto-generated method stub
-		return new Iterator<E>(){
-			private Iterator<HeapEntry<E>> entrys = AbstractHeap.this.entrys().iterator();
+		return new Iterator<E>() {
+			private Iterator<HeapEntry<E>> entrys = AbstractHeap.this.entrys()
+					.iterator();
 
 			@Override
 			public boolean hasNext() {
@@ -256,7 +257,7 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 				// TODO Auto-generated method stub
 				entrys.remove();
 			}
-			
+
 		};
 	}
 
@@ -282,7 +283,7 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 		}
 		return index;
 	}
-	
+
 	/**
 	 * Get Heap Index of the reference of the element, using "==" to decide if
 	 * it was the one we need
@@ -292,8 +293,8 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 	 * @return <tt>null</tt> if not found, else return the actual index of the
 	 *         element
 	 */
-	HeapEntry<E> getEntryByReference(E element){
-		if(element == null)
+	HeapEntry<E> getEntryByReference(E element) {
+		if (element == null)
 			return null;
 		Iterator<HeapEntry<E>> entries = this.entrys().iterator();
 		while (entries.hasNext()) {
@@ -315,13 +316,13 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 	 *         element
 	 */
 	HeapEntry<E> getEntry(E element) {
-		if(element == null)
+		if (element == null)
 			return null;
 		Iterator<HeapEntry<E>> roots = this.roots().iterator();
-		while(roots.hasNext()){
+		while (roots.hasNext()) {
 			HeapEntry<E> root = roots.next();
 			HeapEntry<E> entry = this.find(element, root);
-			if(entry != null)
+			if (entry != null)
 				return entry;
 		}
 		return null;
@@ -508,8 +509,7 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 
 		int subHeapSize() {
 			int size = 1;
-			Iterator<HeapEntry<E>> childIt = this
-					.children().iterator();
+			Iterator<HeapEntry<E>> childIt = this.children().iterator();
 			while (childIt.hasNext()) {
 				size += ((AbstractHeapEntry) childIt.next()).subHeapSize();
 			}
@@ -542,11 +542,12 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 
 		@Override
 		public abstract AbstractHeapEntry rightSibling();
-		
+
 		@Override
 		public boolean set(E element) {
 			// TODO Auto-generated method stub
-			throw new UnsupportedOperationException("unsupported operation: HeapEntry.set");
+			throw new UnsupportedOperationException(
+					"unsupported operation: HeapEntry.set");
 		}
 
 		@Override
@@ -554,13 +555,13 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 			// TODO Auto-generated method stub
 			return this.children().size();
 		}
-		
+
 		protected transient volatile Collection<HeapEntry<E>> children = null;
-		
+
 		@Override
-		public Collection<HeapEntry<E>> children(){
-			if(children == null){
-				children = new AbstractCollection<HeapEntry<E>>(){
+		public Collection<HeapEntry<E>> children() {
+			if (children == null) {
+				children = new AbstractCollection<HeapEntry<E>>() {
 
 					@Override
 					public Iterator<HeapEntry<E>> iterator() {
@@ -573,13 +574,14 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 						// TODO Auto-generated method stub
 						int count = 0;
 						Iterator<HeapEntry<E>> childIt = iterator();
-						while(childIt.hasNext()){
+						while (childIt.hasNext()) {
 							childIt.next();
 							++count;
 						}
 						return count;
+
 					}
-					
+
 				};
 			}
 			return children;
@@ -649,8 +651,7 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 			return builder.toString();
 		}
 
-		private class DefaultChildIterator implements
-				Iterator<HeapEntry<E>> {
+		private class DefaultChildIterator implements Iterator<HeapEntry<E>> {
 			private HeapEntry<E> nextChild, entryChild;
 			private boolean mark = true;
 
@@ -696,11 +697,103 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 			@Override
 			public void remove() {
 				// TODO Auto-generated method stub
-				throw new UnsupportedOperationException("unsupported operation: HeapEntry.children().iterator().remove()");
+				throw new UnsupportedOperationException(
+						"unsupported operation: HeapEntry.children().iterator().remove()");
 			}
 
 		}
 
 	}
 
+	abstract class AbstractBinaryHeapEntry extends AbstractHeapEntry {
+		AbstractBinaryHeapEntry(){
+			super();
+		}
+		
+		public abstract AbstractBinaryHeapEntry parent();
+		
+		abstract AbstractBinaryHeapEntry leftChild();
+
+		abstract AbstractBinaryHeapEntry rightChild();
+
+		@Override
+		public final HeapEntry<E> child() {
+			return this.leftChild() == null ? this.rightChild() : this
+					.leftChild();
+		}
+
+		@Override
+		public AbstractBinaryHeapEntry leftSibling() {
+			// TODO Auto-generated method stub
+			if (this.parent() == null || this == parent().leftChild())
+				return null;
+			return parent().leftChild();
+		}
+
+		@Override
+		public AbstractHeapEntry rightSibling() {
+			// TODO Auto-generated method stub
+			if (this.parent() == null || this == parent().rightChild())
+				return null;
+			return parent().rightChild();
+		}
+
+		@Override
+		public Collection<HeapEntry<E>> children() {
+			// TODO Auto-generated method stub
+			if (children == null) {
+				children = new AbstractCollection<HeapEntry<E>>() {
+
+					@Override
+					public Iterator<HeapEntry<E>> iterator() {
+						// TODO Auto-generated method stub
+						return new Iterator<HeapEntry<E>>() {
+							private boolean inLeft = (AbstractBinaryHeapEntry.this
+									.leftChild() != null);
+							private HeapEntry<E> next = AbstractBinaryHeapEntry.this
+									.child();
+
+							@Override
+							public boolean hasNext() {
+								// TODO Auto-generated method stub
+								return next != null;
+							}
+
+							@Override
+							public HeapEntry<E> next() {
+								// TODO Auto-generated method stub
+								if (next == null)
+									throw new NoSuchElementException();
+								HeapEntry<E> cur = next;
+								next = inLeft ? cur.rightSibling() : null;
+								inLeft = false;
+								return cur;
+							}
+
+							@Override
+							public void remove() {
+								// TODO Auto-generated method stub
+								throw new UnsupportedOperationException(
+										"unsupported operation: HeapEntry.children().iterator().remove()");
+							}
+
+						};
+					}
+
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						if (AbstractBinaryHeapEntry.this.leftChild() == null)
+							return AbstractBinaryHeapEntry.this.rightChild() == null ? 0
+									: 1;
+						else
+							return AbstractBinaryHeapEntry.this.rightChild() == null ? 1
+									: 2;
+					}
+
+				};
+			}
+			return children;
+		}
+	}
 }

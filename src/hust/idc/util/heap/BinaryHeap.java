@@ -441,7 +441,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			return this.elements[0].element();
 	}
 
-	private class BinaryHeapEntry extends AbstractHeapEntry implements
+	private class BinaryHeapEntry extends AbstractBinaryHeapEntry implements
 			HeapEntry<E> {
 		private E element;
 		private transient final int index;
@@ -500,20 +500,9 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 
 		@Override
-		public BinaryHeapEntry child() {
-			// TODO Auto-generated method stub
-			if (index >= 0) {
-				int childIndex = ((index + 1) << 1) - 1;
-				return childIndex < BinaryHeap.this.elements.length ? BinaryHeap.this.elements[childIndex]
-						: null;
-			} else
-				return null;
-		}
-
-		@Override
 		public int degree() {
 			// TODO Auto-generated method stub
-			BinaryHeapEntry child = this.child();
+			BinaryHeapEntry child = this.leftChild();
 			if (child == null)
 				return 0;
 			else
@@ -521,8 +510,24 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 
 		@Override
-		public Collection<hust.idc.util.heap.Heap.HeapEntry<E>> children() {
+		BinaryHeapEntry leftChild() {
 			// TODO Auto-generated method stub
+			if (index >= 0) {
+				int childIndex = ((index + 1) << 1) - 1;
+				return childIndex < BinaryHeap.this.elements.length ? BinaryHeap.this.elements[childIndex]
+						: null;
+			}
+			return null;
+		}
+
+		@Override
+		BinaryHeapEntry rightChild() {
+			// TODO Auto-generated method stub
+			if (index >= 0) {
+				int childIndex = (index + 1) << 1;
+				return childIndex < BinaryHeap.this.elements.length ? BinaryHeap.this.elements[childIndex]
+						: null;
+			}
 			return null;
 		}
 
