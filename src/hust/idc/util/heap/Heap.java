@@ -106,9 +106,9 @@ public interface Heap<E> extends Queue<E> {
 	 */
 	boolean heaplifyAt(E element) throws NoSuchElementException;
 	
-	Collection<HeapEntry<E>> entrys();
-	
-	Collection<HeapEntry<E>> roots();
+//	Collection<HeapEntry<E>> entrys();
+//	
+//	Collection<HeapEntry<E>> roots();
 	
 	/**
 	 * 1.An Entry to access one and exactly one element using method <tt>set(E)</tt> and <tt>element()</tt>;

@@ -87,7 +87,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			@SuppressWarnings("unchecked")
 			E[] array = (E[]) elements.toArray();
 			this.elements = this.initArray(array.length);
-			for(int i = 0; i < this.elements.length; ++i)
+			for (int i = 0; i < this.elements.length; ++i)
 				this.elements[i] = new BinaryHeapEntry(array[i], i);
 			this.buildHeap();
 		}
@@ -101,19 +101,19 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			@SuppressWarnings("unchecked")
 			E[] array = (E[]) elements.toArray();
 			this.elements = this.initArray(array.length);
-			for(int i = 0; i < this.elements.length; ++i)
+			for (int i = 0; i < this.elements.length; ++i)
 				this.elements[i] = new BinaryHeapEntry(array[i], i);
 			this.buildHeap();
 		}
 	}
-	
-	public BinaryHeap(Heap<E> heap){
+
+	public BinaryHeap(Heap<E> heap) {
 		super(heap == null ? null : heap.getComparator());
 		if (heap != null && !heap.isEmpty()) {
 			@SuppressWarnings("unchecked")
 			E[] array = (E[]) heap.toArray();
 			this.elements = this.initArray(array.length);
-			for(int i = 0; i < this.elements.length; ++i)
+			for (int i = 0; i < this.elements.length; ++i)
 				this.elements[i] = new BinaryHeapEntry(array[i], i);
 			this.buildHeap();
 		}
@@ -213,7 +213,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	protected transient volatile Collection<HeapEntry<E>> roots = null;
 
 	@Override
-	public Collection<HeapEntry<E>> entrys() {
+	Collection<HeapEntry<E>> entrys() {
 		// TODO Auto-generated method stub
 		if (entrys == null) {
 			entrys = new AbstractCollection<HeapEntry<E>>() {
@@ -265,7 +265,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	}
 
 	@Override
-	public Collection<Heap.HeapEntry<E>> roots() {
+	Collection<Heap.HeapEntry<E>> roots() {
 		// TODO Auto-generated method stub
 		if (roots == null) {
 			roots = new AbstractCollection<HeapEntry<E>>() {
@@ -344,7 +344,10 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			throw new InternalError();
 		}
 
-		clone.elements = Arrays.copyOf(elements, size);
+		clone.elements = clone.initArray(this.elements.length);
+		for(int i = 0; i < this.size; ++i){
+			clone.elements[i] = clone.new BinaryHeapEntry(this.elements[i].element(), i);
+		}
 		clone.modCount = 0;
 		clone.entrys = null;
 		clone.roots = null;
@@ -357,8 +360,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		if (e == null)
 			return false;
 		if (this.elements == null) {
-			this.ensureCapacityInternal(DEFAULT_INITIAL_CAPACITY); // Increments
-																	// modCount!!
+			this.ensureCapacityInternal(DEFAULT_INITIAL_CAPACITY); // Increments modCount!!
 		} else {
 			this.ensureCapacityInternal(size + 1); // Increments modCount!!
 		}
@@ -381,17 +383,10 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	@Override
 	public E poll() {
 		// TODO Auto-generated method stub
-		int size = this.size();
 		if (size <= 0)
 			return null;
 		E element = this.peek();
-		if (size == 1) {
-			this.elements[0] = null;
-		} else {
-			elements[0] = this.elements[size - 1];
-			this.elements[size - 1] = null;
-			this.elements[0].heaplifyDown();
-		}
+		this.removeEntry(0); // Increments modCount
 		return element;
 	}
 
@@ -402,33 +397,36 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			return false;
 		try {
 			@SuppressWarnings("unchecked")
-			BinaryHeapEntry index = (BinaryHeapEntry) this.getEntry((E) o);
-			if (index == null)
+			BinaryHeapEntry entry = (BinaryHeapEntry) this.getEntry((E) o);
+			if (entry == null)
 				return false;
-			this.removeEntry(index);
+			this.removeEntry(entry.index); // Increments modCount
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
 
-	private void removeEntry(BinaryHeapEntry entry) {
-		assert entry != null : "parameter is null in method removeEntry";
+	private void removeEntry(int index) {
+		assert index >= 0 && index < this.size : "parameter is illegal in method removeEntry";
 
-		if (size == 1) {
-			this.elements[0] = null;
-			return;
-		}
+		++modCount;
+		if(index == size - 1){
+			this.elements[size - 1] = null;
+			--size;
+			return ;
+		}else {
+			E elem = this.elements[index].element();
+			this.elements[index].set(this.elements[size - 1].element());
+			this.elements[size - 1] = null;
+			--size;
 
-		E elem = entry.element();
-		entry.set(this.elements[size - 1].element());
-		this.elements[size - 1] = null;
-
-		int comp = this.compare(elem, entry.element());
-		if (comp > 0) {
-			entry.heaplifyDown();
-		} else if (comp < 0) {
-			entry.heaplifyUp();
+			int comp = this.compare(elem, this.elements[index].element());
+			if (comp > 0) {
+				this.elements[index].heaplifyDown();
+			} else if (comp < 0) {
+				this.elements[index].heaplifyUp();
+			}
 		}
 	}
 
@@ -481,7 +479,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			// TODO Auto-generated method stub
 			if (index <= 1)
 				return null;
-			else if (index % 2 == 0)
+			else if ((index & 0x01) == 0)
 				return BinaryHeap.this.elements[index - 1];
 			else
 				return null;
@@ -492,7 +490,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			// TODO Auto-generated method stub
 			if (index <= 0)
 				return null;
-			else if (index % 2 != 0) {
+			else if ((index & 0x01) != 0) {
 				return index + 1 < BinaryHeap.this.elements.length ? BinaryHeap.this.elements[index + 1]
 						: null;
 			} else
@@ -529,6 +527,11 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 						: null;
 			}
 			return null;
+		}
+		
+		@Override
+		public String toString(){
+			return "index = " + index + ", value = " + element();
 		}
 
 	}
@@ -573,8 +576,8 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		elements = new BinaryHeap.BinaryHeapEntry[arrayLength];
 
 		// Read in all elements in the proper order.
-		for (int i = 0; i < size; i++){
-			E element = (E)s.readObject();
+		for (int i = 0; i < size; i++) {
+			E element = (E) s.readObject();
 			elements[i] = new BinaryHeapEntry(element, i);
 		}
 	}

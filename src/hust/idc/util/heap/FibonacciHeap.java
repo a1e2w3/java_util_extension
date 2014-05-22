@@ -21,6 +21,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	 */
 	private static final long serialVersionUID = -1775006086768839688L;
 	transient FibonacciHeapEntry minRoot;
+	transient boolean consolidated = true;
 	/**
 	 * used to iterate
 	 */
@@ -174,6 +175,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		// merge root list
 		if (consolidate) {
 			this.minRoot = this.consolidate(null);
+			this.consolidated = true;
 		} else {
 			++modCount;
 		}
@@ -186,7 +188,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	protected transient volatile Collection<HeapEntry<E>> roots = null;
 
 	@Override
-	public Collection<HeapEntry<E>> entrys() {
+	Collection<HeapEntry<E>> entrys() {
 		// TODO Auto-generated method stub
 		if (entrys == null) {
 			entrys = new AbstractCollection<HeapEntry<E>>() {
@@ -210,7 +212,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	}
 
 	@Override
-	public Collection<HeapEntry<E>> roots() {
+	Collection<HeapEntry<E>> roots() {
 		// TODO Auto-generated method stub
 		if (roots == null) {
 			roots = new AbstractCollection<HeapEntry<E>>() {
@@ -273,8 +275,11 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	}
 
 	public void consolidate() {
-		this.consolidate(null);
-		this.minRoot = this.peekNode();
+		if (!consolidated) {
+			this.consolidate(null);
+			this.minRoot = this.peekNode();
+			consolidated = true;
+		}
 	}
 
 	private FibonacciHeapEntry consolidate(FibonacciHeapEntry parent) {
@@ -389,6 +394,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				return this.minRoot;
 			}
 		}
+		this.consolidated = false;
 		return entry;
 	}
 
@@ -496,6 +502,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			this.nodes = null;
 		}
 		this.minRoot = null;
+		this.consolidated = true;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -510,13 +517,13 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			e.printStackTrace();
 			throw new InternalError();
 		}
-		
+
 		FibonacciHeapEntry newMinRoot = null, curRoot = null;
 		Iterator<HeapEntry<E>> rootIt = this.roots().iterator();
-		while(rootIt.hasNext()){
+		while (rootIt.hasNext()) {
 			FibonacciHeapEntry root = (FibonacciHeapEntry) rootIt.next();
-			FibonacciHeapEntry newRoot = this.cloneBinomialTree(root);
-			if(curRoot == null){
+			FibonacciHeapEntry newRoot = clone.cloneBinomialTree(root);
+			if (curRoot == null) {
 				newMinRoot = newRoot;
 			} else {
 				newRoot.right = curRoot.right;
@@ -526,24 +533,25 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			}
 			curRoot = newRoot;
 		}
-		
+
 		clone.minRoot = newMinRoot;
 		clone.nodes = clone.getNodeSet(clone.minRoot, null);
 		clone.modCount = 0;
 		clone.entrys = null;
 		clone.roots = null;
+		clone.consolidated = this.consolidated;
 		return clone;
 	}
-	
-	private FibonacciHeapEntry cloneBinomialTree(FibonacciHeapEntry root){
+
+	private FibonacciHeapEntry cloneBinomialTree(FibonacciHeapEntry root) {
 		FibonacciHeapEntry newRoot = new FibonacciHeapEntry(root.element());
 		FibonacciHeapEntry curChild = null;
 		Iterator<HeapEntry<E>> childIt = root.children().iterator();
-		while(childIt.hasNext()){
+		while (childIt.hasNext()) {
 			FibonacciHeapEntry child = (FibonacciHeapEntry) childIt.next();
 			FibonacciHeapEntry newChild = cloneBinomialTree(child);
 			newChild.parent = newRoot;
-			if(curChild == null){
+			if (curChild == null) {
 				newRoot.child = newChild;
 			} else {
 				newChild.right = curChild.right;
@@ -599,6 +607,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			tail.right = entry.rightSibling();
 			entry.right.left = tail;
 			entry.right = otherEntry;
+			
+			this.consolidated = false;
 		}
 
 		++modCount;
@@ -634,6 +644,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 
 		if (node.parent != null) {
 			this.cascadeCut(node.parent());
+			this.consolidated = true;
 		}
 		this.consolidate(null);
 		this.minRoot = this.peekNode();
@@ -693,7 +704,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			// TODO Auto-generated method stub
 			return this.child;
 		}
-		
+
 		@Override
 		public Collection<HeapEntry<E>> children() {
 			// TODO Auto-generated method stub
@@ -705,7 +716,8 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 						// TODO Auto-generated method stub
 						return new Iterator<HeapEntry<E>>() {
 							private int expectedModCount = FibonacciHeap.this.modCount;
-							private HeapEntry<E> next = FibonacciHeapEntry.this.child();
+							private HeapEntry<E> next = FibonacciHeapEntry.this
+									.child();
 
 							@Override
 							public boolean hasNext() {
@@ -722,11 +734,11 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 							public HeapEntry<E> next() {
 								// TODO Auto-generated method stub
 								checkForComodification();
-								if(next == null)
+								if (next == null)
 									throw new NoSuchElementException();
 								HeapEntry<E> cur = next;
 								next = cur.rightSibling();
-								if(next == FibonacciHeapEntry.this.child())
+								if (next == FibonacciHeapEntry.this.child())
 									next = null;
 								return cur;
 							}
@@ -844,6 +856,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		while (iterator.hasNext()) {
 			s.writeObject(iterator.next());
 		}
+		this.consolidated = false;
 
 		if (modCount != expectedModCount) {
 			throw new ConcurrentModificationException();

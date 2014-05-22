@@ -2,6 +2,7 @@ package hust.idc.util.heap;
 
 import hust.idc.util.Mergeable;
 
+import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Comparator;
@@ -11,9 +12,13 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
-		Mergeable<SkewHeap<E>> {
+		Mergeable<SkewHeap<E>>, Cloneable, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1780109760968396206L;
 	transient SkewHeapEntry root;
-	transient int size;
+	int size;
 	transient volatile int modCount = 0;
 
 	public SkewHeap() {
@@ -66,7 +71,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	protected transient volatile Collection<HeapEntry<E>> roots = null;
 
 	@Override
-	public Collection<HeapEntry<E>> entrys() {
+	Collection<HeapEntry<E>> entrys() {
 		// TODO Auto-generated method stub
 		if (entrys == null) {
 			entrys = new AbstractCollection<HeapEntry<E>>() {
@@ -89,7 +94,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	}
 
 	@Override
-	public Collection<HeapEntry<E>> roots() {
+	Collection<HeapEntry<E>> roots() {
 		// TODO Auto-generated method stub
 		if (roots == null) {
 			roots = new AbstractCollection<HeapEntry<E>>() {
@@ -271,6 +276,40 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		root.leftChild = null;
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public SkewHeap<E> clone() {
+		// TODO Auto-generated method stub
+		SkewHeap<E> clone;
+		try {
+			clone = (SkewHeap<E>) super.clone();
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalError();
+		}
+		// cannot use this.clone(root), otherwise, the clone.root.this$0 will not be
+		// clone but the current heap(this)
+		clone.root = clone.clone(root);
+		clone.modCount = 0;
+		clone.entrys = null;
+		clone.roots = null;
+		return clone;
+	}
+	
+	private SkewHeapEntry clone(SkewHeapEntry root){
+		if(root == null)
+			return null;
+		SkewHeapEntry newRoot = new SkewHeapEntry(root.element());
+		newRoot.leftChild = this.clone(root.leftChild());
+		if(newRoot.leftChild != null)
+			newRoot.leftChild.parent = newRoot;
+		newRoot.rightChild = this.clone(root.rightChild());
+		if(newRoot.rightChild != null)
+			newRoot.rightChild.parent = newRoot;
+		return newRoot;
+	}
+
 	private class SkewHeapEntry extends AbstractBinaryHeapEntry {
 		private E element;
 		private SkewHeapEntry parent;
@@ -296,19 +335,19 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 
 		@Override
-		public AbstractBinaryHeapEntry parent() {
+		public SkewHeapEntry parent() {
 			// TODO Auto-generated method stub
 			return parent;
 		}
 
 		@Override
-		public AbstractBinaryHeapEntry leftChild() {
+		public SkewHeapEntry leftChild() {
 			// TODO Auto-generated method stub
 			return leftChild;
 		}
 
 		@Override
-		public AbstractBinaryHeapEntry rightChild() {
+		public SkewHeapEntry rightChild() {
 			// TODO Auto-generated method stub
 			return rightChild;
 		}
@@ -322,6 +361,49 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			return true;
 		}
 
+	}
+	
+	/**
+	 * Save the state of the <tt>SkewHeap</tt> instance to a stream (that is,
+	 * serialize it).
+	 * 
+	 * @serialData The length of the array backing the <tt>SkewHeap</tt>
+	 *             instance is emitted (int), followed by all of its elements
+	 *             (each an <tt>Object</tt>) in the proper order.
+	 */
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		// Write out element count, and any hidden stuff
+		int expectedModCount = modCount;
+		s.defaultWriteObject();
+		
+		Iterator<E> iterator = this.iterator();
+		while(iterator.hasNext()){
+			s.writeObject(iterator.next());
+		}
+
+		if (modCount != expectedModCount) {
+			throw new ConcurrentModificationException();
+		}
+	}
+
+	/**
+	 * Reconstitute the <tt>SkewHeap</tt> instance from a stream (that is,
+	 * deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.IOException, ClassNotFoundException {
+		// Read in size, and any hidden stuff
+		s.defaultReadObject();
+		int sz = this.size;
+		
+		for(int i = 0; i < sz; ++i){
+			E element = (E) s.readObject();
+			this.offer(element);
+		}
+		this.size = sz;
+		this.modCount = 0;
 	}
 
 }

@@ -218,11 +218,9 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 		return this.entrys().size();
 	}
 
-	@Override
-	public abstract Collection<HeapEntry<E>> entrys();
+	abstract Collection<HeapEntry<E>> entrys();
 
-	@Override
-	public abstract Collection<HeapEntry<E>> roots();
+	abstract Collection<HeapEntry<E>> roots();
 
 	@Override
 	public abstract boolean offer(E e);

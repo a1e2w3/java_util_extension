@@ -19,7 +19,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	transient BinomialHeapEntry head;
 	// Cannot initilize to 0, this statement will be executed after super() in
 	// constructor and cover the current value.
-	transient int size;
+	int size;
 	transient volatile int modCount = 0;
 
 	public BinomialHeap() {
@@ -102,7 +102,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	protected transient volatile Collection<HeapEntry<E>> roots = null;
 
 	@Override
-	public Collection<HeapEntry<E>> entrys() {
+	Collection<HeapEntry<E>> entrys() {
 		// TODO Auto-generated method stub
 		if(entrys == null){
 			entrys = new AbstractCollection<HeapEntry<E>>(){
@@ -125,7 +125,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	}
 
 	@Override
-	public Collection<HeapEntry<E>> roots() {
+	Collection<HeapEntry<E>> roots() {
 		// TODO Auto-generated method stub
 		if(roots == null){
 			roots = new AbstractCollection<HeapEntry<E>>(){
@@ -357,7 +357,9 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		Iterator<HeapEntry<E>> rootIt = this.roots().iterator();
 		while(rootIt.hasNext()){
 			BinomialHeapEntry root = (BinomialHeapEntry) rootIt.next();
-			BinomialHeapEntry newRoot = this.cloneBinomialTree(root);
+			// cannot use this.cloneBinomialTree(root), otherwise, the newRoot.this$0 will not be
+			// clone but the current heap(this)
+			BinomialHeapEntry newRoot = clone.cloneBinomialTree(root);
 			if(curRoot == null){
 				newHead = newRoot;
 			} else {
@@ -367,7 +369,6 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 		
 		clone.head = newHead;
-		clone.size = this.size;
 		clone.modCount = 0;
 		clone.entrys = null;
 		clone.roots = null;

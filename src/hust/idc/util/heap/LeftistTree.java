@@ -2,6 +2,7 @@ package hust.idc.util.heap;
 
 import hust.idc.util.Mergeable;
 
+import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.Collection;
 import java.util.Comparator;
@@ -10,10 +11,14 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-public class LeftistTree<E> extends AbstractHeap<E> implements
-		Mergeable<LeftistTree<E>> {
+public class LeftistTree<E> extends AbstractHeap<E> implements Heap<E>,
+		Mergeable<LeftistTree<E>>, Cloneable, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 525489916375766502L;
 	transient LeftistTreeEntry root;
-	transient int size;
+	int size;
 	transient volatile int modCount = 0;
 
 	public LeftistTree() {
@@ -72,7 +77,7 @@ public class LeftistTree<E> extends AbstractHeap<E> implements
 	protected transient volatile Collection<HeapEntry<E>> roots = null;
 
 	@Override
-	public Collection<HeapEntry<E>> entrys() {
+	Collection<HeapEntry<E>> entrys() {
 		// TODO Auto-generated method stub
 		if (entrys == null) {
 			entrys = new AbstractCollection<HeapEntry<E>>() {
@@ -95,7 +100,7 @@ public class LeftistTree<E> extends AbstractHeap<E> implements
 	}
 
 	@Override
-	public Collection<HeapEntry<E>> roots() {
+	Collection<HeapEntry<E>> roots() {
 		// TODO Auto-generated method stub
 		if (roots == null) {
 			roots = new AbstractCollection<HeapEntry<E>>() {
@@ -284,6 +289,42 @@ public class LeftistTree<E> extends AbstractHeap<E> implements
 		clear(root.leftChild);
 		root.leftChild = null;
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public LeftistTree<E> clone() {
+		// TODO Auto-generated method stub
+		LeftistTree<E> clone;
+		try {
+			clone = (LeftistTree<E>) super.clone();
+		} catch (CloneNotSupportedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			throw new InternalError();
+		}
+
+		// cannot use this.clone(root), otherwise, the clone.root.this$0 will not be
+		// clone but the current heap(this)
+		clone.root = clone.clone(root);
+		clone.modCount = 0;
+		clone.entrys = null;
+		clone.roots = null;
+		return clone;
+	}
+	
+	private LeftistTreeEntry clone(LeftistTreeEntry root){
+		if(root == null)
+			return null;
+		LeftistTreeEntry newRoot = new LeftistTreeEntry(root.element());
+		newRoot.leftChild = this.clone(root.leftChild());
+		if(newRoot.leftChild != null)
+			newRoot.leftChild.parent = newRoot;
+		newRoot.rightChild = this.clone(root.rightChild());
+		if(newRoot.rightChild != null)
+			newRoot.rightChild.parent = newRoot;
+		newRoot.npl = root.npl;
+		return newRoot;
+	}
 
 	private class LeftistTreeEntry extends AbstractBinaryHeapEntry {
 		private E element;
@@ -348,6 +389,49 @@ public class LeftistTree<E> extends AbstractHeap<E> implements
 			return true;
 		}
 
+	}
+	
+	/**
+	 * Save the state of the <tt>LeftistTree</tt> instance to a stream (that is,
+	 * serialize it).
+	 * 
+	 * @serialData The length of the array backing the <tt>LeftistTree</tt>
+	 *             instance is emitted (int), followed by all of its elements
+	 *             (each an <tt>Object</tt>) in the proper order.
+	 */
+	private void writeObject(java.io.ObjectOutputStream s)
+			throws java.io.IOException {
+		// Write out element count, and any hidden stuff
+		int expectedModCount = modCount;
+		s.defaultWriteObject();
+		
+		Iterator<E> iterator = this.iterator();
+		while(iterator.hasNext()){
+			s.writeObject(iterator.next());
+		}
+
+		if (modCount != expectedModCount) {
+			throw new ConcurrentModificationException();
+		}
+	}
+
+	/**
+	 * Reconstitute the <tt>LeftistTree</tt> instance from a stream (that is,
+	 * deserialize it).
+	 */
+	@SuppressWarnings("unchecked")
+	private void readObject(java.io.ObjectInputStream s)
+			throws java.io.IOException, ClassNotFoundException {
+		// Read in size, and any hidden stuff
+		s.defaultReadObject();
+		int sz = this.size;
+		
+		for(int i = 0; i < sz; ++i){
+			E element = (E) s.readObject();
+			this.offer(element);
+		}
+		this.size = sz;
+		this.modCount = 0;
 	}
 
 }

@@ -1,35 +1,16 @@
 package hust.idc.util.heap.test;
 
 import hust.idc.util.heap.FibonacciHeap;
-import hust.idc.util.heap.Heap;
 
-import java.util.Comparator;
-import java.util.Random;
-
-public class TestFibonacciHeaplify {
+public class TestFibonacciHeaplify extends TestHeap {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Heap<WritableInt> intHeap = new FibonacciHeap<WritableInt>(new Comparator<WritableInt>(){
-			@Override
-			public int compare(WritableInt o1, WritableInt o2) {
-				// TODO Auto-generated method stub
-				return o1.compareTo(o2);
-			}
-			
-		});
-		
-		Random random = new Random();
-		int size = random.nextInt(10) + 3;
-		System.out.println("initialize: size = " + size);
-		for(int i = 0; i < size; ++i){
-			int elem = random.nextInt(100);
-			intHeap.add(WritableInt.newInstance(elem));
-			System.out.println(elem);
-		}
+		FibonacciHeap<WritableInt> intHeap = new FibonacciHeap<WritableInt>(wcomp);
+		initWritableInt(intHeap);
 		
 		WritableInt element = WritableInt.newInstance(35);
 		intHeap.add(element);
@@ -44,12 +25,18 @@ public class TestFibonacciHeaplify {
 		intHeap.heaplifyAt(element);
 		System.out.println("35¡ú200, heaplified: ");
 		System.out.println("Heap Builded: " + intHeap);
+		intHeap.consolidate();
+		System.out.println("35¡ú200, consolidated: ");
+		System.out.println("Heap Builded: " + intHeap);
 		
 		element.set(-1);
 		System.out.println("200¡ú-1, without heaplify: ");
 		System.out.println("Heap Builded: " + intHeap);
 		intHeap.heaplifyAt(element);
 		System.out.println("200¡ú-1, heaplified: ");
+		System.out.println("Heap Builded: " + intHeap);
+		intHeap.consolidate();
+		System.out.println("200¡ú-1, consolidated: ");
 		System.out.println("Heap Builded: " + intHeap);
 
 	}
