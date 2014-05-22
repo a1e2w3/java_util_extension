@@ -15,6 +15,8 @@ import java.util.Random;
 
 public abstract class TestHeap {
 	
+	static final int HEAP_SIZE = 20;
+	
 	static final Comparator<Integer> comp = new Comparator<Integer>(){
 		@Override
 		public int compare(Integer o1, Integer o2) {
@@ -47,13 +49,13 @@ public abstract class TestHeap {
 	}
 	
 	static int init(Heap<Integer> heap){
-		return init(heap, 0);
+		return init(heap, -1);
 	}
 	
-	static int init(Heap<Integer> heap, int minSize){
+	static int init(Heap<Integer> heap, int heapSize){
 		assert heap != null;
 		Random random = new Random();
-		int size = Math.max(random.nextInt(10), minSize) + 3;
+		int size = heapSize <= 3 ? random.nextInt(10) + 3 : heapSize;
 		System.out.println("initialize: size = " + size);
 		for(int i = 0; i < size; ++i){
 			int elem = random.nextInt(100);

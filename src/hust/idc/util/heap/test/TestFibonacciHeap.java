@@ -12,9 +12,7 @@ public class TestFibonacciHeap extends TestHeap {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		FibonacciHeap<Integer> heap = new FibonacciHeap<Integer>(comp);
-		
-		heap.add(0);
-		init(heap);
+		init(heap, HEAP_SIZE);
 		
 		System.out.println("Iterate: ");
 		Iterator<Integer> it = heap.iterator();

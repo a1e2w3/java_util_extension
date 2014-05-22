@@ -13,7 +13,7 @@ public class TestBinomialHeap extends TestHeap {
 		// TODO Auto-generated method stub
 		BinomialHeap<Integer> heap = new BinomialHeap<Integer>(comp);
 		
-		init(heap);
+		init(heap, HEAP_SIZE);
 		
 		System.out.println("Iterate: ");
 		Iterator<Integer> it = heap.iterator();
