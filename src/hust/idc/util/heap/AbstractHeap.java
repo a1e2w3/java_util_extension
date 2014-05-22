@@ -1,5 +1,6 @@
 package hust.idc.util.heap;
 
+import java.io.IOException;
 import java.util.AbstractCollection;
 import java.util.AbstractQueue;
 import java.util.Collection;
@@ -490,7 +491,10 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 	 */
 	abstract class AbstractHeapEntry implements HeapEntry<E> {
 		AbstractHeapEntry() {
-
+		}
+		
+		AbstractHeapEntry(E element) {
+			this.set(element);
 		}
 
 		boolean exchangeElementWith(HeapEntry<E> otherIndex) {
@@ -708,6 +712,10 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 			super();
 		}
 		
+		AbstractBinaryHeapEntry(E element){
+			super(element);
+		}
+		
 		public abstract AbstractBinaryHeapEntry parent();
 		
 		abstract AbstractBinaryHeapEntry leftChild();
@@ -792,6 +800,20 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 				};
 			}
 			return children;
+		}
+		
+		void writeBinaryTree(java.io.ObjectOutputStream s) throws IOException{
+			assert s != null;
+			s.writeObject(this.element());
+			boolean leftEmpty = this.leftChild() != null;
+			s.writeBoolean(leftEmpty);
+			if(!leftEmpty)
+				this.leftChild().writeBinaryTree(s);
+
+			boolean rightEmpty = this.rightChild() != null;
+			s.writeBoolean(rightEmpty);
+			if(!rightEmpty)
+				this.rightChild().writeBinaryTree(s);
 		}
 	}
 }

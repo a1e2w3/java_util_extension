@@ -3,6 +3,7 @@ package hust.idc.util.heap;
 import hust.idc.util.EmptyIterator;
 import hust.idc.util.Mergeable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
@@ -12,6 +13,7 @@ import java.util.ConcurrentModificationException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 
 public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
@@ -21,7 +23,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	 */
 	private static final long serialVersionUID = -1775006086768839688L;
 	transient FibonacciHeapEntry minRoot;
-	transient boolean consolidated = true;
+	boolean consolidated = true;
 	/**
 	 * used to iterate
 	 */
@@ -539,7 +541,6 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		clone.modCount = 0;
 		clone.entrys = null;
 		clone.roots = null;
-		clone.consolidated = this.consolidated;
 		return clone;
 	}
 
@@ -607,7 +608,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			tail.right = entry.rightSibling();
 			entry.right.left = tail;
 			entry.right = otherEntry;
-			
+
 			this.consolidated = false;
 		}
 
@@ -664,8 +665,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		private boolean mark = false;
 
 		private FibonacciHeapEntry(E element) {
-			super();
-			this.element = element;
+			super(Objects.requireNonNull(element));
 			this.parent = null;
 			this.child = null;
 			this.left = this;
@@ -839,7 +839,7 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	 * Save the state of the <tt>FibonacciHeap</tt> instance to a stream (that
 	 * is, serialize it).
 	 * 
-	 * @serialData The size of the heap backing the <tt>FibonacciHeap</tt>
+	 * @serialData The root count of the heap backing the <tt>FibonacciHeap</tt>
 	 *             instance is emitted (int), followed by all of its elements
 	 *             (each an <tt>Object</tt>) in the proper order.
 	 */
@@ -849,17 +849,29 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		int expectedModCount = modCount;
 		s.defaultWriteObject();
 
-		s.writeInt(this.size());
-
 		// Write out all elements in the proper order.
-		Iterator<E> iterator = this.iterator();
-		while (iterator.hasNext()) {
-			s.writeObject(iterator.next());
+		s.writeInt(roots().size());
+		if (!this.isEmpty()) {
+			Iterator<HeapEntry<E>> iterator = this.roots().iterator();
+			while (iterator.hasNext()) {
+				this.writeFibonacciTree((FibonacciHeapEntry) iterator.next(), s);
+			}
 		}
-		this.consolidated = false;
 
 		if (modCount != expectedModCount) {
 			throw new ConcurrentModificationException();
+		}
+	}
+
+	private void writeFibonacciTree(FibonacciHeapEntry root,
+			java.io.ObjectOutputStream s) throws IOException {
+		assert root != null && s != null;
+		s.writeObject(root.element);
+		s.writeBoolean(root.mark);
+		s.writeInt(root.degree);
+		Iterator<HeapEntry<E>> childIt = root.children().iterator();
+		while (childIt.hasNext()) {
+			writeFibonacciTree((FibonacciHeapEntry) childIt.next(), s);
 		}
 	}
 
@@ -867,20 +879,54 @@ public class FibonacciHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	 * Reconstitute the <tt>FibonacciHeap</tt> instance from a stream (that is,
 	 * deserialize it).
 	 */
-	@SuppressWarnings("unchecked")
 	private void readObject(java.io.ObjectInputStream s)
 			throws java.io.IOException, ClassNotFoundException {
 		// Read in any hidden stuff
 		s.defaultReadObject();
 
-		// Read in size
-		int size = s.readInt();
+		// Read in roots size
+		int roots = s.readInt();
 
 		// Read in all elements in the proper order.
-		for (int i = 0; i < size; i++) {
-			E element = (E) s.readObject();
-			this.offer(element);
+		FibonacciHeapEntry curRoot = null;
+		for (int i = 0; i < roots; i++) {
+			FibonacciHeapEntry root = this.readFibonacciTree(s);
+			if(curRoot == null)
+				this.minRoot = root;
+			else{
+				root.left = curRoot;
+				root.right = curRoot.right;
+				curRoot.right.left = root;
+				curRoot.right = root;
+			}
+			curRoot = root;
 		}
+		this.nodes = this.getNodeSet(minRoot, null);
+	}
+
+	private FibonacciHeapEntry readFibonacciTree(java.io.ObjectInputStream s)
+			throws ClassNotFoundException, IOException {
+		assert s != null;
+		@SuppressWarnings("unchecked")
+		E element = (E) s.readObject();
+		FibonacciHeapEntry root = new FibonacciHeapEntry(element);
+		root.mark = s.readBoolean();
+		root.degree = s.readInt();
+		FibonacciHeapEntry curChild = null;
+		for (int i = 0; i < root.degree; ++i) {
+			FibonacciHeapEntry child = readFibonacciTree(s);
+			child.parent = root;
+			if (curChild == null) {
+				root.child = child;
+			} else {
+				child.right = curChild.right;
+				child.left = curChild;
+				curChild.right.left = child;
+				curChild.right = child;
+			}
+			curChild = child;
+		}
+		return root;
 	}
 
 }

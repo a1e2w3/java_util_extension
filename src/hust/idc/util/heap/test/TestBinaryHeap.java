@@ -3,6 +3,8 @@ package hust.idc.util.heap.test;
 import hust.idc.util.heap.BinaryHeap;
 
 public class TestBinaryHeap extends TestHeap {
+	
+	private static final int MIN_HEAP_SIZE = 0;
 
 	/**
 	 * @param args
@@ -11,7 +13,7 @@ public class TestBinaryHeap extends TestHeap {
 		// TODO Auto-generated method stub
 		BinaryHeap<Integer> heap = new BinaryHeap<Integer>(comp);
 		
-		init(heap);
+		init(heap, MIN_HEAP_SIZE);
 		printSorted(heap.clone());
 		
 		System.out.println("Extract Max: " + heap.poll());
@@ -34,6 +36,8 @@ public class TestBinaryHeap extends TestHeap {
 		
 		System.out.println("Heap Contains Element 30? " + heap.contains(30));
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));
+		
+		testSerialization(heap);
 		
 		heap.clear();
 		System.out.println("Clear: " + heap);

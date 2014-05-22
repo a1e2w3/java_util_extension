@@ -3,6 +3,8 @@ package hust.idc.util.heap;
 import hust.idc.util.Mergeable;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.Collection;
@@ -12,59 +14,66 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
-public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
-		Mergeable<SkewHeap<E>>, Cloneable, Serializable {
+public class PairHeap<E> extends AbstractHeap<E> implements Heap<E>,
+		Mergeable<PairHeap<E>>, Cloneable, Serializable {
+
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -1780109760968396206L;
-	transient SkewHeapEntry root;
-	int size;
-	transient volatile int modCount = 0;
+	private static final long serialVersionUID = 7854703372936306012L;
 
-	public SkewHeap() {
+	transient PairHeapEntry root;
+	int size;
+	transient volatile int modCount;
+
+	public PairHeap() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
 
-	public SkewHeap(Collection<? extends E> elements,
+	public PairHeap(Comparator<? super E> comparator) {
+		super(comparator);
+		// TODO Auto-generated constructor stub
+	}
+
+	public PairHeap(Collection<? extends E> elements) {
+		super(elements);
+		// TODO Auto-generated constructor stub
+	}
+
+	public PairHeap(Collection<? extends E> elements,
 			Comparator<? super E> comparator) {
 		super(elements, comparator);
 		// TODO Auto-generated constructor stub
 	}
 
-	public SkewHeap(Collection<? extends E> elements) {
-		super(elements);
-		// TODO Auto-generated constructor stub
-	}
-
-	public SkewHeap(Comparator<? super E> comparator) {
-		super(comparator);
+	public PairHeap(Heap<E> heap) {
+		super(heap);
 		// TODO Auto-generated constructor stub
 	}
 
 	@Override
-	public boolean union(SkewHeap<E> otherHeap) {
+	public boolean union(PairHeap<E> otherHeap) {
 		// TODO Auto-generated method stub
 		if (otherHeap == null || otherHeap.isEmpty())
 			return false;
 		++modCount;
-		this.root = this.unionInternal(this.root, otherHeap.root);
+		this.root = this.pairLink(this.root, otherHeap.root);
 		this.size += otherHeap.size;
 		return true;
 	}
 
-	private SkewHeapEntry unionInternal(SkewHeapEntry root1, SkewHeapEntry root2) {
+	private PairHeapEntry pairLink(PairHeapEntry root1, PairHeapEntry root2) {
 		if (root1 == null)
 			return root2;
 		if (root2 == null)
 			return root1;
 		if (this.compare(root1, root2) < 0)
-			return unionInternal(root2, root1);
-
+			return pairLink(root2, root1);
 		root2.parent = root1;
-		root1.rightChild = unionInternal(root1.rightChild, root2);
-		root1.swapChild();
+		PairHeapEntry temp = root1.child;
+		root1.child = root2;
+		root2.sibling = temp;
 		return root1;
 	}
 
@@ -80,13 +89,13 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				@Override
 				public Iterator<HeapEntry<E>> iterator() {
 					// TODO Auto-generated method stub
-					return new SkewHeapEntryIterator();
+					return new PairHeapEntryIterator();
 				}
 
 				@Override
 				public int size() {
 					// TODO Auto-generated method stub
-					return SkewHeap.this.size;
+					return PairHeap.this.size;
 				}
 
 			};
@@ -104,11 +113,11 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				public Iterator<HeapEntry<E>> iterator() {
 					// TODO Auto-generated method stub
 					return new Iterator<HeapEntry<E>>() {
-						private boolean hasNext = !SkewHeap.this.isEmpty();
-						private int expectedModCount = SkewHeap.this.modCount;
+						private boolean hasNext = !PairHeap.this.isEmpty();
+						private int expectedModCount = PairHeap.this.modCount;
 
 						private void checkForComodification() {
-							if (expectedModCount != SkewHeap.this.modCount)
+							if (expectedModCount != PairHeap.this.modCount)
 								throw new ConcurrentModificationException();
 						}
 
@@ -125,7 +134,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 							if (!hasNext)
 								throw new NoSuchElementException();
 							hasNext = false;
-							return SkewHeap.this.root;
+							return PairHeap.this.root;
 						}
 
 						@Override
@@ -141,23 +150,23 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 				@Override
 				public int size() {
 					// TODO Auto-generated method stub
-					return SkewHeap.this.root == null ? 0 : 1;
+					return PairHeap.this.root == null ? 0 : 1;
 				}
 
 			};
 		}
 		return roots;
 	}
-	
-	private class SkewHeapEntryIterator extends HeapPreorderIterator {
-		private int expectedModCount = SkewHeap.this.modCount;
-		
-		private SkewHeapEntryIterator(){
+
+	private class PairHeapEntryIterator extends HeapPreorderIterator {
+		private int expectedModCount = PairHeap.this.modCount;
+
+		private PairHeapEntryIterator() {
 			super();
 		}
 
 		private void checkForComodification() {
-			if (expectedModCount != SkewHeap.this.modCount)
+			if (expectedModCount != PairHeap.this.modCount)
 				throw new ConcurrentModificationException();
 		}
 
@@ -165,8 +174,8 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		boolean removeCurrent() {
 			// TODO Auto-generated method stub
 			checkForComodification();
-			next = SkewHeap.this.removeEntry((SkewHeapEntry) current);
-			expectedModCount = SkewHeap.this.modCount;
+			next = PairHeap.this.removeEntry((PairHeapEntry) current);
+			expectedModCount = PairHeap.this.modCount;
 			return true;
 		}
 
@@ -184,7 +193,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		if (e == null)
 			return false;
 		++modCount;
-		this.root = this.unionInternal(this.root, new SkewHeapEntry(e));
+		this.root = this.pairLink(this.root, new PairHeapEntry(e));
 		++size;
 		return true;
 	}
@@ -202,7 +211,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	@Override
 	public E peek() {
 		// TODO Auto-generated method stub
-		return this.root == null ? null : this.root.element();
+		return root == null ? null : root.element();
 	}
 
 	@Override
@@ -212,7 +221,7 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			return false;
 		try {
 			@SuppressWarnings("unchecked")
-			SkewHeapEntry entry = (SkewHeapEntry) this.getEntry((E) o);
+			PairHeapEntry entry = (PairHeapEntry) this.getEntry((E) o);
 			if (entry == null)
 				return false;
 			this.removeEntry(entry);
@@ -222,30 +231,53 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 	}
 
-	private SkewHeapEntry removeEntry(SkewHeapEntry entry) {
+	private PairHeapEntry removeEntry(PairHeapEntry entry) {
 		assert entry != null : "parameter is null in method removeEntry";
-		++modCount;
-		if (entry.leftChild != null) {
-			entry.leftChild.parent = null;
-		}
-		if (entry.rightChild != null) {
-			entry.rightChild.parent = null;
+		PairHeapEntry firstChild = entry.child;
+		entry.child = null;
+
+		if (firstChild == null)
+			return null;
+
+		PairHeapEntry child = (firstChild.sibling == null ? null
+				: firstChild.sibling.sibling);
+		firstChild = this.pairLink(firstChild, firstChild.sibling);
+		PairHeapEntry prev = firstChild;
+
+		while (child != null) {
+			PairHeapEntry next = (child.sibling == null ? null
+					: child.sibling.sibling);
+			child = this.pairLink(child, child.sibling);
+			prev.sibling = child;
+			prev = child;
+			child = next;
 		}
 
-		SkewHeapEntry newRoot = this.unionInternal(entry.rightChild,
-				entry.leftChild);
-		entry.leftChild = entry.rightChild = null;
-		if (entry.parent == null) {
-			this.root = newRoot;
-		} else {
-			if (entry.parent.leftChild == entry)
-				entry.parent.leftChild = newRoot;
-			else
-				entry.parent.rightChild = newRoot;
-			entry.parent = null;
+		child = firstChild.sibling;
+		while (child != null) {
+			PairHeapEntry next = child.sibling;
+			firstChild = this.pairLink(firstChild, child);
+			child = next;
 		}
-		--size;
-		return newRoot;
+
+		firstChild.parent = entry.parent;
+		if (entry.parent == null) {
+			this.root = firstChild;
+		} else {
+			child = entry.parent.child;
+			if (child == entry) {
+				entry.parent.child = firstChild;
+				firstChild.sibling = entry.sibling;
+			} else {
+				while (child.sibling != entry)
+					child = child.sibling;
+				child.sibling = firstChild;
+				firstChild.sibling = entry.sibling;
+			}
+			entry.parent = null;
+			entry.sibling = null;
+		}
+		return firstChild;
 	}
 
 	@Override
@@ -267,29 +299,34 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		size = 0;
 	}
 
-	private void clear(SkewHeapEntry root) {
+	private void clear(PairHeapEntry root) {
 		if (root == null)
 			return;
 		root.parent = null;
-		clear(root.rightChild);
-		root.rightChild = null;
-		clear(root.leftChild);
-		root.leftChild = null;
+		PairHeapEntry child = root.child;
+		while (child != null) {
+			clear(child);
+			PairHeapEntry next = child.sibling;
+			child.sibling = null;
+			child = next;
+		}
+		root.child = null;
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public SkewHeap<E> clone() {
+	public PairHeap<E> clone() {
 		// TODO Auto-generated method stub
-		SkewHeap<E> clone;
+		PairHeap<E> clone;
 		try {
-			clone = (SkewHeap<E>) super.clone();
+			clone = (PairHeap<E>) super.clone();
 		} catch (CloneNotSupportedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 			throw new InternalError();
 		}
-		// cannot use this.clone(root), otherwise, the clone.root.this$0 will not be
+		// cannot use this.clone(root), otherwise, the clone.root.this$0 will
+		// not be
 		// clone but the current heap(this)
 		clone.root = clone.clone(root);
 		clone.modCount = 0;
@@ -297,35 +334,34 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		clone.roots = null;
 		return clone;
 	}
-	
-	private SkewHeapEntry clone(SkewHeapEntry root){
-		if(root == null)
+
+	private PairHeapEntry clone(PairHeapEntry root) {
+		if (root == null)
 			return null;
-		SkewHeapEntry newRoot = new SkewHeapEntry(root.element());
-		newRoot.leftChild = this.clone(root.leftChild());
-		if(newRoot.leftChild != null)
-			newRoot.leftChild.parent = newRoot;
-		newRoot.rightChild = this.clone(root.rightChild());
-		if(newRoot.rightChild != null)
-			newRoot.rightChild.parent = newRoot;
+		PairHeapEntry newRoot = new PairHeapEntry(root.element());
+		PairHeapEntry child = root.child, curChild = null;
+		while (child != null) {
+			PairHeapEntry newChild = clone(child);
+			newChild.parent = newRoot;
+			if (curChild == null)
+				newRoot.child = newChild;
+			else
+				curChild.sibling = newChild;
+			child = child.sibling;
+		}
 		return newRoot;
 	}
 
-	private class SkewHeapEntry extends AbstractBinaryHeapEntry {
+	private class PairHeapEntry extends AbstractHeapEntry {
 		private E element;
-		private SkewHeapEntry parent;
-		private SkewHeapEntry leftChild, rightChild;
+		private transient PairHeapEntry parent;
+		private transient PairHeapEntry child, sibling;
 
-		private SkewHeapEntry(E element) {
+		private PairHeapEntry(E element) {
 			super(Objects.requireNonNull(element));
 			this.parent = null;
-			this.leftChild = this.rightChild = null;
-		}
-
-		private void swapChild() {
-			SkewHeapEntry temp = this.leftChild;
-			this.leftChild = this.rightChild;
-			this.rightChild = temp;
+			this.child = null;
+			this.sibling = null;
 		}
 
 		@Override
@@ -335,39 +371,51 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 
 		@Override
-		public SkewHeapEntry parent() {
+		public AbstractHeapEntry parent() {
 			// TODO Auto-generated method stub
 			return parent;
 		}
 
 		@Override
-		public SkewHeapEntry leftChild() {
+		public HeapEntry<E> child() {
 			// TODO Auto-generated method stub
-			return leftChild;
+			return child;
 		}
 
 		@Override
-		public SkewHeapEntry rightChild() {
+		public PairHeapEntry leftSibling() {
 			// TODO Auto-generated method stub
-			return rightChild;
+			if (parent == null)
+				return null;
+			PairHeapEntry ch = parent.child;
+			while (ch != null && ch.sibling != this) {
+				ch = ch.sibling;
+			}
+			return ch;
+		}
+
+		@Override
+		public AbstractHeapEntry rightSibling() {
+			// TODO Auto-generated method stub
+			return sibling;
 		}
 
 		@Override
 		public boolean set(E element) {
 			// TODO Auto-generated method stub
-			if(element == null)
+			if (element == null)
 				return false;
 			this.element = element;
 			return true;
 		}
 
 	}
-	
+
 	/**
-	 * Save the state of the <tt>SkewHeap</tt> instance to a stream (that is,
+	 * Save the state of the <tt>PairHeap</tt> instance to a stream (that is,
 	 * serialize it).
 	 * 
-	 * @serialData The length of the array backing the <tt>SkewHeap</tt>
+	 * @serialData The length of the array backing the <tt>PairHeap</tt>
 	 *             instance is emitted (int), followed by all of its elements
 	 *             (each an <tt>Object</tt>) in the proper order.
 	 */
@@ -376,39 +424,57 @@ public class SkewHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		// Write out element count, and any hidden stuff
 		int expectedModCount = modCount;
 		s.defaultWriteObject();
-		
-		if(!this.isEmpty())
-			root.writeBinaryTree(s);
+
+		if (!this.isEmpty()) {
+			writeSubTree(root, s);
+		}
 
 		if (modCount != expectedModCount) {
 			throw new ConcurrentModificationException();
 		}
 	}
 
+	private void writeSubTree(PairHeapEntry root, ObjectOutputStream s)
+			throws IOException {
+		// TODO Auto-generated method stub
+		assert root != null && s != null;
+		s.writeObject(root.element());
+		s.writeInt(root.degree());
+		Iterator<HeapEntry<E>> iterator = root.children().iterator();
+		while (iterator.hasNext()) {
+			writeSubTree((PairHeapEntry) iterator.next(), s);
+		}
+	}
+
 	/**
-	 * Reconstitute the <tt>SkewHeap</tt> instance from a stream (that is,
+	 * Reconstitute the <tt>PairHeap</tt> instance from a stream (that is,
 	 * deserialize it).
 	 */
 	private void readObject(java.io.ObjectInputStream s)
 			throws java.io.IOException, ClassNotFoundException {
 		// Read in size, and any hidden stuff
 		s.defaultReadObject();
-		if(size > 0){
-			this.root = readSkewHeap(s);
-		}
+		if (size > 0)
+			this.root = readSubTree(s);
 	}
-	
-	private SkewHeapEntry readSkewHeap(java.io.ObjectInputStream s) throws ClassNotFoundException, IOException{
+
+	private PairHeapEntry readSubTree(ObjectInputStream s)
+			throws ClassNotFoundException, IOException {
+		// TODO Auto-generated method stub
+		assert s != null;
 		@SuppressWarnings("unchecked")
 		E element = (E) s.readObject();
-		SkewHeapEntry root = new SkewHeapEntry(element);
-		if(s.readBoolean()){
-			root.leftChild = readSkewHeap(s);
-			root.leftChild.parent = root;
-		}
-		if(s.readBoolean()){
-			root.rightChild = readSkewHeap(s);
-			root.rightChild.parent = root;
+		PairHeapEntry root = new PairHeapEntry(element);
+		int degree = s.readInt();
+		PairHeapEntry curChild = null;
+		for (int i = 0; i < degree; ++i) {
+			PairHeapEntry child = readSubTree(s);
+			child.parent = root;
+			if(curChild == null)
+				root.child = child;
+			else
+				curChild.sibling = child;
+			curChild = child;
 		}
 		return root;
 	}

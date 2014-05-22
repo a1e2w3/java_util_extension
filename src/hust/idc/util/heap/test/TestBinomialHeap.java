@@ -41,6 +41,8 @@ public class TestBinomialHeap extends TestHeap {
 		System.out.println("Heap Contains Element 30? " + heap.contains(30));
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));
 		
+		testSerialization(heap);
+		
 		while(!heap.isEmpty()){
 			System.out.println("Extract Min: " + heap.poll());
 		}

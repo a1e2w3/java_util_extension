@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 
 /**
@@ -445,8 +446,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		private transient final int index;
 
 		private BinaryHeapEntry(E element, int index) {
-			super();
-			this.element = element;
+			super(Objects.requireNonNull(element));
 			this.index = index;
 		}
 

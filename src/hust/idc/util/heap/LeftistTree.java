@@ -2,6 +2,7 @@ package hust.idc.util.heap;
 
 import hust.idc.util.Mergeable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.Collection;
@@ -328,13 +329,12 @@ public class LeftistTree<E> extends AbstractHeap<E> implements Heap<E>,
 
 	private class LeftistTreeEntry extends AbstractBinaryHeapEntry {
 		private E element;
-		private int npl = 0;
-		private LeftistTreeEntry parent;
-		private LeftistTreeEntry leftChild, rightChild;
+		private transient int npl = 0;
+		private transient LeftistTreeEntry parent;
+		private transient LeftistTreeEntry leftChild, rightChild;
 
 		private LeftistTreeEntry(E element) {
-			super();
-			this.element = Objects.requireNonNull(element);
+			super(Objects.requireNonNull(element));
 			this.parent = null;
 			this.leftChild = this.rightChild = null;
 		}
@@ -405,9 +405,8 @@ public class LeftistTree<E> extends AbstractHeap<E> implements Heap<E>,
 		int expectedModCount = modCount;
 		s.defaultWriteObject();
 		
-		Iterator<E> iterator = this.iterator();
-		while(iterator.hasNext()){
-			s.writeObject(iterator.next());
+		if(!this.isEmpty()){
+			root.writeBinaryTree(s);
 		}
 
 		if (modCount != expectedModCount) {
@@ -419,19 +418,28 @@ public class LeftistTree<E> extends AbstractHeap<E> implements Heap<E>,
 	 * Reconstitute the <tt>LeftistTree</tt> instance from a stream (that is,
 	 * deserialize it).
 	 */
-	@SuppressWarnings("unchecked")
 	private void readObject(java.io.ObjectInputStream s)
 			throws java.io.IOException, ClassNotFoundException {
 		// Read in size, and any hidden stuff
 		s.defaultReadObject();
-		int sz = this.size;
-		
-		for(int i = 0; i < sz; ++i){
-			E element = (E) s.readObject();
-			this.offer(element);
+		if(size > 0)
+			this.root = readLeftistTree(s);
+	}
+	
+	private LeftistTreeEntry readLeftistTree(java.io.ObjectInputStream s) throws ClassNotFoundException, IOException{
+		@SuppressWarnings("unchecked")
+		E element = (E) s.readObject();
+		LeftistTreeEntry root = new LeftistTreeEntry(element);
+		if(s.readBoolean()){
+			root.leftChild = readLeftistTree(s);
+			root.leftChild.parent = root;
 		}
-		this.size = sz;
-		this.modCount = 0;
+		if(s.readBoolean()){
+			root.rightChild = readLeftistTree(s);
+			root.rightChild.parent = root;
+		}
+		root.npl = root.rightChild == null ? 0 : root.rightChild.npl + 1;
+		return root;
 	}
 
 }

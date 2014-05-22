@@ -2,6 +2,7 @@ package hust.idc.util.heap;
 
 import hust.idc.util.Mergeable;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.AbstractCollection;
 import java.util.Collection;
@@ -9,6 +10,7 @@ import java.util.Comparator;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		Mergeable<BinomialHeap<E>>, Cloneable, Serializable {
@@ -104,8 +106,8 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	@Override
 	Collection<HeapEntry<E>> entrys() {
 		// TODO Auto-generated method stub
-		if(entrys == null){
-			entrys = new AbstractCollection<HeapEntry<E>>(){
+		if (entrys == null) {
+			entrys = new AbstractCollection<HeapEntry<E>>() {
 
 				@Override
 				public Iterator<HeapEntry<E>> iterator() {
@@ -118,7 +120,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 					// TODO Auto-generated method stub
 					return BinomialHeap.this.size;
 				}
-				
+
 			};
 		}
 		return entrys;
@@ -127,16 +129,16 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	@Override
 	Collection<HeapEntry<E>> roots() {
 		// TODO Auto-generated method stub
-		if(roots == null){
-			roots = new AbstractCollection<HeapEntry<E>>(){
+		if (roots == null) {
+			roots = new AbstractCollection<HeapEntry<E>>() {
 
 				@Override
 				public Iterator<HeapEntry<E>> iterator() {
 					// TODO Auto-generated method stub
-					return new Iterator<HeapEntry<E>>(){
+					return new Iterator<HeapEntry<E>>() {
 						private int expectedModCount = BinomialHeap.this.modCount;
 						private HeapEntry<E> next = BinomialHeap.this.head;
-						
+
 						private final void checkForComodification() {
 							if (expectedModCount != BinomialHeap.this.modCount)
 								throw new ConcurrentModificationException();
@@ -152,7 +154,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 						public HeapEntry<E> next() {
 							// TODO Auto-generated method stub
 							checkForComodification();
-							if(next == null)
+							if (next == null)
 								throw new NoSuchElementException();
 							HeapEntry<E> cur = next;
 							next = cur.rightSibling();
@@ -172,12 +174,12 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 					// TODO Auto-generated method stub
 					int s = BinomialHeap.this.size;
 					int count = 0;
-				    for(; s != 0; ++count){
-				        s &= (s - 1) ; // 清除最低位的1
-				    }
-				    return count;
+					for (; s != 0; ++count) {
+						s &= (s - 1); // 清除最低位的1
+					}
+					return count;
 				}
-				
+
 			};
 		}
 		return roots;
@@ -352,38 +354,39 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 			e.printStackTrace();
 			throw new InternalError();
 		}
-		
+
 		BinomialHeapEntry newHead = null, curRoot = null;
 		Iterator<HeapEntry<E>> rootIt = this.roots().iterator();
-		while(rootIt.hasNext()){
+		while (rootIt.hasNext()) {
 			BinomialHeapEntry root = (BinomialHeapEntry) rootIt.next();
-			// cannot use this.cloneBinomialTree(root), otherwise, the newRoot.this$0 will not be
+			// cannot use this.cloneBinomialTree(root), otherwise, the
+			// newRoot.this$0 will not be
 			// clone but the current heap(this)
 			BinomialHeapEntry newRoot = clone.cloneBinomialTree(root);
-			if(curRoot == null){
+			if (curRoot == null) {
 				newHead = newRoot;
 			} else {
 				curRoot.sibling = newRoot;
 			}
 			curRoot = newRoot;
 		}
-		
+
 		clone.head = newHead;
 		clone.modCount = 0;
 		clone.entrys = null;
 		clone.roots = null;
 		return clone;
 	}
-	
-	private BinomialHeapEntry cloneBinomialTree(BinomialHeapEntry root){
+
+	private BinomialHeapEntry cloneBinomialTree(BinomialHeapEntry root) {
 		BinomialHeapEntry newRoot = new BinomialHeapEntry(root.element());
 		BinomialHeapEntry curChild = null;
 		Iterator<HeapEntry<E>> childIt = root.children().iterator();
-		while(childIt.hasNext()){
+		while (childIt.hasNext()) {
 			BinomialHeapEntry child = (BinomialHeapEntry) childIt.next();
 			BinomialHeapEntry newChild = cloneBinomialTree(child);
 			newChild.parent = newRoot;
-			if(curChild == null){
+			if (curChild == null) {
 				newRoot.child = newChild;
 			} else {
 				curChild.sibling = newChild;
@@ -455,8 +458,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		transient int degree = 0;
 
 		private BinomialHeapEntry(E element) {
-			super();
-			this.set(element);
+			super(Objects.requireNonNull(element));
 		}
 
 		private void dispose() {
@@ -537,7 +539,8 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 						// TODO Auto-generated method stub
 						return new Iterator<HeapEntry<E>>() {
 							private int expectedModCount = BinomialHeap.this.modCount;
-							private HeapEntry<E> next = BinomialHeapEntry.this.child();
+							private HeapEntry<E> next = BinomialHeapEntry.this
+									.child();
 
 							@Override
 							public boolean hasNext() {
@@ -554,7 +557,7 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 							public HeapEntry<E> next() {
 								// TODO Auto-generated method stub
 								checkForComodification();
-								if(next == null)
+								if (next == null)
 									throw new NoSuchElementException();
 								HeapEntry<E> cur = next;
 								next = cur.rightSibling();
@@ -592,11 +595,11 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	private class BinomialHeapIterator extends HeapPreorderIterator implements
 			Iterator<HeapEntry<E>> {
 		private int expectedModCount = BinomialHeap.this.modCount;
-		
+
 		private BinomialHeapIterator() {
 			super();
 		}
-		
+
 		@Override
 		public HeapEntry<E> next() {
 			// TODO Auto-generated method stub
@@ -616,12 +619,12 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 
 	}
-	
+
 	/**
-	 * Save the state of the <tt>BinomialHeap</tt> instance to a stream (that is,
-	 * serialize it).
+	 * Save the state of the <tt>BinomialHeap</tt> instance to a stream (that
+	 * is, serialize it).
 	 * 
-	 * @serialData The size of the heap backing the <tt>BinomialHeap</tt>
+	 * @serialData The root count of the heap backing the <tt>BinomialHeap</tt>
 	 *             instance is emitted (int), followed by all of its elements
 	 *             (each an <tt>Object</tt>) in the proper order.
 	 */
@@ -630,12 +633,14 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		// Write out element count, and any hidden stuff
 		int expectedModCount = modCount;
 		s.defaultWriteObject();
-		s.writeInt(size);
 
 		// Write out all elements in the proper order.
-		Iterator<E> iterator = this.iterator();
-		while(iterator.hasNext()){
-			s.writeObject(iterator.next());
+		if (!this.isEmpty()) {
+			s.writeInt(roots().size());
+			Iterator<HeapEntry<E>> iterator = this.roots().iterator();
+			while (iterator.hasNext()) {
+				this.writeBinomialTree((BinomialHeapEntry) iterator.next(), s);
+			}
 		}
 
 		if (modCount != expectedModCount) {
@@ -643,24 +648,58 @@ public class BinomialHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		}
 	}
 
+	private void writeBinomialTree(BinomialHeapEntry root,
+			java.io.ObjectOutputStream s) throws IOException {
+		assert root != null && s != null;
+		s.writeObject(root.element);
+		s.writeInt(root.degree);
+		Iterator<HeapEntry<E>> childIt = root.children().iterator();
+		while (childIt.hasNext()) {
+			writeBinomialTree((BinomialHeapEntry) childIt.next(), s);
+		}
+	}
+
 	/**
 	 * Reconstitute the <tt>BinomialHeap</tt> instance from a stream (that is,
 	 * deserialize it).
 	 */
-	@SuppressWarnings("unchecked")
 	private void readObject(java.io.ObjectInputStream s)
 			throws java.io.IOException, ClassNotFoundException {
 		// Read in size, and any hidden stuff
 		s.defaultReadObject();
-		
-		// Read in size
-		int size = s.readInt();
 
-		// Read in all elements in the proper order.
-		for (int i = 0; i < size; i++){
-			E element = (E) s.readObject();
-			this.offer(element);
+		if (size > 0) {
+			int roots = s.readInt();
+			BinomialHeapEntry curRoot = null;
+			for(int i = 0; i < roots; ++i){
+				BinomialHeapEntry root = this.readBinomialTree(s);
+				if(curRoot == null)
+					this.head = root;
+				else
+					curRoot.sibling = root;
+				curRoot = root;
+			}
 		}
+	}
+
+	private BinomialHeapEntry readBinomialTree(java.io.ObjectInputStream s)
+			throws ClassNotFoundException, IOException {
+		assert s != null;
+		@SuppressWarnings("unchecked")
+		E element = (E) s.readObject();
+		BinomialHeapEntry root = new BinomialHeapEntry(element);
+		root.degree = s.readInt();
+		BinomialHeapEntry curChild = null;
+		for (int i = 0; i < root.degree; ++i) {
+			BinomialHeapEntry child = readBinomialTree(s);
+			child.parent = root;
+			if (curChild == null)
+				root.child = child;
+			else
+				curChild.sibling = child;
+			curChild = child;
+		}
+		return root;
 	}
 
 }

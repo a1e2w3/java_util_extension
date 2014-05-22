@@ -30,18 +30,20 @@ public class TestFibonacciHeap extends TestHeap {
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));
 
 		heap.decreaseElement(35, 30);
-		System.out.println("Decrease : 35 ¡ú 30");
+		System.out.println("Decrease : 35 ¡ú 30 " + heap);
 		printSorted(heap.clone());
 		heap.increaseElement(35, 40);
-		System.out.println("Increase : 35 ¡ú 40");
+		System.out.println("Increase : 35 ¡ú 40 " + heap);
 		printSorted(heap.clone());
 		
 		heap.remove(30);
-		System.out.println("Remove : 30");
+		System.out.println("Remove : 30 " + heap);
 		printSorted(heap.clone());
 		
 		System.out.println("Heap Contains Element 30? " + heap.contains(30));
 		System.out.println("Heap Contains Element 100? " + heap.contains(100));
+		
+		testSerialization(heap);
 		
 //		heap.clear();
 //		heap.rebuild();
