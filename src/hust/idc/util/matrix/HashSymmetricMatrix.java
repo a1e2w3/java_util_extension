@@ -532,7 +532,6 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		++size;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public HashSymmetricMatrix<K, V> clone() {
 		// TODO Auto-generated method stub
@@ -545,7 +544,6 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			e.printStackTrace();
 		}
 
-		clone.clearViews();
 		clone.modCount = 0;
 		clone.dimension = clone.size = 0;
 		clone.initBuckets(this.dimensionCapacity());

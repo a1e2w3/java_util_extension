@@ -559,6 +559,15 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	}
 
 	@Override
+	protected AbstractMatrix<RK, CK, V> clone() throws CloneNotSupportedException {
+		// TODO Auto-generated method stub
+		@SuppressWarnings("unchecked")
+		AbstractMatrix<RK, CK, V> clone = (AbstractMatrix<RK, CK, V>) super.clone();
+		clone.clearViews();
+		return clone;
+	}
+
+	@Override
 	public int hashCode() {
 		// TODO Auto-generated method stub
 		int h = 0;

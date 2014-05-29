@@ -757,7 +757,6 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	 * 
 	 * @return a shallow copy of this matrix
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public HashMatrix<RK, CK, V> clone() {
 		// TODO Auto-generated method stub
@@ -770,7 +769,6 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			e.printStackTrace();
 		}
 
-		clone.clearViews();
 		clone.modCount = 0;
 		clone.rows = clone.columns = clone.size = 0;
 		clone.initBuckets(this.rowCapacity(), this.columnCapacity());

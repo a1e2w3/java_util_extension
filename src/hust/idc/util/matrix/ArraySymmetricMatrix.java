@@ -322,14 +322,12 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	 * 
 	 * @return a shallow copy of this matrix
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public ArraySymmetricMatrix<K, V> clone() {
 		// TODO Auto-generated method stub
 		try {
 			ArraySymmetricMatrix<K, V> v = (ArraySymmetricMatrix<K, V>) super
 					.clone();
-			v.clearViews();
 			v.initArrays(this.dimensionCapacity);
 
 			// clone keys

@@ -448,13 +448,11 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	 * 
 	 * @return a shallow copy of this matrix
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public ArrayMatrix<RK, CK, V> clone() {
 		// TODO Auto-generated method stub
 		try {
 			ArrayMatrix<RK, CK, V> v = (ArrayMatrix<RK, CK, V>) super.clone();
-			v.clearViews();
 			v.size = 0;
 		    v.initArrays(this.rowCapacity(), this.columnCapacity());
 		    v.putAll(this, false);

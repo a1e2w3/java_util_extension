@@ -417,13 +417,11 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 	 * 
 	 * @return a shallow copy of this matrix
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public LinkedMatrix<RK, CK, V> clone() {
 		// TODO Auto-generated method stub
 		try {
 			LinkedMatrix<RK, CK, V> v = (LinkedMatrix<RK, CK, V>) super.clone();
-			v.clearViews();
 			v.size = v.rows = v.columns = 0;
 			v.rowHeadsEntry = null;
 			v.columnHeadsEntry = null;

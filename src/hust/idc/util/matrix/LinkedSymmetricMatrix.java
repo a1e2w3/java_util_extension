@@ -362,13 +362,11 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	 * 
 	 * @return a shallow copy of this matrix
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public LinkedSymmetricMatrix<K, V> clone() {
 		// TODO Auto-generated method stub
 		try {
 			LinkedSymmetricMatrix<K, V> v = (LinkedSymmetricMatrix<K, V>) super.clone();
-			v.clearViews();
 			v.size = v.demension = 0;
 			v.headsEntry = null;
 		    v.putAll(this);
