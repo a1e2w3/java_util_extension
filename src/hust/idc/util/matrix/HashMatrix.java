@@ -1,6 +1,5 @@
 package hust.idc.util.matrix;
 
-import hust.idc.util.EmptyIterator;
 import hust.idc.util.pair.Pair;
 
 import java.io.IOException;
@@ -71,15 +70,15 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	 * The number of times this HashMatrix has been structurally modified
 	 * Structural modifications are those that change the number of mappings in
 	 * the HashMatrix or otherwise modify its internal structure (e.g., rehash).
-	 * This field is used to make iterators on Collection-views of the HashMatrix
-	 * fail-fast. (See ConcurrentModificationException).
+	 * This field is used to make iterators on Collection-views of the
+	 * HashMatrix fail-fast. (See ConcurrentModificationException).
 	 */
 	transient volatile int modCount;
 
 	public HashMatrix() {
 		super();
 		this.loadFactor = DEFAULT_LOAD_FACTOR;
-		rowThreshold = columnThreshold = (int) (DEFAULT_INITIAL_CAPACITY);
+		rowThreshold = columnThreshold = DEFAULT_INITIAL_CAPACITY;
 
 		this.rows = this.columns = this.size = 0;
 		initBuckets(DEFAULT_INITIAL_CAPACITY, DEFAULT_INITIAL_CAPACITY);
@@ -128,9 +127,9 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		this();
 		this.putAll(otherMatrix);
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	void initBuckets(int rowCapacity, int columnCapacity){
+	void initBuckets(int rowCapacity, int columnCapacity) {
 		table = new HashMatrix.Entry[rowCapacity][columnCapacity];
 		rowHeads = new Head[rowCapacity];
 		columnHeads = new Head[columnCapacity];
@@ -777,13 +776,27 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		return clone;
 	}
-	
+
+	@SuppressWarnings("unchecked")
 	@Override
-	void clearViews(){
+	void clearViews() {
 		super.clearViews();
 		rowKeySet = null;
 		columnKeySet = null;
 		entrySet = null;
+
+		for(Head<RK> rowHead : rowHeads){
+			if(rowHead.viewMap != null){
+				((RowMapView) rowHead.viewMap).entrySet = null;
+				rowHead.viewMap = null;
+			}
+		}
+		for(Head<CK> columnHead : columnHeads){
+			if(columnHead.viewMap != null){
+				((RowMapView) columnHead.viewMap).entrySet = null;
+				columnHead.viewMap = null;
+			}
+		}
 	}
 
 	private void putAllForCreate(
@@ -916,8 +929,8 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			if (HashMatrix.this.modCount != expectedModCount)
 				throw new ConcurrentModificationException();
 		}
-		
-		void resetModCount(){
+
+		void resetModCount() {
 			expectedModCount = HashMatrix.this.modCount;
 		}
 	}
@@ -1102,82 +1115,128 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		return (Map<RK, V>) head.viewMap;
 	}
 
-	private final class RowMapView extends AbstractMap<CK, V> {
-		private transient volatile Head<RK> head;
-		private final transient RK row;
+	private abstract class MapView<K1, K2> extends AbstractMap<K2, V> {
+		transient volatile Head<K1> head;
+		final transient K1 viewKey;
 
-		private RowMapView(RK row, Head<RK> head) {
-			this.row = row;
+		transient volatile Set<Map.Entry<K2, V>> entrySet = null;
+
+		MapView(K1 viewKey, Head<K1> head) {
+			this.viewKey = viewKey;
 			this.head = head;
-			modCount = head == null ? 0 : head.modCount;
+		}
+
+		final int modCount() {
+			return headNotExists() ? -1 : head.modCount;
+		}
+
+		final boolean headNotExists() {
+			if (head != null && head.disposed())
+				head = null;
+			return head == null;
 		}
 		
-		private int modCount(){
-			return head == null ? 0 : head.modCount;
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			validateHead();
+			return head == null ? 0 : head.size;
 		}
 
 		@Override
-		public V put(CK key, V value) {
-			// TODO Auto-generated method stub
-			if (null == head) {
-				head = HashMatrix.this.addRowHeadIfNotExists(row);
-				head.viewMap = this;
-			}
-			return HashMatrix.this.put(row, key, value);
-		}
+		public Set<Map.Entry<K2, V>> entrySet() {
+			validateHead();
+			if (entrySet == null) {
+				entrySet = new AbstractSet<Map.Entry<K2, V>>() {
 
-		private transient volatile Set<Map.Entry<CK, V>> entrySet = null;
-
-		@Override
-		public Set<Map.Entry<CK, V>> entrySet() {
-			// TODO Auto-generated method stub
-			if (null == entrySet) {
-				entrySet = new AbstractSet<Map.Entry<CK, V>>() {
 					@Override
-					public Iterator<Map.Entry<CK, V>> iterator() {
+					public Iterator<Map.Entry<K2, V>> iterator() {
 						// TODO Auto-generated method stub
-						if (head == null)
-							return EmptyIterator.<Map.Entry<CK, V>>getInstance();
-						else
-							return new EntryIterator();
+						validateHead();
+						return entryIterator();
 					}
 
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return head == null ? 0 : head.size;
+						return MapView.this.size();
 					}
+
 				};
 			}
 			return entrySet;
 		}
+		
+		void validateHead() {
+			if (headNotExists()) {
+				resetHead();
+				if (head != null && head.viewMap == null)
+					head.viewMap = this;
+			}
+		}
 
-		private final class EntryIterator implements
-				Iterator<Map.Entry<CK, V>> {
+		abstract Iterator<Map.Entry<K2, V>> entryIterator();
+		
+		abstract void resetHead();
+	}
+
+	private final class RowMapView extends MapView<RK, CK> {
+		private RowMapView(RK row, Head<RK> head) {
+			super(row, head);
+		}
+
+		@Override
+		void resetHead() {
+			// TODO Auto-generated method stub
+			head = HashMatrix.this.rowHead(viewKey);
+		}
+
+		@Override
+		public V put(CK key, V value) {
+			// TODO Auto-generated method stub
+			validateHead();
+			if (null == head) {
+				head = HashMatrix.this.addRowHeadIfNotExists(viewKey);
+				head.viewMap = this;
+			}
+			return HashMatrix.this.put(viewKey, key, value);
+		}
+
+		@Override
+		Iterator<java.util.Map.Entry<CK, V>> entryIterator() {
+			// TODO Auto-generated method stub
+			return new EntryIterator();
+		}
+
+		private final class EntryIterator implements Iterator<Map.Entry<CK, V>> {
 			private HashMatrix<RK, CK, V>.Entry current = null, next;
 			private final int rowIndex = indexFor(head.hash, rowHeads.length);
 			private volatile int columnIndex = 0;
-			
+
 			private int expectedModCount;
 
 			private EntryIterator() {
 				expectedModCount = RowMapView.this.modCount();
 				getNext();
 			}
-			
-			void checkModCount() {
+
+			void checkForModification() {
 				if (RowMapView.this.modCount() != expectedModCount)
 					throw new ConcurrentModificationException();
 			}
 
 			private void getNext() {
-				while (columnIndex < columnHeads.length) {
-					if (table[rowIndex][columnIndex] != null
-							&& table[rowIndex][columnIndex].rowHead == head) {
-						next = table[rowIndex][columnIndex++];
-						break;
+				if (RowMapView.this.headNotExists()) {
+					next = null;
+				} else {
+					while (columnIndex < columnHeads.length) {
+						if (table[rowIndex][columnIndex] != null
+								&& table[rowIndex][columnIndex].rowHead == head) {
+							next = table[rowIndex][columnIndex++];
+							break;
+						}
+						++columnIndex;
 					}
-					++columnIndex;
 				}
 			}
 
@@ -1190,12 +1249,12 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			@Override
 			public Map.Entry<CK, V> next() {
 				// TODO Auto-generated method stub
-				checkModCount();
+				checkForModification();
 				if (null == next)
 					throw new NoSuchElementException();
 				current = next;
 				while ((next = next.next) != null) {
-					if (eq(row, next.getRowKey()))
+					if (eq(viewKey, next.getRowKey()))
 						break;
 				}
 				if (next == null) {
@@ -1209,65 +1268,47 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				// TODO Auto-generated method stub
 				if (null == current)
 					throw new IllegalStateException();
-				checkModCount();
+				checkForModification();
 				CK column = current.getColumnKey();
 				current = null;
-				HashMatrix.this.remove(row, column);
-				if (head.disposed())
+				HashMatrix.this.remove(viewKey, column);
+				if (head.disposed()) {
 					head = null;
+					next = null;
+				}
 				expectedModCount = RowMapView.this.modCount();
 			}
 
 		}
 	}
 
-	private final class ColumnMapView extends AbstractMap<RK, V> {
-		private transient volatile Head<CK> head;
-		private final transient CK column;
+	private final class ColumnMapView extends MapView<CK, RK> {
 
 		private ColumnMapView(CK column, Head<CK> head) {
-			this.column = column;
-			this.head = head;
+			super(column, head);
 		}
 		
-		private int modCount(){
-			return head == null ? 0 : head.modCount;
+		@Override
+		void resetHead() {
+			// TODO Auto-generated method stub
+			head = HashMatrix.this.columnHead(viewKey);
 		}
 
 		@Override
 		public V put(RK key, V value) {
 			// TODO Auto-generated method stub
+			validateHead();
 			if (null == head) {
-				head = HashMatrix.this.addColumnHeadIfNotExists(column);
+				head = HashMatrix.this.addColumnHeadIfNotExists(viewKey);
 				head.viewMap = this;
 			}
-			return HashMatrix.this.put(key, column, value);
+			return HashMatrix.this.put(key, viewKey, value);
 		}
 
-		private transient volatile Set<Map.Entry<RK, V>> entrySet = null;
-
 		@Override
-		public Set<Map.Entry<RK, V>> entrySet() {
+		Iterator<Map.Entry<RK, V>> entryIterator() {
 			// TODO Auto-generated method stub
-			if (null == entrySet) {
-				entrySet = new AbstractSet<Map.Entry<RK, V>>() {
-					@Override
-					public Iterator<Map.Entry<RK, V>> iterator() {
-						// TODO Auto-generated method stub
-						if (null == head)
-							return EmptyIterator.<Map.Entry<RK, V>>getInstance();
-						else
-							return new EntryIterator();
-					}
-
-					@Override
-					public int size() {
-						// TODO Auto-generated method stub
-						return head == null ? 0 : head.size;
-					}
-				};
-			}
-			return entrySet;
+			return new EntryIterator();
 		}
 
 		private final class EntryIterator implements Iterator<Map.Entry<RK, V>> {
@@ -1276,27 +1317,31 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			private int rowIndex = 0;
 			private final int columnIndex = indexFor(head.hash,
 					columnHeads.length);
-			
+
 			private int expectedModCount;
 
 			private EntryIterator() {
 				expectedModCount = ColumnMapView.this.modCount();
 				getNext();
 			}
-			
-			void checkModCount() {
+
+			void checkForModification() {
 				if (ColumnMapView.this.modCount() != expectedModCount)
 					throw new ConcurrentModificationException();
 			}
 
 			private void getNext() {
-				while (rowIndex < rowHeads.length) {
-					if (table[rowIndex][columnIndex] != null
-							&& table[rowIndex][columnIndex].columnHead == head) {
-						next = table[rowIndex++][columnIndex];
-						break;
+				if (ColumnMapView.this.headNotExists()) {
+					next = null;
+				} else {
+					while (rowIndex < rowHeads.length) {
+						if (table[rowIndex][columnIndex] != null
+								&& table[rowIndex][columnIndex].columnHead == head) {
+							next = table[rowIndex++][columnIndex];
+							break;
+						}
+						++rowIndex;
 					}
-					++rowIndex;
 				}
 			}
 
@@ -1309,12 +1354,12 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			@Override
 			public Map.Entry<RK, V> next() {
 				// TODO Auto-generated method stub
-				checkModCount();
+				checkForModification();
 				if (null == next)
 					throw new NoSuchElementException();
 				current = next;
 				while ((next = next.next) != null) {
-					if (eq(column, next.getColumnKey()))
+					if (eq(viewKey, next.getColumnKey()))
 						break;
 				}
 				if (next == null) {
@@ -1328,13 +1373,15 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				// TODO Auto-generated method stub
 				if (null == current)
 					throw new IllegalStateException();
-				checkModCount();
+				checkForModification();
 				RK row = current.getRowKey();
 				current = null;
-				HashMatrix.this.remove(row, column);
+				HashMatrix.this.remove(row, viewKey);
 
-				if (head.disposed())
+				if (head.disposed()) {
 					head = null;
+					next = null;
+				}
 				expectedModCount = ColumnMapView.this.modCount();
 			}
 
@@ -1421,9 +1468,9 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						&& eq(this.getValue(), other.getValue());
 			}
 		}
-		
+
 		@Override
-		void dispose(){
+		void dispose() {
 			super.dispose();
 			rowHead = null;
 			columnHead = null;
@@ -1453,7 +1500,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		transient volatile int modCount;
 		transient Head<K> next = null;
 
-		transient volatile Map<?, V> viewMap = null;
+		transient volatile Map<?, ?> viewMap = null;
 
 		Head(K key, int hash, Head<K> next) {
 			this.key = key;
@@ -1466,7 +1513,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		int increaseSize(int incr) {
-			if(0 == incr)
+			if (0 == incr)
 				return size;
 			++modCount;
 			size = Math.max(0, size + incr);
@@ -1475,6 +1522,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		void dispose() {
 			size = -1;
+			modCount = -1;
 			next = null;
 			viewMap = null;
 		}
@@ -1485,18 +1533,19 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 	}
 
 	/**
-     * Save the state of the <tt>HashMatrix</tt> instance to a stream (i.e.,
-     * serialize it).
-     *
-     * @serialData The <i>capacity</i> of the HashMatrix (the row and column of the
-     *		   bucket array) is emitted (int), followed by the
-     *		   <i>size</i> (an int, the number of keypair-value
-     *		   mappings), followed by the rowKey (Object), columnKey (Object) and value (Object)
-     *		   for each keypair-value mapping.  The keypair-value mappings are
-     *		   emitted in no particular order.
-     */
+	 * Save the state of the <tt>HashMatrix</tt> instance to a stream (i.e.,
+	 * serialize it).
+	 * 
+	 * @serialData The <i>capacity</i> of the HashMatrix (the row and column of
+	 *             the bucket array) is emitted (int), followed by the
+	 *             <i>size</i> (an int, the number of keypair-value mappings),
+	 *             followed by the rowKey (Object), columnKey (Object) and value
+	 *             (Object) for each keypair-value mapping. The keypair-value
+	 *             mappings are emitted in no particular order.
+	 */
 	private void writeObject(java.io.ObjectOutputStream s) throws IOException {
-		Iterator<Matrix.Entry<RK, CK, V>> i = isEmpty() ? null : entrySet().iterator();
+		Iterator<Matrix.Entry<RK, CK, V>> i = isEmpty() ? null : entrySet()
+				.iterator();
 
 		// Write out the threshold, loadfactor, and any hidden stuff
 		s.defaultWriteObject();

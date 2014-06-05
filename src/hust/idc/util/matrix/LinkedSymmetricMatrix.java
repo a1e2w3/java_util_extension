@@ -393,10 +393,10 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		if (null == head)
 			return new KeyMapView(key, head);
 
-		if (null == head.rowMapView) {
-			head.rowMapView = new KeyMapView(key, head);
+		if (null == head.viewMap) {
+			head.viewMap = new KeyMapView(key, head);
 		}
-		return head.rowMapView;
+		return head.viewMap;
 	}
 
 	private class KeyMapView extends AbstractMap<K, V> {
@@ -407,13 +407,32 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			this.row = key;
 			this.head = head;
 		}
+		
+		private final int modCount() {
+			return headNotExists() ? -1 : head.modCount;
+		}
+		
+		private final boolean headNotExists() {
+			if (head != null && head.disposed())
+				head = null;
+			return head == null;
+		}
+		
+		private void validateHead() {
+			if (headNotExists()) {
+				head = LinkedSymmetricMatrix.this.getHead(row);
+				if (head != null && head.viewMap == null)
+					head.viewMap = this;
+			}
+		}
 
 		@Override
 		public V put(K key, V value) {
 			// TODO Auto-generated method stub
-			if (null == head || head.disposed()) {
+			validateHead();
+			if (null == head) {
 				head = LinkedSymmetricMatrix.this.addHeadIfNotExists(row);
-				head.rowMapView = this;
+				head.viewMap = this;
 			}
 			return LinkedSymmetricMatrix.this.setValue(head,
 					addHeadIfNotExists(key), value);
@@ -425,18 +444,20 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		@Override
 		public Set<Map.Entry<K, V>> entrySet() {
 			// TODO Auto-generated method stub
+			validateHead();
 			if (null == entrySet) {
 				entrySet = new AbstractSet<Map.Entry<K, V>>() {
 
 					@Override
 					public Iterator<Map.Entry<K, V>> iterator() {
 						// TODO Auto-generated method stub
+						validateHead();
 						return new Iterator<Map.Entry<K, V>>() {
 							private EntryNode current = null, next = null;
 							private boolean inRow = true;
 							private boolean currentRemoved = false;
 
-							private int expectedModCount = LinkedSymmetricMatrix.this.modCount;
+							private int expectedModCount = KeyMapView.this.modCount();
 
 							@Override
 							public boolean hasNext() {
@@ -472,7 +493,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 							}
 
 							private void checkModCount() {
-								if (expectedModCount != LinkedSymmetricMatrix.this.modCount)
+								if (expectedModCount != KeyMapView.this.modCount())
 									throw new ConcurrentModificationException();
 							}
 
@@ -503,7 +524,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 									head = null;
 								}
 								currentRemoved = true;
-								expectedModCount = LinkedSymmetricMatrix.this.modCount;
+								expectedModCount = KeyMapView.this.modCount();
 							}
 
 						};
@@ -512,7 +533,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return head == null ? 0 : head.size;
+						return KeyMapView.this.size();
 					}
 				};
 			}
@@ -522,6 +543,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		@Override
 		public int size() {
 			// TODO Auto-generated method stub
+			validateHead();
 			return head == null ? 0 : head.size;
 		}
 
@@ -532,6 +554,15 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		super.clearViews();
 		keySet = null;
 		entrySet = null;
+		
+		HeadNode head = headsEntry;
+		while(head != null){
+			if(head.viewMap != null){
+				((KeyMapView) head.viewMap).entrySet = null;
+				head.viewMap = null;
+			}
+			head = head.next;
+		}
 	}
 
 	// View
@@ -767,6 +798,8 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		private K key;
 		private int index;
 		private int size;
+		
+		transient volatile int modCount;
 
 		/*
 		 * To prevent the diagonal element to be access twice, column entry
@@ -778,7 +811,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		private HeadNode prev, next;
 
 		// View
-		protected transient volatile Map<K, V> rowMapView = null;
+		protected transient volatile Map<K, V> viewMap = null;
 
 		private HeadNode(K key, int index) {
 			this.key = key;
@@ -793,6 +826,9 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		private int addSize(int incr) {
+			if(incr == 0)
+				return size;
+			++modCount;
 			size = Math.max(0, size + incr);
 			return size;
 		}
@@ -801,9 +837,10 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			key = null;
 			index = -1;
 			size = 0;
+			modCount = -1;
 			rowEntry = columnEntry = null;
 			prev = next = null;
-			rowMapView = null;
+			viewMap = null;
 		}
 
 		private boolean disposed() {

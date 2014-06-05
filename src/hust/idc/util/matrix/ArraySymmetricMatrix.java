@@ -364,24 +364,43 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		Head head = this.getHead(key);
 		if (null == head)
 			return new KeyMapView(key, head);
-		if (null == head.rowMapView) {
-			head.rowMapView = new KeyMapView(key, head);
+		if (null == head.viewMap) {
+			head.viewMap = new KeyMapView(key, head);
 		}
-		return head.rowMapView;
+		return head.viewMap;
 	}
 
 	private final class KeyMapView extends AbstractMap<K, V> {
 		private transient volatile Head head;
-		private final transient K key;
+		private final transient K viewKey;
 
 		private KeyMapView(K key, Head head) {
-			this.key = key;
+			this.viewKey = key;
 			this.head = head;
+		}
+		
+		private final int modCount() {
+			return headNotExists() ? -1 : head.modCount;
+		}
+		
+		private final boolean headNotExists() {
+			if (head != null && head.disposed())
+				head = null;
+			return head == null;
+		}
+		
+		private void validateHead() {
+			if (headNotExists()) {
+				head = ArraySymmetricMatrix.this.getHead(viewKey);
+				if (head != null && head.viewMap == null)
+					head.viewMap = this;
+			}
 		}
 
 		@Override
 		public boolean containsKey(Object key) {
 			// TODO Auto-generated method stub
+			validateHead();
 			if (null == head)
 				return false;
 			Head columnHead = ArraySymmetricMatrix.this.getHead(key);
@@ -397,6 +416,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		@Override
 		public V get(Object key) {
 			// TODO Auto-generated method stub
+			validateHead();
 			if (null == head)
 				return null;
 			Head columnHead = ArraySymmetricMatrix.this.getHead(key);
@@ -412,9 +432,10 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		@Override
 		public V put(K key, V value) {
 			// TODO Auto-generated method stub
-			if (null == head || head.disposed()) {
-				head = ArraySymmetricMatrix.this.addHeadIfNotExists(this.key);
-				head.rowMapView = this;
+			validateHead();
+			if (null == head) {
+				head = ArraySymmetricMatrix.this.addHeadIfNotExists(this.viewKey);
+				head.viewMap = this;
 			}
 			return ArraySymmetricMatrix.this.setValue(head,
 					addHeadIfNotExists(key), value);
@@ -426,27 +447,29 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		@Override
 		public Set<Map.Entry<K, V>> entrySet() {
 			// TODO Auto-generated method stub
+			validateHead();
 			if (null == entrySet) {
 				entrySet = new AbstractSet<Map.Entry<K, V>>() {
 
 					@Override
 					public Iterator<Map.Entry<K, V>> iterator() {
 						// TODO Auto-generated method stub
+						validateHead();
 						return new Iterator<Map.Entry<K, V>>() {
 							private int currentIndex = -1;
 							private int nextColumn = -1, nextIndex = -1;
 							private boolean nextInRow = false;
 
-							private int expectedModCount = ArraySymmetricMatrix.this.modCount;
+							private int expectedModCount = KeyMapView.this.modCount();
 
 							private void checkModCount() {
-								if (expectedModCount != ArraySymmetricMatrix.this.modCount)
+								if (expectedModCount != KeyMapView.this.modCount())
 									throw new ConcurrentModificationException();
 							}
 
 							private boolean getNext() {
 								checkModCount();
-								if (null == head)
+								if (KeyMapView.this.headNotExists())
 									return false;
 								for (nextColumn = nextColumn + 1; nextColumn < ArraySymmetricMatrix.this
 										.dimension(); ++nextColumn) {
@@ -496,7 +519,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 									currentIndex = nextIndex = nextColumn = -1;
 									head = null;
 								}
-								expectedModCount = ArraySymmetricMatrix.this.modCount;
+								expectedModCount = KeyMapView.this.modCount();
 							}
 
 						};
@@ -505,17 +528,18 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return null == head ? 0 : head.size;
+						return KeyMapView.this.size();
 					}
 
 				};
 			}
 			return entrySet;
 		}
-
+		
 		@Override
 		public int size() {
 			// TODO Auto-generated method stub
+			validateHead();
 			return head == null ? 0 : head.size;
 		}
 
@@ -533,6 +557,12 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		super.clearViews();
 		keySet = null;
 		entrySet = null;
+		for(Head head : heads){
+			if(head.viewMap != null){
+				((KeyMapView) head.viewMap).entrySet = null;
+				head.viewMap = null;
+			}
+		}
 	}
 
 	// View
@@ -746,9 +776,11 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		private K key;
 		private int index;
 		private int size = 0;
+		
+		transient volatile int modCount;
 
 		// View
-		protected transient volatile Map<K, V> rowMapView = null;
+		protected transient volatile Map<K, V> viewMap = null;
 
 		private Head(K key, int index) {
 			this.key = key;
@@ -756,7 +788,10 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		private int increaseSize(int incr) {
+			if(incr == 0)
+				return size;
 			size = Math.max(0, size + incr);
+			++modCount;
 			return size;
 		}
 
@@ -768,7 +803,8 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			key = null;
 			index = -1;
 			size = 0;
-			rowMapView = null;
+			modCount = -1;
+			viewMap = null;
 		}
 
 		private boolean disposed() {

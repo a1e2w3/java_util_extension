@@ -448,119 +448,163 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 		return (Map<CK, V>) head.viewMap;
 	}
+	
+	private abstract class MapView<K1, K2> extends AbstractMap<K2, V> {
+		transient volatile HeadNode<K1> head;
+		final transient K1 viewKey;
 
-	private class RowMapView extends AbstractMap<CK, V> {
-		private transient volatile HeadNode<RK> head;
-		private final transient RK row;
+		// View
+		transient volatile Set<Map.Entry<K2, V>> entrySet = null;
 
-		private RowMapView(RK key, HeadNode<RK> head) {
-			this.row = key;
+		MapView(K1 key, HeadNode<K1> head) {
+			this.viewKey = key;
 			this.head = head;
 		}
 
-		@Override
-		public V put(CK key, V value) {
-			// TODO Auto-generated method stub
-			if (null == head || head.disposed()) {
-				head = LinkedMatrix.this.addRowIfNotExists(row);
-				head.viewMap = this;
-			}
-			return LinkedMatrix.this.setValueInRow(head, key, value);
+		final int modCount() {
+			return headNotExists() ? -1 : head.modCount;
 		}
 
-		// View
-		protected transient volatile Set<Map.Entry<CK, V>> entrySet = null;
+		final boolean headNotExists() {
+			if (head != null && head.disposed())
+				head = null;
+			return head == null;
+		}
+		
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			validateHead();
+			return head == null ? 0 : head.size;
+		}
 
 		@Override
-		public Set<Map.Entry<CK, V>> entrySet() {
-			// TODO Auto-generated method stub
-			if (null == entrySet) {
-				entrySet = new AbstractSet<Map.Entry<CK, V>>() {
+		public Set<Map.Entry<K2, V>> entrySet() {
+			validateHead();
+			if (entrySet == null) {
+				entrySet = new AbstractSet<Map.Entry<K2, V>>() {
 
 					@Override
-					public Iterator<Map.Entry<CK, V>> iterator() {
+					public Iterator<Map.Entry<K2, V>> iterator() {
 						// TODO Auto-generated method stub
-						return new Iterator<Map.Entry<CK, V>>() {
-							private EntryNode current = null;
-							private boolean currentRemoved = false;
-
-							private int expectedModCount = LinkedMatrix.this.modCount;
-
-							@Override
-							public boolean hasNext() {
-								// TODO Auto-generated method stub
-								checkModCount();
-								if (current == null)
-									return head != null && head.entry != null;
-								else
-									return current.right != null;
-							}
-
-							private boolean getNext() {
-								checkModCount();
-								if (current == null) {
-									if (head == null)
-										return false;
-									return (current = head.entry) != null;
-								} else {
-									if (current.right == null)
-										return false;
-									current = current.right;
-									return true;
-								}
-							}
-
-							private void checkModCount() {
-								if (expectedModCount != LinkedMatrix.this.modCount)
-									throw new ConcurrentModificationException();
-							}
-
-							@Override
-							public Map.Entry<CK, V> next() {
-								// TODO Auto-generated method stub
-								if (!getNext())
-									throw new NoSuchElementException();
-								currentRemoved = false;
-								return current.rowMapEntry();
-							}
-
-							@Override
-							public void remove() {
-								// TODO Auto-generated method stub
-								checkModCount();
-								if (currentRemoved || current == null)
-									throw new IllegalStateException();
-								EntryNode left = current.left;
-								LinkedMatrix.this.removeNode(current);
-								if (head.disposed()) {
-									current = null;
-									head = null;
-								} else {
-									current = left;
-								}
-								currentRemoved = true;
-								expectedModCount = LinkedMatrix.this.modCount;
-							}
-
-						};
+						validateHead();
+						return entryIterator();
 					}
 
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return head == null ? 0 : head.size;
+						return MapView.this.size();
 					}
 
 				};
-
 			}
 			return entrySet;
 		}
 
+		void validateHead() {
+			if (headNotExists()) {
+				resetHead();
+				if (head != null && head.viewMap == null)
+					head.viewMap = this;
+			}
+		}
+
+		abstract Iterator<Map.Entry<K2, V>> entryIterator();
+		
+		abstract void resetHead();
+
+	}
+
+	private class RowMapView extends MapView<RK, CK> {
+
+		private RowMapView(RK key, HeadNode<RK> head) {
+			super(key, head);
+		}
+
 		@Override
-		public int size() {
+		public V put(CK key, V value) {
 			// TODO Auto-generated method stub
-			return head == null ? 0 : head.size;
+			validateHead();
+			if (null == head) {
+				head = LinkedMatrix.this.addRowIfNotExists(viewKey);
+				head.viewMap = this;
+			}
+			return LinkedMatrix.this.setValueInRow(head, key, value);
+		}
+
+		@Override
+		Iterator<java.util.Map.Entry<CK, V>> entryIterator() {
+			// TODO Auto-generated method stub
+			return new Iterator<Map.Entry<CK, V>>() {
+				private EntryNode current = null;
+				private boolean currentRemoved = false;
+
+				private int expectedModCount = RowMapView.this.modCount();
+
+				@Override
+				public boolean hasNext() {
+					// TODO Auto-generated method stub
+					checkModCount();
+					if (current == null)
+						return head != null && head.entry != null;
+					else
+						return current.right != null;
+				}
+
+				private boolean getNext() {
+					checkModCount();
+					if (current == null) {
+						if (head == null)
+							return false;
+						return (current = head.entry) != null;
+					} else {
+						if (current.right == null)
+							return false;
+						current = current.right;
+						return true;
+					}
+				}
+
+				private void checkModCount() {
+					if (expectedModCount != RowMapView.this.modCount())
+						throw new ConcurrentModificationException();
+				}
+
+				@Override
+				public Map.Entry<CK, V> next() {
+					// TODO Auto-generated method stub
+					if (!getNext())
+						throw new NoSuchElementException();
+					currentRemoved = false;
+					return current.rowMapEntry();
+				}
+
+				@Override
+				public void remove() {
+					// TODO Auto-generated method stub
+					checkModCount();
+					if (currentRemoved || current == null)
+						throw new IllegalStateException();
+					EntryNode left = current.left;
+					LinkedMatrix.this.removeNode(current);
+					if (head.disposed()) {
+						current = null;
+						head = null;
+					} else {
+						current = left;
+					}
+					currentRemoved = true;
+					expectedModCount = RowMapView.this.modCount();
+				}
+
+			};
+		}
+
+		@Override
+		void resetHead() {
+			// TODO Auto-generated method stub
+			head = LinkedMatrix.this.rowHead(viewKey);
 		}
 
 	}
@@ -579,117 +623,95 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		return (Map<RK, V>) head.viewMap;
 	}
 
-	private class ColumnMapView extends AbstractMap<RK, V> {
-		private transient volatile HeadNode<CK> head;
-		private final transient CK column;
+	private class ColumnMapView extends MapView<CK, RK> {
 
 		private ColumnMapView(CK key, HeadNode<CK> head) {
-			this.column = key;
-			this.head = head;
+			super(key, head);
 		}
 
 		@Override
 		public V put(RK key, V value) {
 			// TODO Auto-generated method stub
-			if (null == head || head.disposed()) {
-				head = LinkedMatrix.this.addColumnIfNotExists(column);
+			validateHead();
+			if (null == head) {
+				head = LinkedMatrix.this.addColumnIfNotExists(viewKey);
 				head.viewMap = this;
 			}
 			return LinkedMatrix.this.setValueInColumn(head, key, value);
 		}
 
-		// View
-		protected transient volatile Set<Map.Entry<RK, V>> entrySet = null;
-
 		@Override
-		public Set<Map.Entry<RK, V>> entrySet() {
+		Iterator<java.util.Map.Entry<RK, V>> entryIterator() {
 			// TODO Auto-generated method stub
-			if (null == entrySet) {
-				entrySet = new AbstractSet<Map.Entry<RK, V>>() {
+			return new Iterator<Map.Entry<RK, V>>() {
+				private EntryNode current = null;
+				private boolean currentRemoved = false;
 
-					@Override
-					public Iterator<Map.Entry<RK, V>> iterator() {
-						// TODO Auto-generated method stub
-						return new Iterator<Map.Entry<RK, V>>() {
-							private EntryNode current = null;
-							private boolean currentRemoved = false;
+				private int expectedModCount = ColumnMapView.this.modCount();
 
-							private int expectedModCount = LinkedMatrix.this.modCount;
+				@Override
+				public boolean hasNext() {
+					// TODO Auto-generated method stub
+					checkModCount();
+					if (current == null)
+						return head != null && head.entry != null;
+					else
+						return current.lower != null;
+				}
 
-							@Override
-							public boolean hasNext() {
-								// TODO Auto-generated method stub
-								checkModCount();
-								if (current == null)
-									return head != null && head.entry != null;
-								else
-									return current.lower != null;
-							}
-
-							private boolean getNext() {
-								checkModCount();
-								if (current == null) {
-									if (head == null)
-										return false;
-									return (current = head.entry) != null;
-								} else {
-									if (current.lower == null)
-										return false;
-									current = current.lower;
-									return true;
-								}
-							}
-
-							private void checkModCount() {
-								if (expectedModCount != LinkedMatrix.this.modCount)
-									throw new ConcurrentModificationException();
-							}
-
-							@Override
-							public Map.Entry<RK, V> next() {
-								// TODO Auto-generated method stub
-								if (!getNext())
-									throw new NoSuchElementException();
-								currentRemoved = false;
-								return current.columnMapEntry();
-							}
-
-							@Override
-							public void remove() {
-								// TODO Auto-generated method stub
-								checkModCount();
-								if (currentRemoved || current == null)
-									throw new IllegalStateException();
-								EntryNode up = current.upper;
-								LinkedMatrix.this.removeNode(current);
-								if (head.disposed()) {
-									current = null;
-									head = null;
-								} else {
-									current = up;
-								}
-								currentRemoved = true;
-								expectedModCount = LinkedMatrix.this.modCount;
-							}
-
-						};
+				private boolean getNext() {
+					checkModCount();
+					if (current == null) {
+						if (head == null)
+							return false;
+						return (current = head.entry) != null;
+					} else {
+						if (current.lower == null)
+							return false;
+						current = current.lower;
+						return true;
 					}
+				}
 
-					@Override
-					public int size() {
-						// TODO Auto-generated method stub
-						return head == null ? 0 : head.size;
+				private void checkModCount() {
+					if (expectedModCount != ColumnMapView.this.modCount())
+						throw new ConcurrentModificationException();
+				}
+
+				@Override
+				public Map.Entry<RK, V> next() {
+					// TODO Auto-generated method stub
+					if (!getNext())
+						throw new NoSuchElementException();
+					currentRemoved = false;
+					return current.columnMapEntry();
+				}
+
+				@Override
+				public void remove() {
+					// TODO Auto-generated method stub
+					checkModCount();
+					if (currentRemoved || current == null)
+						throw new IllegalStateException();
+					EntryNode up = current.upper;
+					LinkedMatrix.this.removeNode(current);
+					if (head.disposed()) {
+						current = null;
+						head = null;
+					} else {
+						current = up;
 					}
+					currentRemoved = true;
+					expectedModCount = ColumnMapView.this.modCount();
+				}
 
-				};
-			}
-			return entrySet;
+			};
 		}
 
 		@Override
-		public int size() {
+		void resetHead() {
 			// TODO Auto-generated method stub
-			return head == null ? 0 : head.size;
+			head = LinkedMatrix.this.columnHead(viewKey);
 		}
 
 	}
@@ -708,12 +730,30 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		return head == null ? 0 : head.size;
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Override
 	void clearViews(){
 		super.clearViews();
 		rowKeySet = null;
 		columnKeySet = null;
 		entrySet = null;
+
+		HeadNode<RK> rowHead = rowHeadsEntry;
+		while(rowHead != null){
+			if(rowHead.viewMap != null){
+				((RowMapView) rowHead.viewMap).entrySet = null;
+				rowHead.viewMap = null;
+			}
+			rowHead = rowHead.next;
+		}
+		HeadNode<CK> columnHead = columnHeadsEntry;
+		while(columnHead != null){
+			if(columnHead.viewMap != null){
+				((RowMapView) columnHead.viewMap).entrySet = null;
+				columnHead.viewMap = null;
+			}
+			columnHead = columnHead.next;
+		}
 	}
 
 	// View
@@ -1028,6 +1068,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		private K key;
 		private int index;
 		private int size;
+		transient volatile int modCount;
 		private EntryNode entry;
 		private HeadNode<K> prev, next;
 
@@ -1048,6 +1089,9 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 
 		private int addSize(int incr) {
+			if(incr == 0)
+				return size;
+			++modCount;
 			size = Math.max(0, size + incr);
 			return size;
 		}
@@ -1060,6 +1104,7 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			key = null;
 			index = -1;
 			size = 0;
+			modCount = -1;
 			entry = null;
 			prev = next = null;
 

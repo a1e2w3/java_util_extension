@@ -497,6 +497,12 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		super.clearViews();
 		this.entrySet = null;
 		this.keySet = null;
+		for(Head head : heads){
+			if(head.viewMap != null){
+				((KeyMapView) head.viewMap).entrySet = null;
+				head.viewMap = null;
+			}
+		}
 	}
 
 	private void putAllForCreate(
@@ -560,21 +566,43 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		private KeyMapView(K row, Head head) {
 			this.row = row;
 			this.head = head;
-			modCount = head == null ? 0 : head.modCount;
 		}
 
-		private int modCount() {
-			return head == null ? 0 : head.modCount;
+		private final int modCount() {
+			return headNotExists() ? 0 : head.modCount;
+		}
+
+		final boolean headNotExists() {
+			if (head != null && head.disposed())
+				head = null;
+			return head == null;
+		}
+
+		private boolean validateHead() {
+			if (headNotExists()) {
+				head = HashSymmetricMatrix.this.getHead(row);
+				if (head != null && head.viewMap == null)
+					head.viewMap = this;
+			}
+			return true;
 		}
 
 		@Override
 		public V put(K key, V value) {
 			// TODO Auto-generated method stub
+			validateHead();
 			if (null == head) {
 				head = HashSymmetricMatrix.this.addHeadIfNotExists(row);
 				head.viewMap = this;
 			}
 			return HashSymmetricMatrix.this.put(row, key, value);
+		}
+		
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			validateHead();
+			return head == null ? 0 : head.size;
 		}
 
 		private transient volatile Set<Map.Entry<K, V>> entrySet = null;
@@ -582,13 +610,15 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		@Override
 		public Set<Map.Entry<K, V>> entrySet() {
 			// TODO Auto-generated method stub
+			validateHead();
 			if (null == entrySet) {
 				entrySet = new AbstractSet<Map.Entry<K, V>>() {
 					@Override
 					public Iterator<Map.Entry<K, V>> iterator() {
 						// TODO Auto-generated method stub
-						if (head == null)
-							return EmptyIterator.<Map.Entry<K, V>>getInstance();
+						if (headNotExists())
+							return EmptyIterator
+									.<Map.Entry<K, V>> getInstance();
 						else
 							return new EntryIterator();
 					}
@@ -596,7 +626,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return head == null ? 0 : head.size;
+						return KeyMapView.this.size();
 					}
 				};
 			}
@@ -629,14 +659,18 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			}
 
 			private void getNext() {
-				while (columnIndex < heads.length) {
-					int tableIndex = tableIndexFor(rowIndex, columnIndex);
-					if (match(table[tableIndex])) {
-						next = table[tableIndex];
+				if (KeyMapView.this.headNotExists()) {
+					next = null;
+				} else {
+					while (columnIndex < heads.length) {
+						int tableIndex = tableIndexFor(rowIndex, columnIndex);
+						if (match(table[tableIndex])) {
+							next = table[tableIndex];
+							++columnIndex;
+							break;
+						}
 						++columnIndex;
-						break;
 					}
-					++columnIndex;
 				}
 			}
 
@@ -660,7 +694,8 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 				if (next == null) {
 					getNext();
 				}
-				return head == current.rowHead ? current.rowMapEntry() : current.columnMapEntry();
+				return head == current.rowHead ? current.rowMapEntry()
+						: current.columnMapEntry();
 			}
 
 			@Override
@@ -669,18 +704,20 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 				if (null == current)
 					throw new IllegalStateException();
 				checkModCount();
-				K column = head == current.rowHead ? current.getColumnKey() : current.getRowKey();
+				K column = head == current.rowHead ? current.getColumnKey()
+						: current.getRowKey();
 				current = null;
 				HashSymmetricMatrix.this.remove(row, column);
-				if (head.disposed())
+				if (head.disposed()){
 					head = null;
+					next = null;
+				}
 				expectedModCount = KeyMapView.this.modCount();
 			}
 
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Map<K, V> keyMap(K key) {
 		// TODO Auto-generated method stub
@@ -691,7 +728,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		if (head.viewMap == null) {
 			head.viewMap = new KeyMapView(key, head);
 		}
-		return (Map<K, V>) head.viewMap;
+		return head.viewMap;
 	}
 
 	@Override
@@ -948,7 +985,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		transient Head next;
 		transient volatile int modCount;
 
-		transient volatile Map<?, V> viewMap = null;
+		transient volatile KeyMapView viewMap = null;
 
 		Head(K key, int hash, Head next) {
 			this.key = key;
@@ -969,7 +1006,10 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		void dispose() {
 			size = -1;
 			next = null;
-			viewMap = null;
+			if (viewMap != null) {
+				viewMap.head = null;
+				viewMap = null;
+			}
 		}
 
 		boolean disposed() {
