@@ -1125,8 +1125,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		@Override
 		public int size() {
 			// TODO Auto-generated method stub
-			validateHead();
-			return head == null ? 0 : head.size;
+			return validateHead() == null ? 0 : head.size;
 		}
 
 		@Override
@@ -1153,12 +1152,13 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return entrySet;
 		}
 		
-		void validateHead() {
+		Head<K1> validateHead() {
 			if (headNotExists()) {
 				resetHead();
 				if (head != null && head.viewMap == null)
 					head.viewMap = this;
 			}
+			return head;
 		}
 
 		abstract Iterator<Map.Entry<K2, V>> entryIterator();
@@ -1180,12 +1180,47 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		@Override
 		public V put(CK key, V value) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == head) {
+			if (validateHead() == null) {
 				head = HashMatrix.this.addRowHeadIfNotExists(viewKey);
 				head.viewMap = this;
 			}
 			return HashMatrix.this.put(viewKey, key, value);
+		}
+
+		@Override
+		public boolean containsKey(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null) 
+				return false;
+			return HashMatrix.this.containsKey(viewKey, key);
+		}
+
+		@Override
+		public V get(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null) 
+				return null;
+			return HashMatrix.this.get(viewKey, key);
+		}
+
+		@Override
+		public V remove(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null) 
+				return null;
+			V oldValue = HashMatrix.this.remove(viewKey, key);
+			if(head.disposed())
+				head = null;
+			return oldValue;
+		}
+
+		@Override
+		public void clear() {
+			// TODO Auto-generated method stub
+			if (validateHead() != null) {
+				HashMatrix.this.removeRow(viewKey);
+				head = null;
+			}
 		}
 
 		@Override
@@ -1196,14 +1231,14 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 		private final class EntryIterator implements Iterator<Map.Entry<CK, V>> {
 			private HashMatrix<RK, CK, V>.Entry current = null, next;
-			private final int rowIndex = indexFor(head.hash, rowHeads.length);
+			private final int rowIndex = headNotExists() ? -1 : indexFor(head.hash, rowHeads.length);
 			private volatile int columnIndex = 0;
 
 			private int expectedModCount;
 
 			private EntryIterator() {
 				expectedModCount = RowMapView.this.modCount();
-				getNext();
+				advance();
 			}
 
 			void checkForModification() {
@@ -1211,8 +1246,8 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 					throw new ConcurrentModificationException();
 			}
 
-			private void getNext() {
-				if (RowMapView.this.headNotExists()) {
+			final void advance() {
+				if (RowMapView.this.headNotExists() || rowIndex < 0) {
 					next = null;
 				} else {
 					while (columnIndex < columnHeads.length) {
@@ -1244,7 +1279,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						break;
 				}
 				if (next == null) {
-					getNext();
+					advance();
 				}
 				return current.rowMapEntry();
 			}
@@ -1283,12 +1318,47 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		@Override
 		public V put(RK key, V value) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == head) {
+			if (validateHead() == null) {
 				head = HashMatrix.this.addColumnHeadIfNotExists(viewKey);
 				head.viewMap = this;
 			}
 			return HashMatrix.this.put(key, viewKey, value);
+		}
+
+		@Override
+		public boolean containsKey(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return false;
+			return HashMatrix.this.containsKey(key, viewKey);
+		}
+
+		@Override
+		public V get(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return null;
+			return HashMatrix.this.get(key, viewKey);
+		}
+
+		@Override
+		public V remove(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return null;
+			V oldValue = HashMatrix.this.remove(key, viewKey);
+			if(head.disposed())
+				head = null;
+			return oldValue;
+		}
+
+		@Override
+		public void clear() {
+			// TODO Auto-generated method stub
+			if (validateHead() != null){
+				HashMatrix.this.removeColumn(viewKey);
+				head = null;
+			}
 		}
 
 		@Override
@@ -1301,14 +1371,14 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 			private HashMatrix<RK, CK, V>.Entry current = null, next;
 			private int rowIndex = 0;
-			private final int columnIndex = indexFor(head.hash,
+			private final int columnIndex = headNotExists() ? -1 : indexFor(head.hash,
 					columnHeads.length);
 
 			private int expectedModCount;
 
 			private EntryIterator() {
 				expectedModCount = ColumnMapView.this.modCount();
-				getNext();
+				advance();
 			}
 
 			void checkForModification() {
@@ -1316,8 +1386,8 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 					throw new ConcurrentModificationException();
 			}
 
-			private void getNext() {
-				if (ColumnMapView.this.headNotExists()) {
+			final void advance() {
+				if (ColumnMapView.this.headNotExists() || columnIndex < 0) {
 					next = null;
 				} else {
 					while (rowIndex < rowHeads.length) {
@@ -1349,7 +1419,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 						break;
 				}
 				if (next == null) {
-					getNext();
+					advance();
 				}
 				return current.columnMapEntry();
 			}

@@ -100,97 +100,144 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 		}
 		return count;
 	}
+	
+	abstract class AbstractKeyMapView extends AbstractMap<K, V> {
+		final K viewKey;
+		
+		AbstractKeyMapView(K viewKey){
+			this.viewKey = viewKey;
+		}
 
-	@Override
-	public Map<K, V> keyMap(final K key){
-		return new AbstractMap<K, V>() {
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			return AbstractSymmetricMatrix.this.valueCount(viewKey);
+		}
 
-			@Override
-			public V put(K innerKey, V value) {
-				// TODO Auto-generated method stub
-				return AbstractSymmetricMatrix.this.put(key, innerKey, value);
-			}
+		@Override
+		public V put(K innerKey, V value) {
+			// TODO Auto-generated method stub
+			return AbstractSymmetricMatrix.this.put(viewKey, innerKey, value);
+		}
+		
+		@Override
+		public boolean containsKey(Object key) {
+			return AbstractSymmetricMatrix.this.containsKey(key, viewKey);
+		}
+		
+		@Override
+		public V get(Object key) {
+			return AbstractSymmetricMatrix.this.get(key, viewKey);
+		}
 
-			@Override
-			public Set<Map.Entry<K, V>> entrySet() {
-				// TODO Auto-generated method stub
-				return new AbstractSet<Map.Entry<K, V>>() {
+		@Override
+		public V remove(Object key) {
+			// TODO Auto-generated method stub
+			return AbstractSymmetricMatrix.this.remove(key, viewKey);
+		}
+
+		@Override
+		public void clear() {
+			// TODO Auto-generated method stub
+			AbstractSymmetricMatrix.this.removeKey(viewKey);
+		}
+
+		transient volatile Set<Map.Entry<K, V>> entrySet = null;
+		@Override
+		public Set<Map.Entry<K, V>> entrySet(){
+			if(entrySet == null){
+				entrySet = new AbstractSet<Map.Entry<K, V>>(){
 
 					@Override
-					public Iterator<Map.Entry<K, V>> iterator() {
+					public Iterator<java.util.Map.Entry<K, V>> iterator() {
 						// TODO Auto-generated method stub
-						return new Iterator<Map.Entry<K, V>>() {
-							Iterator<Matrix.Entry<K, K, V>> iterator = AbstractSymmetricMatrix.this
-									.entrySet().iterator();
-							Matrix.Entry<K, K, V> next = null;
-							boolean keyInRow = false;
-
-							private void getNext() {
-								next = null;
-								if (null == key) {
-									while (iterator.hasNext()) {
-										Matrix.Entry<K, K, V> entry = iterator
-												.next();
-										if (null == entry.getRowKey()) {
-											next = entry;
-											keyInRow = true;
-											break;
-										} else if(null == entry.getColumnKey()){
-											next = entry;
-											keyInRow = false;
-											break;
-										}
-									}
-								} else {
-									while (iterator.hasNext()) {
-										Matrix.Entry<K, K, V> entry = iterator
-												.next();
-										if (key.equals(entry.getRowKey())) {
-											next = entry;
-											keyInRow = true;
-											break;
-										} else if (key.equals(entry.getColumnKey())) {
-											next = entry;
-											keyInRow = false;
-											break;
-										}
-									}
-								}
-							}
-
-							@Override
-							public boolean hasNext() {
-								// TODO Auto-generated method stub
-								if (next == null && iterator.hasNext())
-									this.getNext();
-								return next != null;
-							}
-
-							@Override
-							public java.util.Map.Entry<K, V> next() {
-								// TODO Auto-generated method stub
-								if (next == null && iterator.hasNext())
-									this.getNext();
-								if (next == null)
-									throw new NoSuchElementException();
-								Map.Entry<K, V> entry = keyInRow ? next.rowMapEntry() : next.columnMapEntry();
-								next = null;
-								return entry;
-							}
-
-							@Override
-							public void remove() {
-								// TODO Auto-generated method stub
-								iterator.remove();
-							}
-
-						};
+						return entryIterator();
 					}
 
 					@Override
 					public int size() {
 						// TODO Auto-generated method stub
-						return AbstractSymmetricMatrix.this.valueCount(key);
+						return AbstractKeyMapView.this.size();
+					}
+					
+				};
+			}
+			return entrySet;
+		}
+		
+		abstract Iterator<Map.Entry<K, V>> entryIterator();
+	}
+
+	@Override
+	public Map<K, V> keyMap(K key){
+		return new AbstractKeyMapView(key) {
+
+			@Override
+			Iterator<Map.Entry<K, V>> entryIterator() {
+				// TODO Auto-generated method stub
+				return new Iterator<Map.Entry<K, V>>() {
+					Iterator<Matrix.Entry<K, K, V>> iterator = AbstractSymmetricMatrix.this
+							.entrySet().iterator();
+					Matrix.Entry<K, K, V> next = null;
+					boolean keyInRow = false;
+
+					private void getNext() {
+						next = null;
+						if (null == viewKey) {
+							while (iterator.hasNext()) {
+								Matrix.Entry<K, K, V> entry = iterator
+										.next();
+								if (null == entry.getRowKey()) {
+									next = entry;
+									keyInRow = true;
+									break;
+								} else if(null == entry.getColumnKey()){
+									next = entry;
+									keyInRow = false;
+									break;
+								}
+							}
+						} else {
+							while (iterator.hasNext()) {
+								Matrix.Entry<K, K, V> entry = iterator
+										.next();
+								if (viewKey.equals(entry.getRowKey())) {
+									next = entry;
+									keyInRow = true;
+									break;
+								} else if (viewKey.equals(entry.getColumnKey())) {
+									next = entry;
+									keyInRow = false;
+									break;
+								}
+							}
+						}
+					}
+
+					@Override
+					public boolean hasNext() {
+						// TODO Auto-generated method stub
+						if (next == null && iterator.hasNext())
+							this.getNext();
+						return next != null;
+					}
+
+					@Override
+					public java.util.Map.Entry<K, V> next() {
+						// TODO Auto-generated method stub
+						if (next == null && iterator.hasNext())
+							this.getNext();
+						if (next == null)
+							throw new NoSuchElementException();
+						Map.Entry<K, V> entry = keyInRow ? next.rowMapEntry() : next.columnMapEntry();
+						next = null;
+						return entry;
+					}
+
+					@Override
+					public void remove() {
+						// TODO Auto-generated method stub
+						iterator.remove();
 					}
 
 				};

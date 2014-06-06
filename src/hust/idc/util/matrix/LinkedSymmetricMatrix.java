@@ -2,7 +2,6 @@ package hust.idc.util.matrix;
 
 import hust.idc.util.pair.UnorderedPair;
 
-import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -85,8 +84,11 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	EntryNode getEntry(Object row, Object column) {
-		HeadNode rowHead = getHead(row);
-		if (rowHead == null)
+		return getEntry(getHead(row), column);
+	}
+	
+	EntryNode getEntry(HeadNode rowHead, Object column) {
+		if(rowHead == null)
 			return null;
 
 		EntryNode node = rowHead.rowEntry;
@@ -399,12 +401,11 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return head.viewMap;
 	}
 
-	private class KeyMapView extends AbstractMap<K, V> {
-		private final transient K row;
+	private class KeyMapView extends AbstractKeyMapView {
 		private transient volatile HeadNode head;
 
 		private KeyMapView(K key, HeadNode head) {
-			this.row = key;
+			super(key);
 			this.head = head;
 		}
 		
@@ -418,133 +419,153 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			return head == null;
 		}
 		
-		private void validateHead() {
+		HeadNode validateHead() {
 			if (headNotExists()) {
-				head = LinkedSymmetricMatrix.this.getHead(row);
+				head = LinkedSymmetricMatrix.this.getHead(viewKey);
 				if (head != null && head.viewMap == null)
 					head.viewMap = this;
 			}
+			return head;
 		}
 
 		@Override
 		public V put(K key, V value) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == head) {
-				head = LinkedSymmetricMatrix.this.addHeadIfNotExists(row);
+			if (validateHead() == null) {
+				head = LinkedSymmetricMatrix.this.addHeadIfNotExists(viewKey);
 				head.viewMap = this;
 			}
 			return LinkedSymmetricMatrix.this.setValue(head,
 					addHeadIfNotExists(key), value);
 		}
 
-		// View
-		protected transient volatile Set<Map.Entry<K, V>> entrySet = null;
+		@Override
+		public boolean containsKey(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return false;
+			return getEntry(head, key) != null;
+		}
 
 		@Override
-		public Set<Map.Entry<K, V>> entrySet() {
+		public V get(Object key) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == entrySet) {
-				entrySet = new AbstractSet<Map.Entry<K, V>>() {
+			if (validateHead() == null)
+				return null;
+			return getEntry(head, key).getValue();
+		}
 
-					@Override
-					public Iterator<Map.Entry<K, V>> iterator() {
-						// TODO Auto-generated method stub
-						validateHead();
-						return new Iterator<Map.Entry<K, V>>() {
-							private EntryNode current = null, next = null;
-							private boolean inRow = true;
-							private boolean currentRemoved = false;
+		@Override
+		public V remove(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return null;
+			V oldValue = removeNode(getEntry(head, key));
+			if(head.disposed())
+				head = null;
+			return oldValue;
+		}
 
-							private int expectedModCount = KeyMapView.this.modCount();
-
-							@Override
-							public boolean hasNext() {
-								// TODO Auto-generated method stub
-								return next == null ? getNext() : true;
-							}
-
-							private boolean getNext() {
-								checkModCount();
-								if (current == null) {
-									if (head == null)
-										return false;
-									if (head.rowEntry != null) {
-										inRow = true;
-										next = head.rowEntry;
-									} else {
-										next = head.columnEntry;
-										inRow = false;
-									}
-									return next != null;
-								} else {
-									if (inRow) {
-										if ((next = current.right) == null) {
-											inRow = false;
-											return (next = head.columnEntry) != null;
-										} else {
-											return true;
-										}
-									} else {
-										return (next = current.lower) != null;
-									}
-								}
-							}
-
-							private void checkModCount() {
-								if (expectedModCount != KeyMapView.this.modCount())
-									throw new ConcurrentModificationException();
-							}
-
-							@Override
-							public Map.Entry<K, V> next() {
-								// TODO Auto-generated method stub
-								if (next == null && !getNext())
-									throw new NoSuchElementException();
-								currentRemoved = false;
-								current = next;
-								next = null;
-								return inRow ? current.rowMapEntry() : current
-										.columnMapEntry();
-							}
-
-							@Override
-							public void remove() {
-								// TODO Auto-generated method stub
-								checkModCount();
-								if (currentRemoved || current == null)
-									throw new IllegalStateException();
-								if (next == null)
-									this.getNext();
-								LinkedSymmetricMatrix.this.removeNode(current);
-								if (head.disposed()) {
-									current = null;
-									next = null;
-									head = null;
-								}
-								currentRemoved = true;
-								expectedModCount = KeyMapView.this.modCount();
-							}
-
-						};
-					}
-
-					@Override
-					public int size() {
-						// TODO Auto-generated method stub
-						return KeyMapView.this.size();
-					}
-				};
-			}
-			return entrySet;
+		@Override
+		public void clear() {
+			// TODO Auto-generated method stub
+			removeKey(validateHead());
+			head = null;
 		}
 
 		@Override
 		public int size() {
 			// TODO Auto-generated method stub
+			return validateHead() == null ? 0 : head.size;
+		}
+
+		@Override
+		public Set<Map.Entry<K, V>> entrySet() {
+			// TODO Auto-generated method stub
 			validateHead();
-			return head == null ? 0 : head.size;
+			return super.entrySet();
+		}
+		
+		@Override
+		Iterator<Map.Entry<K, V>> entryIterator() {
+			// TODO Auto-generated method stub
+			validateHead();
+			return new Iterator<Map.Entry<K, V>>() {
+				private EntryNode current = null, next = null;
+				private boolean inRow = true;
+				private boolean currentRemoved = false;
+
+				private int expectedModCount = KeyMapView.this.modCount();
+
+				@Override
+				public boolean hasNext() {
+					// TODO Auto-generated method stub
+					return next == null ? getNext() : true;
+				}
+
+				private boolean getNext() {
+					checkModCount();
+					if (current == null) {
+						if (head == null)
+							return false;
+						if (head.rowEntry != null) {
+							inRow = true;
+							next = head.rowEntry;
+						} else {
+							next = head.columnEntry;
+							inRow = false;
+						}
+						return next != null;
+					} else {
+						if (inRow) {
+							if ((next = current.right) == null) {
+								inRow = false;
+								return (next = head.columnEntry) != null;
+							} else {
+								return true;
+							}
+						} else {
+							return (next = current.lower) != null;
+						}
+					}
+				}
+
+				private void checkModCount() {
+					if (expectedModCount != KeyMapView.this.modCount())
+						throw new ConcurrentModificationException();
+				}
+
+				@Override
+				public Map.Entry<K, V> next() {
+					// TODO Auto-generated method stub
+					if (next == null && !getNext())
+						throw new NoSuchElementException();
+					currentRemoved = false;
+					current = next;
+					next = null;
+					return inRow ? current.rowMapEntry() : current
+							.columnMapEntry();
+				}
+
+				@Override
+				public void remove() {
+					// TODO Auto-generated method stub
+					checkModCount();
+					if (currentRemoved || current == null)
+						throw new IllegalStateException();
+					if (next == null)
+						this.getNext();
+					LinkedSymmetricMatrix.this.removeNode(current);
+					if (head.disposed()) {
+						current = null;
+						next = null;
+						head = null;
+					}
+					currentRemoved = true;
+					expectedModCount = KeyMapView.this.modCount();
+				}
+
+			};
 		}
 
 	}

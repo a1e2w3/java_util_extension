@@ -192,13 +192,21 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	@Override
 	public void removeRow(RK row) {
 		// TODO Auto-generated method stub
-		rowMap(row).clear();
+		Iterator<Map.Entry<CK, V>> iterator = rowMap(row).entrySet().iterator();
+		while(iterator.hasNext()){
+			iterator.next();
+			iterator.remove();
+		}
 	}
 
 	@Override
 	public void removeColumn(CK column) {
 		// TODO Auto-generated method stub
-		columnMap(column).clear();
+		Iterator<Map.Entry<RK, V>> iterator = columnMap(column).entrySet().iterator();
+		while(iterator.hasNext()){
+			iterator.next();
+			iterator.remove();
+		}
 	}
 
 	@Override
@@ -265,7 +273,13 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 				@Override
 				public boolean contains(Object o) {
 					// TODO Auto-generated method stub
-					return AbstractMatrix.this.containsColumn(o);
+					return AbstractMatrix.this.containsValue(o);
+				}
+
+				@Override
+				public void clear() {
+					// TODO Auto-generated method stub
+					AbstractMatrix.this.clear();
 				}
 
 			};
@@ -313,6 +327,31 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 					return AbstractMatrix.this.size();
 				}
 
+				@Override
+				public void clear() {
+					// TODO Auto-generated method stub
+					AbstractMatrix.this.clear();
+				}
+
+				@Override
+				public boolean contains(Object o) {
+					// TODO Auto-generated method stub
+					if(!(o instanceof Pair<?, ?>))
+						return false;
+					return AbstractMatrix.this.containsKey((Pair<?, ?>) o);
+				}
+
+				@Override
+				public boolean remove(Object o) {
+					// TODO Auto-generated method stub
+					if(!(o instanceof Pair<?, ?>))
+						return false;
+					boolean contains = contains(o);
+					if(contains)
+						AbstractMatrix.this.remove((Pair<?, ?>) o);
+					return contains;
+				}
+
 			};
 		}
 		return keyPairSet;
@@ -320,11 +359,17 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 
 	@Override
 	public abstract Set<Entry<RK, CK, V>> entrySet();
-
+	
 	@Override
 	public Map<CK, V> rowMap(final RK row) {
 		// TODO Auto-generated method stub
 		return new AbstractMap<CK, V>() {
+
+			@Override
+			public int size() {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.rowValueCount(row);
+			}
 
 			@Override
 			public V put(CK key, V value) {
@@ -333,9 +378,39 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 			}
 
 			@Override
+			public boolean containsKey(Object key) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.containsKey(row, key);
+			}
+
+			@Override
+			public V get(Object key) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.get(row, key);
+			}
+
+			@Override
+			public V remove(Object key) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.remove(row, key);
+			}
+
+			@Override
+			public void clear() {
+				// TODO Auto-generated method stub
+				AbstractMatrix.this.removeRow(row);
+			}
+
+			@Override
 			public Set<Map.Entry<CK, V>> entrySet() {
 				// TODO Auto-generated method stub
 				return new AbstractSet<Map.Entry<CK, V>>() {
+
+					@Override
+					public void clear() {
+						// TODO Auto-generated method stub
+						AbstractMatrix.this.removeRow(row);
+					}
 
 					@Override
 					public Iterator<Map.Entry<CK, V>> iterator() {
@@ -415,15 +490,51 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 		return new AbstractMap<RK, V>() {
 
 			@Override
+			public int size() {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.columnValueCount(column);
+			}
+
+			@Override
 			public V put(RK key, V value) {
 				// TODO Auto-generated method stub
 				return AbstractMatrix.this.put(key, column, value);
 			}
 
 			@Override
+			public void clear() {
+				// TODO Auto-generated method stub
+				AbstractMatrix.this.removeColumn(column);
+			}
+
+			@Override
+			public boolean containsKey(Object key) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.containsKey(key, column);
+			}
+
+			@Override
+			public V get(Object key) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.get(key, column);
+			}
+
+			@Override
+			public V remove(Object key) {
+				// TODO Auto-generated method stub
+				return AbstractMatrix.this.remove(key, column);
+			}
+
+			@Override
 			public Set<Map.Entry<RK, V>> entrySet() {
 				// TODO Auto-generated method stub
 				return new AbstractSet<Map.Entry<RK, V>>() {
+
+					@Override
+					public void clear() {
+						// TODO Auto-generated method stub
+						AbstractMatrix.this.removeColumn(column);
+					}
 
 					@Override
 					public Iterator<Map.Entry<RK, V>> iterator() {

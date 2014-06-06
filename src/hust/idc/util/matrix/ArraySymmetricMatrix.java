@@ -2,7 +2,6 @@ package hust.idc.util.matrix;
 
 import hust.idc.util.pair.UnorderedPair;
 
-import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -370,12 +369,11 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return head.viewMap;
 	}
 
-	private final class KeyMapView extends AbstractMap<K, V> {
+	private final class KeyMapView extends AbstractKeyMapView {
 		private transient volatile Head head;
-		private final transient K viewKey;
 
 		private KeyMapView(K key, Head head) {
-			this.viewKey = key;
+			super(key);
 			this.head = head;
 		}
 		
@@ -389,19 +387,19 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			return head == null;
 		}
 		
-		private void validateHead() {
+		Head validateHead() {
 			if (headNotExists()) {
 				head = ArraySymmetricMatrix.this.getHead(viewKey);
 				if (head != null && head.viewMap == null)
 					head.viewMap = this;
 			}
+			return head;
 		}
 
 		@Override
 		public boolean containsKey(Object key) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == head)
+			if (validateHead() == null)
 				return false;
 			Head columnHead = ArraySymmetricMatrix.this.getHead(key);
 			if (null == columnHead)
@@ -416,8 +414,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		@Override
 		public V get(Object key) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == head)
+			if (validateHead() == null)
 				return null;
 			Head columnHead = ArraySymmetricMatrix.this.getHead(key);
 			if (null == columnHead)
@@ -428,119 +425,127 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 				return null;
 			return null == entrys[index] ? null : entrys[index].getValue();
 		}
+		
+		@Override
+		public V remove(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return null;
+			Head columnHead = ArraySymmetricMatrix.this.getHead(key);
+			if (null == columnHead)
+				return null;
+			
+			V oldValue = ArraySymmetricMatrix.this.removeElementAt(indexFor(head.index, columnHead.index));
+			if(head.disposed())
+				head = null;
+			return oldValue;
+		}
+
+		@Override
+		public void clear() {
+			// TODO Auto-generated method stub
+			if(validateHead() != null){
+				super.clear();
+				head = null;
+			}
+		}
+
+		@Override
+		public int size() {
+			// TODO Auto-generated method stub
+			return validateHead() == null ? 0 : head.size;
+		}
 
 		@Override
 		public V put(K key, V value) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == head) {
+			if (validateHead() == null) {
 				head = ArraySymmetricMatrix.this.addHeadIfNotExists(this.viewKey);
 				head.viewMap = this;
 			}
 			return ArraySymmetricMatrix.this.setValue(head,
 					addHeadIfNotExists(key), value);
 		}
-
-		// View
-		protected transient volatile Set<Map.Entry<K, V>> entrySet = null;
-
+		
 		@Override
 		public Set<Map.Entry<K, V>> entrySet() {
 			// TODO Auto-generated method stub
 			validateHead();
-			if (null == entrySet) {
-				entrySet = new AbstractSet<Map.Entry<K, V>>() {
-
-					@Override
-					public Iterator<Map.Entry<K, V>> iterator() {
-						// TODO Auto-generated method stub
-						validateHead();
-						return new Iterator<Map.Entry<K, V>>() {
-							private int currentIndex = -1;
-							private int nextColumn = -1, nextIndex = -1;
-							private boolean nextInRow = false;
-
-							private int expectedModCount = KeyMapView.this.modCount();
-
-							private void checkModCount() {
-								if (expectedModCount != KeyMapView.this.modCount())
-									throw new ConcurrentModificationException();
-							}
-
-							private boolean getNext() {
-								checkModCount();
-								if (KeyMapView.this.headNotExists())
-									return false;
-								for (nextColumn = nextColumn + 1; nextColumn < ArraySymmetricMatrix.this
-										.dimension(); ++nextColumn) {
-									nextIndex = indexFor(head.index, nextColumn);
-									nextInRow = (head.index >= nextColumn);
-									if (null != ArraySymmetricMatrix.this.entrys[nextIndex])
-										return true;
-								}
-								return false;
-							}
-
-							@Override
-							public boolean hasNext() {
-								// TODO Auto-generated method stub
-								if (nextIndex < 0)
-									return getNext();
-								return null != ArraySymmetricMatrix.this.entrys[nextIndex];
-							}
-
-							@Override
-							public Map.Entry<K, V> next() {
-								// TODO Auto-generated method stub
-								if (nextIndex < 0 && !getNext())
-									throw new NoSuchElementException();
-								if (null == ArraySymmetricMatrix.this.entrys[nextIndex])
-									throw new NoSuchElementException();
-								ArraySymmetricMatrix<K, V>.Entry entry = ArraySymmetricMatrix.this.entrys[nextIndex];
-								currentIndex = nextIndex;
-								nextIndex = -1;
-								if (nextInRow)
-									return entry.rowMapEntry();
-								else
-									return entry.columnMapEntry();
-							}
-
-							@Override
-							public void remove() {
-								// TODO Auto-generated method stub
-								checkModCount();
-								if (currentIndex < 0
-										|| null == ArraySymmetricMatrix.this.entrys[currentIndex])
-									throw new IllegalStateException();
-
-								ArraySymmetricMatrix.this
-										.removeElementAt(currentIndex);
-								if (head.disposed()) {
-									currentIndex = nextIndex = nextColumn = -1;
-									head = null;
-								}
-								expectedModCount = KeyMapView.this.modCount();
-							}
-
-						};
-					}
-
-					@Override
-					public int size() {
-						// TODO Auto-generated method stub
-						return KeyMapView.this.size();
-					}
-
-				};
-			}
-			return entrySet;
+			return super.entrySet();
 		}
-		
+
 		@Override
-		public int size() {
+		Iterator<Map.Entry<K, V>> entryIterator() {
 			// TODO Auto-generated method stub
 			validateHead();
-			return head == null ? 0 : head.size;
+			return new Iterator<Map.Entry<K, V>>() {
+				private int currentIndex = -1;
+				private int nextColumn = -1, nextIndex = -1;
+				private boolean nextInRow = false;
+
+				private int expectedModCount = KeyMapView.this.modCount();
+
+				private void checkModCount() {
+					if (expectedModCount != KeyMapView.this.modCount())
+						throw new ConcurrentModificationException();
+				}
+
+				private boolean getNext() {
+					checkModCount();
+					if (KeyMapView.this.headNotExists())
+						return false;
+					for (nextColumn = nextColumn + 1; nextColumn < ArraySymmetricMatrix.this
+							.dimension(); ++nextColumn) {
+						nextIndex = indexFor(head.index, nextColumn);
+						nextInRow = (head.index >= nextColumn);
+						if (null != ArraySymmetricMatrix.this.entrys[nextIndex])
+							return true;
+					}
+					return false;
+				}
+
+				@Override
+				public boolean hasNext() {
+					// TODO Auto-generated method stub
+					if (nextIndex < 0)
+						return getNext();
+					return null != ArraySymmetricMatrix.this.entrys[nextIndex];
+				}
+
+				@Override
+				public Map.Entry<K, V> next() {
+					// TODO Auto-generated method stub
+					if (nextIndex < 0 && !getNext())
+						throw new NoSuchElementException();
+					if (null == ArraySymmetricMatrix.this.entrys[nextIndex])
+						throw new NoSuchElementException();
+					ArraySymmetricMatrix<K, V>.Entry entry = ArraySymmetricMatrix.this.entrys[nextIndex];
+					currentIndex = nextIndex;
+					nextIndex = -1;
+					if (nextInRow)
+						return entry.rowMapEntry();
+					else
+						return entry.columnMapEntry();
+				}
+
+				@Override
+				public void remove() {
+					// TODO Auto-generated method stub
+					checkModCount();
+					if (currentIndex < 0
+							|| null == ArraySymmetricMatrix.this.entrys[currentIndex])
+						throw new IllegalStateException();
+
+					ArraySymmetricMatrix.this
+							.removeElementAt(currentIndex);
+					if (head.disposed()) {
+						currentIndex = nextIndex = nextColumn = -1;
+						head = null;
+					}
+					expectedModCount = KeyMapView.this.modCount();
+				}
+
+			};
 		}
 
 	}

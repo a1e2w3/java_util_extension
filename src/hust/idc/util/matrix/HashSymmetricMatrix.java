@@ -1,10 +1,8 @@
 package hust.idc.util.matrix;
 
-import hust.idc.util.EmptyIterator;
 import hust.idc.util.pair.Pair;
 
 import java.io.IOException;
-import java.util.AbstractMap;
 import java.util.AbstractSet;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -191,9 +189,14 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	public boolean containsKey(Object row, Object column) {
 		// TODO Auto-generated method stub
 		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
-		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
 		int columnHash = (column == null ? 0 : HashMatrix.hash(column
 				.hashCode()));
+		return containsKey(row, rowHash, column, columnHash);
+	}
+
+	private boolean containsKey(Object row, int rowHash, Object column,
+			int columnHash) {
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
 		int columnIndex = HashMatrix.indexFor(columnHash, heads.length);
 
 		Entry entry = table[tableIndexFor(rowIndex, columnIndex)];
@@ -210,9 +213,13 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	public V get(Object row, Object column) {
 		// TODO Auto-generated method stub
 		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
-		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
 		int columnHash = (column == null ? 0 : HashMatrix.hash(column
 				.hashCode()));
+		return get(row, rowHash, column, columnHash);
+	}
+
+	private V get(Object row, int rowHash, Object column, int columnHash) {
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
 		int columnIndex = HashMatrix.indexFor(columnHash, heads.length);
 
 		Entry entry = table[tableIndexFor(rowIndex, columnIndex)];
@@ -328,11 +335,14 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	public V put(K row, K column, V value) {
 		// TODO Auto-generated method stub
 		int rowHash = (row == null ? 0 : HashMatrix.hash(row.hashCode()));
-		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
-		Head rowHead = this.addHeadIfNotExists(row, rowHash, rowIndex);
-
 		int columnHash = (column == null ? 0 : HashMatrix.hash(column
 				.hashCode()));
+		return put(row, rowHash, column, columnHash, value);
+	}
+
+	private V put(K row, int rowHash, K column, int columnHash, V value) {
+		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
+		Head rowHead = this.addHeadIfNotExists(row, rowHash, rowIndex);
 		int columnIndex = HashMatrix.indexFor(columnHash, heads.length);
 		Head columnHead = this.addHeadIfNotExists(column, columnHash,
 				columnIndex);
@@ -407,18 +417,22 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		--dimension;
 		head.dispose();
 	}
-
+	
 	@Override
 	public void removeKey(K key) {
+		int hash = (key == null ? 0 : HashMatrix.hash(key.hashCode()));
+		removeKey(key, hash);
+	}
+
+	private void removeKey(K key, int hash) {
 		// TODO Auto-generated method stub
-		int rowHash = (key == null ? 0 : HashMatrix.hash(key.hashCode()));
-		int rowIndex = HashMatrix.indexFor(rowHash, heads.length);
+		int rowIndex = HashMatrix.indexFor(hash, heads.length);
 
 		// find the rowHead and its prev
 		Head head = heads[rowIndex], prev = null, rowHead = null;
 		if (key == null) {
 			while (head != null) {
-				if (head.hash == rowHash && head.getKey() == null) {
+				if (head.hash == hash && head.getKey() == null) {
 					rowHead = head;
 					break;
 				}
@@ -427,7 +441,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			}
 		} else {
 			while (head != null) {
-				if (head.hash == rowHash && key.equals(head.getKey())) {
+				if (head.hash == hash && key.equals(head.getKey())) {
 					rowHead = head;
 					break;
 				}
@@ -436,7 +450,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			}
 		}
 		if (rowHead == null)
-			return;
+			return ;
 
 		if (rowHead.size > 0) {
 			// remove all entry of this row
@@ -444,11 +458,12 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 				int tableIndex = tableIndexFor(rowIndex, j);
 				Entry entry = table[tableIndex], prevEntry = null;
 				while (entry != null) {
+					Entry next = entry.next;
 					if (entry.rowHead == rowHead) {
 						if (prevEntry == null)
-							table[tableIndex] = entry.next;
+							table[tableIndex] = next;
 						else
-							prevEntry.next = entry.next;
+							prevEntry.next = next;
 						--size;
 						if (!entry.isDiagonal()
 								&& entry.columnHead.increaseSize(-1) == 0)
@@ -456,7 +471,10 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 						entry.recordRemoval(this);
 						entry.dispose();
+					} else {
+						prevEntry = entry;
 					}
+					entry = next;
 				}
 			}
 		}
@@ -553,12 +571,13 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return clone;
 	}
 
-	private final class KeyMapView extends AbstractMap<K, V> {
-		private transient volatile Head head;
-		private final transient K row;
+	final class KeyMapView extends AbstractKeyMapView {
+		transient final int keyHash;
+		transient volatile Head head;
 
-		private KeyMapView(K row, Head head) {
-			this.row = row;
+		private KeyMapView(K key, int keyHash, Head head) {
+			super(key);
+			this.keyHash = keyHash;
 			this.head = head;
 		}
 
@@ -572,65 +591,90 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			return head == null;
 		}
 
-		private boolean validateHead() {
+		Head validateHead() {
 			if (headNotExists()) {
-				head = HashSymmetricMatrix.this.getHead(row);
+				head = HashSymmetricMatrix.this.getHead(viewKey);
 				if (head != null && head.viewMap == null)
 					head.viewMap = this;
 			}
-			return true;
+			return head;
 		}
 
 		@Override
 		public V put(K key, V value) {
 			// TODO Auto-generated method stub
-			validateHead();
-			if (null == head) {
-				head = HashSymmetricMatrix.this.addHeadIfNotExists(row);
+			if (validateHead() == null) {
+				head = HashSymmetricMatrix.this.addHeadIfNotExists(viewKey);
 				head.viewMap = this;
 			}
-			return HashSymmetricMatrix.this.put(row, key, value);
+			int hash = key == null ? 0 : HashMatrix.hash(key.hashCode());
+			return HashSymmetricMatrix.this.put(viewKey, keyHash, key, hash,
+					value);
 		}
-		
+
 		@Override
 		public int size() {
 			// TODO Auto-generated method stub
-			validateHead();
-			return head == null ? 0 : head.size;
+			return validateHead() == null ? 0 : head.size;
 		}
 
-		private transient volatile Set<Map.Entry<K, V>> entrySet = null;
+		@Override
+		public boolean containsKey(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return false;
+			int hash = key == null ? 0 : HashMatrix.hash(key.hashCode());
+			return HashSymmetricMatrix.this.containsKey(viewKey, keyHash, key,
+					hash);
+		}
 
+		@Override
+		public V get(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return null;
+			int hash = key == null ? 0 : HashMatrix.hash(key.hashCode());
+			return HashSymmetricMatrix.this.get(viewKey, keyHash, key, hash);
+		}
+
+		@Override
+		public V remove(Object key) {
+			// TODO Auto-generated method stub
+			if (validateHead() == null)
+				return null;
+			V oldValue = super.remove(key);
+			if (head.disposed())
+				head = null;
+			return oldValue;
+		}
+
+		@Override
+		public void clear() {
+			// TODO Auto-generated method stub
+			if (validateHead() != null) {
+				HashSymmetricMatrix.this.removeKey(viewKey, keyHash);
+				head = null;
+			}
+		}
+		
 		@Override
 		public Set<Map.Entry<K, V>> entrySet() {
 			// TODO Auto-generated method stub
 			validateHead();
-			if (null == entrySet) {
-				entrySet = new AbstractSet<Map.Entry<K, V>>() {
-					@Override
-					public Iterator<Map.Entry<K, V>> iterator() {
-						// TODO Auto-generated method stub
-						if (headNotExists())
-							return EmptyIterator
-									.<Map.Entry<K, V>> getInstance();
-						else
-							return new EntryIterator();
-					}
+			return super.entrySet();
+		}
 
-					@Override
-					public int size() {
-						// TODO Auto-generated method stub
-						return KeyMapView.this.size();
-					}
-				};
-			}
-			return entrySet;
+		@Override
+		Iterator<Map.Entry<K, V>> entryIterator() {
+			// TODO Auto-generated method stub
+			validateHead();
+			return new EntryIterator();
 		}
 
 		private final class EntryIterator implements Iterator<Map.Entry<K, V>> {
 			private HashSymmetricMatrix<K, V>.Entry current = null, next;
-			private final int rowIndex = HashMatrix.indexFor(head.hash,
-					heads.length);
+			private final int rowIndex = headNotExists() ? -1 : HashMatrix
+					.indexFor(head.hash, heads.length);
 			private volatile int columnIndex = 0;
 
 			private int expectedModCount;
@@ -640,12 +684,12 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 				getNext();
 			}
 
-			void checkModCount() {
+			final void checkModCount() {
 				if (KeyMapView.this.modCount() != expectedModCount)
 					throw new ConcurrentModificationException();
 			}
 
-			private boolean match(HashSymmetricMatrix<K, V>.Entry entry) {
+			final boolean match(HashSymmetricMatrix<K, V>.Entry entry) {
 				if (entry == null)
 					return false;
 				else
@@ -653,7 +697,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			}
 
 			private void getNext() {
-				if (KeyMapView.this.headNotExists()) {
+				if (KeyMapView.this.headNotExists() || rowIndex < 0) {
 					next = null;
 				} else {
 					while (columnIndex < heads.length) {
@@ -682,7 +726,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 					throw new NoSuchElementException();
 				current = next;
 				while ((next = next.next) != null) {
-					if (eq(row, next.getRowKey()))
+					if (eq(viewKey, next.getRowKey()))
 						break;
 				}
 				if (next == null) {
@@ -701,8 +745,8 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 				K column = head == current.rowHead ? current.getColumnKey()
 						: current.getRowKey();
 				current = null;
-				HashSymmetricMatrix.this.remove(row, column);
-				if (head.disposed()){
+				HashSymmetricMatrix.this.remove(viewKey, column);
+				if (head.disposed()) {
 					head = null;
 					next = null;
 				}
@@ -717,10 +761,11 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		// TODO Auto-generated method stub
 		Head head = getHead(key);
 		if (head == null) {
-			return new KeyMapView(key, null);
+			return new KeyMapView(key, key == null ? 0 : HashMatrix.hash(key
+					.hashCode()), null);
 		}
 		if (head.viewMap == null) {
-			head.viewMap = new KeyMapView(key, head);
+			head.viewMap = new KeyMapView(key, head.hash, head);
 		}
 		return head.viewMap;
 	}

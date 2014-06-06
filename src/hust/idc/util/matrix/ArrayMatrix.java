@@ -728,12 +728,12 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 
 				private int expectedModCount = RowMapView.this.modCount();
 
-				private void checkModCount() {
+				final void checkModCount() {
 					if (expectedModCount != RowMapView.this.modCount())
 						throw new ConcurrentModificationException();
 				}
 
-				private boolean getNext() {
+				final boolean advance() {
 					checkModCount();
 					if(RowMapView.this.headNotExists()){
 						return false;
@@ -761,7 +761,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				public boolean hasNext() {
 					// TODO Auto-generated method stub
 					if (nextColumn < 0)
-						return getNext();
+						return advance();
 					else
 						return nextColumn < columns();
 				}
@@ -769,7 +769,7 @@ public class ArrayMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				@Override
 				public Map.Entry<CK, V> next() {
 					// TODO Auto-generated method stub
-					if (nextColumn < 0 && !getNext())
+					if (nextColumn < 0 && !advance())
 						throw new NoSuchElementException();
 					if (nextColumn > columns()
 							|| entrys[head.index][nextColumn] == null)
