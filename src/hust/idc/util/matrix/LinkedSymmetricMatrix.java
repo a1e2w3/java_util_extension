@@ -554,15 +554,6 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		super.clearViews();
 		keySet = null;
 		entrySet = null;
-		
-		HeadNode head = headsEntry;
-		while(head != null){
-			if(head.viewMap != null){
-				((KeyMapView) head.viewMap).entrySet = null;
-				head.viewMap = null;
-			}
-			head = head.next;
-		}
 	}
 
 	// View

@@ -557,12 +557,6 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		super.clearViews();
 		keySet = null;
 		entrySet = null;
-		for(Head head : heads){
-			if(head.viewMap != null){
-				((KeyMapView) head.viewMap).entrySet = null;
-				head.viewMap = null;
-			}
-		}
 	}
 
 	// View

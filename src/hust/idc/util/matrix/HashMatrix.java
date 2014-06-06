@@ -777,26 +777,12 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		return clone;
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	void clearViews() {
 		super.clearViews();
 		rowKeySet = null;
 		columnKeySet = null;
 		entrySet = null;
-
-		for(Head<RK> rowHead : rowHeads){
-			if(rowHead.viewMap != null){
-				((RowMapView) rowHead.viewMap).entrySet = null;
-				rowHead.viewMap = null;
-			}
-		}
-		for(Head<CK> columnHead : columnHeads){
-			if(columnHead.viewMap != null){
-				((RowMapView) columnHead.viewMap).entrySet = null;
-				columnHead.viewMap = null;
-			}
-		}
 	}
 
 	private void putAllForCreate(

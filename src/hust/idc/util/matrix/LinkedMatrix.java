@@ -730,30 +730,12 @@ public class LinkedMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		return head == null ? 0 : head.size;
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	void clearViews(){
 		super.clearViews();
 		rowKeySet = null;
 		columnKeySet = null;
 		entrySet = null;
-
-		HeadNode<RK> rowHead = rowHeadsEntry;
-		while(rowHead != null){
-			if(rowHead.viewMap != null){
-				((RowMapView) rowHead.viewMap).entrySet = null;
-				rowHead.viewMap = null;
-			}
-			rowHead = rowHead.next;
-		}
-		HeadNode<CK> columnHead = columnHeadsEntry;
-		while(columnHead != null){
-			if(columnHead.viewMap != null){
-				((RowMapView) columnHead.viewMap).entrySet = null;
-				columnHead.viewMap = null;
-			}
-			columnHead = columnHead.next;
-		}
 	}
 
 	// View

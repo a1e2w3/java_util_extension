@@ -497,12 +497,6 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		super.clearViews();
 		this.entrySet = null;
 		this.keySet = null;
-		for(Head head : heads){
-			if(head.viewMap != null){
-				((KeyMapView) head.viewMap).entrySet = null;
-				head.viewMap = null;
-			}
-		}
 	}
 
 	private void putAllForCreate(
