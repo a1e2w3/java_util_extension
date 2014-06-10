@@ -5,26 +5,65 @@ import java.util.AbstractSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 
 public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 	final Map<K, V> map;
 	final Filter<? super K> filter;
 
-	FilteredMap(Map<K, V> map, Filter<? super K> filter) {
+	public FilteredMap(Map<K, V> map, Filter<? super K> filter) {
 		super();
-		if (map == null)
-			throw new NullPointerException();
-		this.map = map;
+		this.map = Objects.requireNonNull(map);
 		this.filter = filter;
 	}
 
-	private final boolean accept(K key) {
-		return filter == null ? true : filter.accept(key);
+	@SuppressWarnings("unchecked")
+	private final boolean accept(Object key) {
+		try {
+			return filter == null ? true : filter.accept((K) key);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return false;
+		}
 	}
 
 	private final boolean accept(Entry<K, V> entry) {
 		return accept(entry.getKey());
+	}
+
+	@Override
+	public boolean containsKey(Object key) {
+		// TODO Auto-generated method stub
+		return this.accept(key) && map.containsKey(key);
+	}
+
+	@Override
+	public V get(Object key) {
+		// TODO Auto-generated method stub
+		return this.accept(key) ? map.get(key) : null;
+	}
+
+	@Override
+	public V put(K key, V value) {
+		// TODO Auto-generated method stub
+		return this.accept(key) ? map.put(key, value) : null;
+	}
+
+	@Override
+	public V remove(Object key) {
+		// TODO Auto-generated method stub
+		return this.accept(key) ? map.remove(key) : null;
+	}
+
+	@Override
+	public void clear() {
+		// TODO Auto-generated method stub
+		Iterator<Entry<K, V>> entryIt = map.entrySet().iterator();
+		while(entryIt.hasNext()){
+			if(this.accept(entryIt.next()))
+				entryIt.remove();
+		}
 	}
 
 	@Override
@@ -36,6 +75,17 @@ public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 				++count;
 		}
 		return count;
+	}
+
+	@Override
+	public boolean isEmpty() {
+		// TODO Auto-generated method stub
+		Iterator<Entry<K, V>> entryIt = map.entrySet().iterator();
+		while(entryIt.hasNext()){
+			if(this.accept(entryIt.next()))
+				return false;
+		}
+		return true;
 	}
 
 	transient volatile Set<Map.Entry<K, V>> entrySet = null;
@@ -57,7 +107,7 @@ public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 
 						private void advance() {
 							while (it.hasNext()) {
-								if (FilteredMap.this.accept(next = it.next())){
+								if (FilteredMap.this.accept(next = it.next())) {
 									removable = true;
 									return;
 								}
@@ -105,6 +155,12 @@ public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 				public int size() {
 					// TODO Auto-generated method stub
 					return FilteredMap.this.size();
+				}
+
+				@Override
+				public void clear() {
+					// TODO Auto-generated method stub
+					FilteredMap.this.clear();
 				}
 
 			};
