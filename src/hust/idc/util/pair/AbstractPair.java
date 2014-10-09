@@ -58,23 +58,55 @@ public abstract class AbstractPair<T, S> implements Pair<T, S> {
 		return convertPair;
 	}
 
-	protected static boolean eq(Object obj1, Object obj2) {
-		return obj1 == null ? (obj2 == null) : obj1.equals(obj2);
-	}
-
 	@Override
 	public boolean equalsWithOrder(Pair<? extends T, ? extends S> anotherPair) {
 		// TODO Auto-generated method stub
-		return anotherPair != null && eq(getFirst(), anotherPair.getFirst())
-				&& eq(getSecond(), anotherPair.getSecond());
+		if (anotherPair == this)
+			return true;
+		return anotherPair != null && Pairs.eq(getFirst(), anotherPair.getFirst())
+				&& Pairs.eq(getSecond(), anotherPair.getSecond());
 	}
 
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return String.format("Pair[%s,%s]", this.getFirst() == null ? "null"
-				: this.getFirst().toString(), this.getSecond() == null ? "null"
-				: this.getSecond().toString());
+		return String.format("[%s,%s]", toString(this.getFirst()), toString(this.getSecond()));
+	}
+	
+	String toString(Object obj) {
+		if (obj == null)
+			return "null";
+		if (obj == this)
+			return "this pair";
+		return obj.toString();
+	}
+	
+	@Override
+	public int hashCode() {
+		// TODO Auto-generated method stub
+		final int prime = 31;
+		int result = 1;
+		result = result * prime + ((getFirst() == null) ? 0 : getFirst().hashCode());
+		result = result * prime + ((getSecond() == null) ? 0 : getSecond().hashCode());
+		return result * prime;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		// TODO Auto-generated method stub
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null) {
+			return false;
+		}
+		if (!(obj instanceof Pair<?, ?>)) {
+			return false;
+		}
+
+		Pair<?, ?> other = (Pair<?, ?>) obj;
+		return Pairs.eq(getFirst(), other.getFirst())
+				&& Pairs.eq(getSecond(), other.getSecond());
 	}
 
 }

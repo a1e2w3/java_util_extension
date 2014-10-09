@@ -318,7 +318,7 @@ public class LinkedSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public void removeKey(K key) {
+	public void removeRowAndColumn(K key) {
 		// TODO Auto-generated method stub
 		this.removeKey(getHead(key));
 	}

@@ -15,17 +15,17 @@ public abstract class AbstractImmutablePair<T, S> extends AbstractPair<T, S> imp
 	@Override
 	public final T setFirst(T first) {
 		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("unsupported operation: setFirst");
 	}
 
 	@Override
 	public final S setSecond(S second) {
 		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("unsupported operation: setSecond");
 	}
 	
 	@Override
-	public Pair<S, T> convertPair() {
+	public ImmutablePair<S, T> convertPair() {
 		if (convertPair == null) {
 			convertPair = new AbstractImmutablePair<S, T>() {
 
@@ -43,7 +43,7 @@ public abstract class AbstractImmutablePair<T, S> extends AbstractPair<T, S> imp
 
 			};
 		}
-		return convertPair;
+		return (ImmutablePair<S, T>)convertPair;
 	}
 
 }

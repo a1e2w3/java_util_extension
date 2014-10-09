@@ -21,6 +21,44 @@ public abstract class AbstractUnorderedPair<E> extends AbstractPair<E, E>
 			return this.getFirst().equals(value) || this.getSecond().equals(value);
 	}
 
+	@Override
+	public UnorderedPair<E> convertPair() {
+		// TODO Auto-generated method stub
+		if (Pairs.eq(getFirst(), getSecond()))
+			return this;
+		
+		if (convertPair == null) {
+			convertPair = new AbstractUnorderedPair<E>() {
+
+				@Override
+				public E getFirst() {
+					// TODO Auto-generated method stub
+					return AbstractUnorderedPair.this.getSecond();
+				}
+
+				@Override
+				public E getSecond() {
+					// TODO Auto-generated method stub
+					return AbstractUnorderedPair.this.getFirst();
+				}
+
+				@Override
+				public E setFirst(E first) {
+					// TODO Auto-generated method stub
+					return AbstractUnorderedPair.this.setSecond(first);
+				}
+
+				@Override
+				public E setSecond(E second) {
+					// TODO Auto-generated method stub
+					return AbstractUnorderedPair.this.setFirst(second);
+				}
+
+			};
+		}
+		return (UnorderedPair<E>) convertPair;
+	}
+
 	/* (non-Javadoc)
 	 * @see css.util.Pair#hashCode()
 	 */
@@ -46,11 +84,15 @@ public abstract class AbstractUnorderedPair<E> extends AbstractPair<E, E>
 			return false;
 		}
 		if (!(obj instanceof UnorderedPair<?>)) {
-			return false;
+			if (! (obj instanceof Pair<?, ?>))
+				return false;
+			Pair<?, ?> other = (Pair<?, ?>) obj;
+			return Pairs.eq(getFirst(), other.getFirst()) && Pairs.eq(getSecond(), other.getSecond());
+		} else {
+			UnorderedPair<?> other = (UnorderedPair<?>) obj;
+			return (Pairs.eq(getFirst(), other.getFirst()) && Pairs.eq(getSecond(), other.getSecond())) 
+					|| (Pairs.eq(getFirst(), other.getSecond()) && Pairs.eq(getSecond(), other.getFirst()));
 		}
-		UnorderedPair<?> other = (UnorderedPair<?>) obj;
-		return (eq(getFirst(), other.getFirst()) && eq(getSecond(), other.getSecond())) 
-				|| (eq(getFirst(), other.getSecond()) && eq(getSecond(), other.getFirst()));
 	}
 
 }

@@ -1,7 +1,7 @@
 package hust.idc.util.matrix;
 
 import hust.idc.util.pair.AbstractImmutableUnorderedPair;
-import hust.idc.util.pair.Pair;
+import hust.idc.util.pair.UnorderedPair;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
@@ -64,20 +64,20 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 	}
 	
 	@Override
-	public void removeKey(K key){
+	public void removeRowAndColumn(K key){
 		keyMap(key).clear();
 	}
 	
 	@Override
 	public final void removeRow(K row) {
 		// TODO Auto-generated method stub
-		removeKey(row);
+		removeRowAndColumn(row);
 	}
 
 	@Override
 	public final void removeColumn(K column) {
 		// TODO Auto-generated method stub
-		removeKey(column);
+		removeRowAndColumn(column);
 	}
 	
 	protected int valueCount(Object key){
@@ -139,7 +139,7 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 		@Override
 		public void clear() {
 			// TODO Auto-generated method stub
-			AbstractSymmetricMatrix.this.removeKey(viewKey);
+			AbstractSymmetricMatrix.this.removeRowAndColumn(viewKey);
 		}
 
 		transient volatile Set<Map.Entry<K, V>> entrySet = null;
@@ -306,9 +306,9 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 
 		@Override
 		public abstract V getValue();
-
+		
 		@Override
-		public Pair<K, K> getKeyPair() {
+		public UnorderedPair<K> getKeyPair() {
 			// TODO Auto-generated method stub
 			if (keyPair == null) {
 				keyPair = new AbstractImmutableUnorderedPair<K>() {
@@ -327,7 +327,7 @@ public abstract class AbstractSymmetricMatrix<K, V> extends
 
 				};
 			}
-			return keyPair;
+			return (UnorderedPair<K>) keyPair;
 		}
 
 		@Override

@@ -419,7 +419,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 	
 	@Override
-	public void removeKey(K key) {
+	public void removeRowAndColumn(K key) {
 		int hash = (key == null ? 0 : HashMatrix.hash(key.hashCode()));
 		removeKey(key, hash);
 	}

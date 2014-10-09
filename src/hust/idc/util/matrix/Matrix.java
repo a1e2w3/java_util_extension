@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 public interface Matrix<RK, CK, V> {
+	
 	int size();
 	
 	int rows();
@@ -61,8 +62,10 @@ public interface Matrix<RK, CK, V> {
 	
 	Set<Pair<RK, CK>> keyPairSet();
 	
+	@Override
 	boolean equals(Object o);
 	
+	@Override
 	int hashCode();
 	
 	static interface Entry<RK, CK, V>{
@@ -82,8 +85,10 @@ public interface Matrix<RK, CK, V> {
 		
 		boolean match(Object row, Object column);
 		
+		@Override
 		boolean equals(Object o);
 		
+		@Override
 		int hashCode();
 		
 	}

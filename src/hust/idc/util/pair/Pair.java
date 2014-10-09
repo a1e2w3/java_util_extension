@@ -11,8 +11,10 @@ public interface Pair<T, S> {
 	
 	Pair<S, T> convertPair();
 	
+	@Override
 	boolean equals(Object o);
 	
+	@Override
 	int hashCode();
 	
 	boolean equalsWithOrder(Pair<? extends T, ? extends S> anotherPair);

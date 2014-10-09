@@ -284,7 +284,7 @@ public class ArraySymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	@Override
-	public void removeKey(K key) {
+	public void removeRowAndColumn(K key) {
 		// TODO Auto-generated method stub
 		Head rowHead = getHead(key);
 		if (null == rowHead)

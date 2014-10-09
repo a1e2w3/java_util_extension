@@ -19,10 +19,10 @@ public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 	}
 
 	@SuppressWarnings("unchecked")
-	private final boolean accept(Object key) {
+	boolean accept(Object key) {
 		try {
-			return filter == null ? true : filter.accept((K) key);
-		} catch (Exception e) {
+			return filter == null || filter.accept((K) key);
+		} catch (Throwable e) {
 			// TODO Auto-generated catch block
 			return false;
 		}
@@ -59,19 +59,25 @@ public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 	@Override
 	public void clear() {
 		// TODO Auto-generated method stub
-		Iterator<Entry<K, V>> entryIt = map.entrySet().iterator();
-		while(entryIt.hasNext()){
-			if(this.accept(entryIt.next()))
-				entryIt.remove();
+		if (filter == null) {
+			map.clear();
+		} else {
+			Iterator<Entry<K, V>> entryIt = map.entrySet().iterator();
+			while (entryIt.hasNext()) {
+				if (this.accept(entryIt.next()))
+					entryIt.remove();
+			}
 		}
 	}
 
 	@Override
 	public int size() {
 		// TODO Auto-generated method stub
+		if (filter == null)
+			return map.size();
 		int count = 0;
 		for (Map.Entry<K, V> entry : map.entrySet()) {
-			if (FilteredMap.this.accept(entry.getKey()))
+			if (this.accept(entry))
 				++count;
 		}
 		return count;
@@ -80,9 +86,11 @@ public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 	@Override
 	public boolean isEmpty() {
 		// TODO Auto-generated method stub
+		if (filter == null)
+			return map.isEmpty();
 		Iterator<Entry<K, V>> entryIt = map.entrySet().iterator();
-		while(entryIt.hasNext()){
-			if(this.accept(entryIt.next()))
+		while (entryIt.hasNext()) {
+			if (this.accept(entryIt.next()))
 				return false;
 		}
 		return true;
@@ -94,76 +102,81 @@ public class FilteredMap<K, V> extends AbstractMap<K, V> implements Map<K, V> {
 	public Set<java.util.Map.Entry<K, V>> entrySet() {
 		// TODO Auto-generated method stub
 		if (entrySet == null) {
-			entrySet = new AbstractSet<Map.Entry<K, V>>() {
+			if (filter == null) {
+				entrySet = map.entrySet();
+			} else {
+				entrySet = new AbstractSet<Map.Entry<K, V>>() {
 
-				@Override
-				public Iterator<Map.Entry<K, V>> iterator() {
-					// TODO Auto-generated method stub
-					return new Iterator<Map.Entry<K, V>>() {
-						Iterator<Map.Entry<K, V>> it = map.entrySet()
-								.iterator();
-						Map.Entry<K, V> next = null;
-						boolean removable = false;
+					@Override
+					public Iterator<Map.Entry<K, V>> iterator() {
+						// TODO Auto-generated method stub
+						return new Iterator<Map.Entry<K, V>>() {
+							Iterator<Map.Entry<K, V>> it = map.entrySet()
+									.iterator();
+							Map.Entry<K, V> next = null;
+							boolean removable = false;
 
-						private void advance() {
-							while (it.hasNext()) {
-								if (FilteredMap.this.accept(next = it.next())) {
-									removable = true;
-									return;
+							private void advance() {
+								while (it.hasNext()) {
+									if (FilteredMap.this.accept(next = it
+											.next())) {
+										removable = true;
+										return;
+									}
 								}
+								next = null;
+								removable = false;
 							}
-							next = null;
-							removable = false;
-						}
 
-						@Override
-						public boolean hasNext() {
-							// TODO Auto-generated method stub
-							if (next != null)
-								return true;
-							else
-								advance();
-							return next != null;
-						}
+							@Override
+							public boolean hasNext() {
+								// TODO Auto-generated method stub
+								if (next != null)
+									return true;
+								else
+									advance();
+								return next != null;
+							}
 
-						@Override
-						public java.util.Map.Entry<K, V> next() {
-							// TODO Auto-generated method stub
-							if (next == null)
-								advance();
-							if (next == null)
-								throw new NoSuchElementException();
-							Map.Entry<K, V> current = next;
-							next = null;
-							return current;
-						}
+							@Override
+							public java.util.Map.Entry<K, V> next() {
+								// TODO Auto-generated method stub
+								if (next == null)
+									advance();
+								if (next == null)
+									throw new NoSuchElementException();
+								Map.Entry<K, V> current = next;
+								next = null;
+								return current;
+							}
 
-						@Override
-						public void remove() {
-							// TODO Auto-generated method stub
-							if (!removable)
-								throw new IllegalStateException();
-							it.remove();
-							removable = false;
-						}
+							@Override
+							public void remove() {
+								// TODO Auto-generated method stub
+								if (!removable)
+									throw new IllegalStateException();
+								it.remove();
+								removable = false;
+							}
 
-					};
+						};
 
-				}
+					}
 
-				@Override
-				public int size() {
-					// TODO Auto-generated method stub
-					return FilteredMap.this.size();
-				}
+					@Override
+					public int size() {
+						// TODO Auto-generated method stub
+						return FilteredMap.this.size();
+					}
 
-				@Override
-				public void clear() {
-					// TODO Auto-generated method stub
-					FilteredMap.this.clear();
-				}
+					@Override
+					public void clear() {
+						// TODO Auto-generated method stub
+						FilteredMap.this.clear();
+					}
 
-			};
+				};
+			}
 		}
 		return entrySet;
 	}

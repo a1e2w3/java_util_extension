@@ -2,8 +2,8 @@ package hust.idc.util.matrix;
 
 import hust.idc.util.AbstractMapEntry;
 import hust.idc.util.pair.AbstractImmutablePair;
-import hust.idc.util.pair.ObjectPair;
 import hust.idc.util.pair.Pair;
+import hust.idc.util.pair.Pairs;
 
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -383,7 +383,7 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		}
 
 		modCount++;
-		tab[rowIndex][columnIndex] = new Entry(new ObjectPair<RK, CK>(rowMask,
+		tab[rowIndex][columnIndex] = new Entry(Pairs.<RK, CK>makePair(rowMask,
 				columnMask), value, rowHash, columnHash, tab[rowIndex][columnIndex]);
 		if (++size >= threshold)
 			resize();
@@ -528,6 +528,36 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			}
 
 			@Override
+			public int size() {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.rowValueCount(row);
+			}
+
+			@Override
+			public boolean containsKey(Object key) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.containsKey(row, key);
+			}
+
+			@Override
+			public V get(Object key) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.get(row, key);
+			}
+
+			@Override
+			public V remove(Object key) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.remove(row, key);
+			}
+
+			@Override
+			public void clear() {
+				// TODO Auto-generated method stub
+				WeakHashMatrix.this.removeRow(row);
+			}
+
+			@Override
 			public Set<Map.Entry<CK, V>> entrySet() {
 				// TODO Auto-generated method stub
 				return new AbstractSet<Map.Entry<CK, V>>(){
@@ -648,6 +678,36 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 			public V put(RK key, V value) {
 				// TODO Auto-generated method stub
 				return WeakHashMatrix.this.put(key, column, value);
+			}
+
+			@Override
+			public int size() {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.columnValueCount(column);
+			}
+
+			@Override
+			public boolean containsKey(Object key) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.containsKey(key, column);
+			}
+
+			@Override
+			public V get(Object key) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.get(key, column);
+			}
+
+			@Override
+			public V remove(Object key) {
+				// TODO Auto-generated method stub
+				return WeakHashMatrix.this.remove(key, column);
+			}
+
+			@Override
+			public void clear() {
+				// TODO Auto-generated method stub
+				WeakHashMatrix.this.removeColumn(column);
 			}
 
 			@Override
@@ -849,6 +909,12 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 					return WeakHashMatrix.this.size;
 				}
 
+				@Override
+				public void clear() {
+					// TODO Auto-generated method stub
+					WeakHashMatrix.this.clear();
+				}
+
 			};
 		}
 		return entrySet;
@@ -960,7 +1026,7 @@ public class WeakHashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V>
 		Entry next;
 		final int rowHash, columnHash;
 
-		public Entry(Pair<RK, CK> reference, V value, int rowHash,
+		Entry(Pair<RK, CK> reference, V value, int rowHash,
 				int columnHash, Entry next) {
 			super(reference, queue);
 			// TODO Auto-generated constructor stub

@@ -54,32 +54,4 @@ public class ObjectPair<T, S> extends AbstractPair<T, S> implements Pair<T, S>, 
 		return old;
 	}
 
-	@Override
-	public int hashCode() {
-		// TODO Auto-generated method stub
-		final int prime = 31;
-		int result = 1;
-		result = result * prime + ((getFirst() == null) ? 0 : getFirst().hashCode());
-		result = result * prime + ((getSecond() == null) ? 0 : getSecond().hashCode());
-		return result * prime;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		// TODO Auto-generated method stub
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null) {
-			return false;
-		}
-		if (!(obj instanceof ObjectPair<?, ?>)) {
-			return false;
-		}
-
-		ObjectPair<?, ?> other = (ObjectPair<?, ?>) obj;
-		return eq(getFirst(), other.getFirst())
-				&& eq(getSecond(), other.getSecond());
-	}
-
 }

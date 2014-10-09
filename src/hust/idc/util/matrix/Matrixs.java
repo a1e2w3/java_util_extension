@@ -129,9 +129,24 @@ public class Matrixs {
 			}
 		}
 
+		@Override
 		public String toString() {
 			synchronized (mutex) {
 				return c.toString();
+			}
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			synchronized (mutex) {
+				return c.equals(o);
+			}
+		}
+
+		@Override
+		public int hashCode() {
+			synchronized (mutex) {
+				return c.hashCode();
 			}
 		}
 
@@ -155,18 +170,6 @@ public class Matrixs {
 
 		SynchronizedSet(Set<E> s, Object mutex) {
 			super(s, mutex);
-		}
-
-		public boolean equals(Object o) {
-			synchronized (mutex) {
-				return c.equals(o);
-			}
-		}
-
-		public int hashCode() {
-			synchronized (mutex) {
-				return c.hashCode();
-			}
 		}
 	}
 
@@ -306,6 +309,7 @@ public class Matrixs {
 		}
 
 		AbstractSynchronizedMatrix(Matrix<RK, CK, V> m, Object mutex) {
+			super();
 			this.m = Objects.requireNonNull(m);
 			this.mutex = Objects.requireNonNull(mutex);
 		}
@@ -625,10 +629,10 @@ public class Matrixs {
 		}
 
 		@Override
-		public void removeKey(K key) {
+		public void removeRowAndColumn(K key) {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
-				sm.removeKey(key);
+				sm.removeRowAndColumn(key);
 			}
 		}
 
@@ -1065,7 +1069,7 @@ public class Matrixs {
 		}
 
 		@Override
-		public void removeKey(K key) {
+		public void removeRowAndColumn(K key) {
 			// TODO Auto-generated method stub
 			throw new UnsupportedOperationException();
 		}

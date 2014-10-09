@@ -2,9 +2,33 @@ package hust.idc.util.matrix.test;
 
 import hust.idc.util.matrix.Matrix;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 public abstract class TestMatrix {
 	
-	protected static void printMatrix(Matrix<Integer, Integer, Integer> matrix){
+	static Matrix<Integer, Integer, Integer> reconstructBySerialization(Matrix<Integer, Integer, Integer> matrix) throws IOException, ClassNotFoundException{
+		ByteArrayOutputStream bout = new ByteArrayOutputStream();
+		ObjectOutputStream oout = new ObjectOutputStream(bout);
+		oout.writeObject(matrix);
+		oout.flush();
+		oout.close();
+		
+		byte[] bytes = bout.toByteArray();
+		System.out.println("Matrix size: " + matrix.size() + ", Serialized Bytes: " + bytes.length);
+		
+		ByteArrayInputStream bin = new ByteArrayInputStream(bytes);
+		ObjectInputStream oin = new ObjectInputStream(bin);
+		@SuppressWarnings("unchecked")
+		Matrix<Integer, Integer, Integer> deserialized = (Matrix<Integer, Integer, Integer>) oin.readObject();
+		oin.close();
+		return deserialized;
+	}
+	
+	static void printMatrix(Matrix<Integer, Integer, Integer> matrix){
 		System.out.println();
 		System.out.println("*****************************************");
 		System.out.println("Matrix: " + matrix);

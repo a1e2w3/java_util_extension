@@ -1,5 +1,7 @@
 package hust.idc.util.matrix;
 
+import hust.idc.util.pair.UnorderedPair;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -9,20 +11,15 @@ public interface SymmetricMatrix<K, V> extends Matrix<K, K, V> {
 	
 	boolean containsRowOrColumn(Object key);
 	
-	void removeKey(K key);
+	void removeRowAndColumn(K key);
 	
 	Set<K> keySet();
 	
 	Map<K, V> keyMap(K key);
-	
-	boolean equals(Object o);
-	
-	int hashCode();
 
 	static interface SymmetricMatrixEntry<K, V> extends Matrix.Entry<K, K, V>{
-
-		boolean equals(Object o);
 		
-		int hashCode();
+		@Override
+		UnorderedPair<K> getKeyPair();
 	}
 }

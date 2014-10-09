@@ -15,7 +15,7 @@ public abstract class AbstractKeyValue<K, V> extends AbstractPair<K, V> implemen
 	@Override
 	public V setValue(V value) {
 		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("unsupported operation: setValue");
 	}
 
 	@Override
@@ -33,7 +33,7 @@ public abstract class AbstractKeyValue<K, V> extends AbstractPair<K, V> implemen
 	@Override
 	public final K setFirst(K first) {
 		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException();
+		throw new UnsupportedOperationException("unsupported operation: setKey");
 	}
 
 	@Override
@@ -45,7 +45,7 @@ public abstract class AbstractKeyValue<K, V> extends AbstractPair<K, V> implemen
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return (getKey() == this ? "this pair" : getKey()) + "=" + (getValue() == this ? "this pair" : getValue());
+		return String.format("(%s=%s)", toString(getKey()), toString(getValue()));
 	}
 
 }
