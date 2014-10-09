@@ -98,6 +98,10 @@ public class Pairs {
 	public static BooleanPair makePair(boolean first, boolean second) {
 		return new BooleanPair(first, second);
 	}
+	
+	public static CharacterPair makePair(char first, char second) {
+		return new CharacterPair(first, second);
+	}
 
 	public static <T> hust.idc.util.pair.UnorderedPair<T> makeUnorderedPair(
 			T first, T second) {
@@ -128,8 +132,30 @@ public class Pairs {
 			boolean element) {
 		return toUnorderedPair(makePair(element, element));
 	}
+	
+	public static hust.idc.util.pair.UnorderedPair<Character> makeUnorderedPair(
+			char first, char second) {
+		return toUnorderedPair(makePair(first, second));
+	}
+
+	public static hust.idc.util.pair.UnorderedPair<Character> makeUnorderedPair(
+			char element) {
+		return toUnorderedPair(makePair(element, element));
+	}
 
 	public static <K, V> KeyValue<K, V> makeKeyValue(K key, V value) {
+		return toKeyValue(makePair(key, value));
+	}
+	
+	public static KeyValue<Integer, Integer> makeKeyValue(int key, int value) {
+		return toKeyValue(makePair(key, value));
+	}
+	
+	public static KeyValue<Boolean, Boolean> makeKeyValue(boolean key, boolean value) {
+		return toKeyValue(makePair(key, value));
+	}
+	
+	public static KeyValue<Character, Character> makeKeyValue(char key, char value) {
 		return toKeyValue(makePair(key, value));
 	}
 

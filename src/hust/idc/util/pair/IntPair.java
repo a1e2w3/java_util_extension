@@ -62,7 +62,7 @@ public class IntPair extends AbstractPair<Integer, Integer> implements Pair<Inte
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return String.format("[%d, %d]", first, second);
+		return String.format("[%d,%d]", first, second);
 	}
 
 }

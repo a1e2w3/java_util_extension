@@ -159,7 +159,7 @@ public class BooleanPair extends AbstractPair<Boolean, Boolean> implements Pair<
 	@Override
 	public String toString() {
 		// TODO Auto-generated method stub
-		return String.format("[%b, %b]", this.getFirstInternal(), this.getSecondInternal());
+		return String.format("[%b,%b]", this.getFirstInternal(), this.getSecondInternal());
 	}
 	
 	public static ImmutableBooleanPair getImmutableBooleanPair(boolean first, boolean second){
