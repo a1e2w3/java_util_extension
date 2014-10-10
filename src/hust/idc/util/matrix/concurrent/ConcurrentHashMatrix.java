@@ -779,7 +779,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		}
 
 		@Override
-		public int size() {
+		public final int size() {
 			// TODO Auto-generated method stub
 			return validateHead() == null ? 0 : head.size;
 		}
@@ -791,14 +791,14 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 				entrySet = new AbstractSet<Map.Entry<K2, V>>() {
 
 					@Override
-					public Iterator<Map.Entry<K2, V>> iterator() {
+					public final Iterator<Map.Entry<K2, V>> iterator() {
 						// TODO Auto-generated method stub
 						validateHead();
 						return entryIterator();
 					}
 
 					@Override
-					public int size() {
+					public final int size() {
 						// TODO Auto-generated method stub
 						return MapView.this.size();
 					}
@@ -884,13 +884,13 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		}
 
 		@Override
-		Iterator<Map.Entry<CK, V>> entryIterator() {
+		final Iterator<Map.Entry<CK, V>> entryIterator() {
 			// TODO Auto-generated method stub
 			return new RowMapEntryIterator();
 		}
 
 		@Override
-		void resetHead() {
+		final void resetHead() {
 			// TODO Auto-generated method stub
 			head = ConcurrentHashMatrix.this.rowHeadSegmentFor(keyHash)
 					.getHead(viewKey, keyHash);
@@ -904,7 +904,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			}
 
 			@Override
-			public Map.Entry<CK, V> next() {
+			public final Map.Entry<CK, V> next() {
 				return new WriteThroughEntry(super.nextEntry()).rowMapEntry();
 			}
 
@@ -919,14 +919,14 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			}
 
 			@Override
-			void init() {
+			final void init() {
 				// TODO Auto-generated method stub
 				super.init();
 				nextBlkRowIndex = rowBlockIndex(keyHash);
 			}
 
 			@Override
-			boolean validateEntry(HashEntry<RK, CK, V> entry) {
+			final boolean validateEntry(HashEntry<RK, CK, V> entry) {
 				// TODO Auto-generated method stub
 				return super.validateEntry(entry) && entry.rowHead == head;
 			}
@@ -1021,13 +1021,13 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		}
 
 		@Override
-		Iterator<Map.Entry<RK, V>> entryIterator() {
+		final Iterator<Map.Entry<RK, V>> entryIterator() {
 			// TODO Auto-generated method stub
 			return new ColumnMapEntryIterator();
 		}
 
 		@Override
-		void resetHead() {
+		final void resetHead() {
 			// TODO Auto-generated method stub
 			head = ConcurrentHashMatrix.this.columnHeadSegmentFor(keyHash)
 					.getHead(viewKey, keyHash);
@@ -1040,7 +1040,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			}
 
 			@Override
-			public Map.Entry<RK, V> next() {
+			public final Map.Entry<RK, V> next() {
 				return new WriteThroughEntry(super.nextEntry())
 						.columnMapEntry();
 			}
@@ -1056,14 +1056,14 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			}
 
 			@Override
-			void init() {
+			final void init() {
 				// TODO Auto-generated method stub
 				super.init();
 				nextBlkColumnIndex = columnBlockIndex(keyHash);
 			}
 
 			@Override
-			boolean validateEntry(HashEntry<RK, CK, V> entry) {
+			final boolean validateEntry(HashEntry<RK, CK, V> entry) {
 				// TODO Auto-generated method stub
 				return super.validateEntry(entry) && entry.columnHead == head;
 			}
@@ -1246,19 +1246,19 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	final class RowKeyIterator extends KeyIterator<RK> {
 
 		@Override
-		void initNextSegmentIndex() {
+		final void initNextSegmentIndex() {
 			// TODO Auto-generated method stub
 			nextSegmentIndex = rowHeadSegments.length - 1;
 		}
 
 		@Override
-		HeadSegment<RK> segmentAt(int index) {
+		final HeadSegment<RK> segmentAt(int index) {
 			// TODO Auto-generated method stub
 			return rowHeadSegments[index];
 		}
 
 		@Override
-		void removeHead(Head<RK> head) {
+		final void removeHead(Head<RK> head) {
 			// TODO Auto-generated method stub
 			ConcurrentHashMatrix.this.removeRow(head.getKey());
 		}
@@ -1268,19 +1268,19 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	final class ColumnKeyIterator extends KeyIterator<CK> {
 
 		@Override
-		void initNextSegmentIndex() {
+		final void initNextSegmentIndex() {
 			// TODO Auto-generated method stub
 			nextSegmentIndex = columnHeadSegments.length - 1;
 		}
 
 		@Override
-		HeadSegment<CK> segmentAt(int index) {
+		final HeadSegment<CK> segmentAt(int index) {
 			// TODO Auto-generated method stub
 			return columnHeadSegments[index];
 		}
 
 		@Override
-		void removeHead(Head<CK> head) {
+		final void removeHead(Head<CK> head) {
 			// TODO Auto-generated method stub
 			ConcurrentHashMatrix.this.removeColumn(head.getKey());
 		}
@@ -1290,19 +1290,19 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	final class RowKeySet extends AbstractSet<RK> {
 
 		@Override
-		public Iterator<RK> iterator() {
+		public final Iterator<RK> iterator() {
 			// TODO Auto-generated method stub
 			return new RowKeyIterator();
 		}
 
 		@Override
-		public int size() {
+		public final int size() {
 			// TODO Auto-generated method stub
 			return ConcurrentHashMatrix.this.rows();
 		}
 
 		@Override
-		public boolean contains(Object o) {
+		public final boolean contains(Object o) {
 			// TODO Auto-generated method stub
 			return ConcurrentHashMatrix.this.containsRow(o);
 		}
@@ -1326,7 +1326,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		}
 
 		@Override
-		public void clear() {
+		public final void clear() {
 			// TODO Auto-generated method stub
 			ConcurrentHashMatrix.this.clear();
 		}
@@ -1336,19 +1336,19 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	final class ColumnKeySet extends AbstractSet<CK> {
 
 		@Override
-		public Iterator<CK> iterator() {
+		public final Iterator<CK> iterator() {
 			// TODO Auto-generated method stub
 			return new ColumnKeyIterator();
 		}
 
 		@Override
-		public int size() {
+		public final int size() {
 			// TODO Auto-generated method stub
 			return ConcurrentHashMatrix.this.columns();
 		}
 
 		@Override
-		public boolean contains(Object o) {
+		public final boolean contains(Object o) {
 			// TODO Auto-generated method stub
 			return ConcurrentHashMatrix.this.containsColumn(o);
 		}
@@ -1373,7 +1373,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		}
 
 		@Override
-		public void clear() {
+		public final void clear() {
 			// TODO Auto-generated method stub
 			ConcurrentHashMatrix.this.clear();
 		}
@@ -1381,7 +1381,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	final class EntrySet extends AbstractSet<Matrix.Entry<RK, CK, V>> {
-		public Iterator<Matrix.Entry<RK, CK, V>> iterator() {
+		public final Iterator<Matrix.Entry<RK, CK, V>> iterator() {
 			return new EntryIterator();
 		}
 
@@ -1402,55 +1402,55 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 					e.getColumnKey(), e.getValue());
 		}
 
-		public int size() {
+		public final int size() {
 			return ConcurrentHashMatrix.this.size();
 		}
 
-		public void clear() {
+		public final void clear() {
 			ConcurrentHashMatrix.this.clear();
 		}
 	}
 
 	final class KeyPairSet extends AbstractSet<Pair<RK, CK>> {
-		public Iterator<Pair<RK, CK>> iterator() {
+		public final Iterator<Pair<RK, CK>> iterator() {
 			return new KeyPairIterator();
 		}
 
-		public int size() {
+		public final int size() {
 			return ConcurrentHashMatrix.this.size();
 		}
 
-		public boolean contains(Object o) {
+		public final boolean contains(Object o) {
 			if (!(o instanceof Pair))
 				return false;
 			return ConcurrentHashMatrix.this.containsKey((Pair<?, ?>) o);
 		}
 
-		public boolean remove(Object o) {
+		public final boolean remove(Object o) {
 			if (!(o instanceof Pair))
 				return false;
 			return ConcurrentHashMatrix.this.remove((Pair<?, ?>) o) != null;
 		}
 
-		public void clear() {
+		public final void clear() {
 			ConcurrentHashMatrix.this.clear();
 		}
 	}
 
 	final class Values extends AbstractCollection<V> {
-		public Iterator<V> iterator() {
+		public final Iterator<V> iterator() {
 			return new ValueIterator();
 		}
 
-		public int size() {
+		public final int size() {
 			return ConcurrentHashMatrix.this.size();
 		}
 
-		public boolean contains(Object o) {
+		public final boolean contains(Object o) {
 			return ConcurrentHashMatrix.this.containsValue(o);
 		}
 
-		public void clear() {
+		public final void clear() {
 			ConcurrentHashMatrix.this.clear();
 		}
 	}
@@ -1564,7 +1564,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 
 	final class EntryIterator extends HashIterator implements
 			Iterator<Matrix.Entry<RK, CK, V>> {
-		public Matrix.Entry<RK, CK, V> next() {
+		public final Matrix.Entry<RK, CK, V> next() {
 			HashEntry<RK, CK, V> e = super.nextEntry();
 			return new WriteThroughEntry(e);
 		}
@@ -1572,22 +1572,22 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 
 	final class KeyPairIterator extends HashIterator implements
 			Iterator<Pair<RK, CK>>, Enumeration<Pair<RK, CK>> {
-		public Pair<RK, CK> next() {
+		public final Pair<RK, CK> next() {
 			return super.nextEntry().getKeyPair();
 		}
 
-		public Pair<RK, CK> nextElement() {
+		public final Pair<RK, CK> nextElement() {
 			return super.nextEntry().getKeyPair();
 		}
 	}
 
 	final class ValueIterator extends HashIterator implements Iterator<V>,
 			Enumeration<V> {
-		public V next() {
+		public final V next() {
 			return super.nextEntry().getValue();
 		}
 
-		public V nextElement() {
+		public final V nextElement() {
 			return super.nextEntry().getValue();
 		}
 	}
@@ -1650,32 +1650,32 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		}
 
 		@Override
-		public RK getRowKey() {
+		public final RK getRowKey() {
 			// TODO Auto-generated method stub
 			return rowHead.getKey();
 		}
 
 		@Override
-		public CK getColumnKey() {
+		public final CK getColumnKey() {
 			// TODO Auto-generated method stub
 			return columnHead.getKey();
 		}
 
 		@Override
-		public V getValue() {
+		public final V getValue() {
 			// TODO Auto-generated method stub
 			return value;
 		}
 
-		int rowHash() {
+		final int rowHash() {
 			return rowHead.hash;
 		}
 
-		int columnHash() {
+		final int columnHash() {
 			return columnHead.hash;
 		}
 
-		boolean matchHash(int rowHash, int columnHash) {
+		final boolean matchHash(int rowHash, int columnHash) {
 			return this.rowHash() == rowHash && this.columnHash() == columnHash;
 		}
 
@@ -1701,11 +1701,11 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			this.next = next;
 		}
 
-		K getKey() {
+		final K getKey() {
 			return key;
 		}
 
-		int increaseSize(int incr) {
+		final int increaseSize(int incr) {
 			if (0 == incr)
 				return size;
 			++modCount;
@@ -1713,14 +1713,14 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			return size;
 		}
 
-		void dispose() {
+		final void dispose() {
 			size = -1;
 			modCount = -1;
 			next = null;
 			viewMap = null;
 		}
 
-		boolean disposed() {
+		final boolean disposed() {
 			return size < 0;
 		}
 
@@ -1846,18 +1846,18 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		 * Sets table to new HashEntry array. Call only while holding lock or in
 		 * constructor.
 		 */
-		private void setTable(HashEntry<RK, CK, V>[][] newTable) {
+		private final void setTable(HashEntry<RK, CK, V>[][] newTable) {
 			rowThreshold = (int) (newTable.length * loadFactor);
 			columnThreshold = (int) (newTable[0].length * loadFactor);
 			table = newTable;
 		}
 
-		int rowIndex(int rowHash) {
+		final int rowIndex(int rowHash) {
 			HashEntry<RK, CK, V>[][] tab = table;
 			return rowHash & (tab.length - 1);
 		}
 
-		int columnIndex(int columnHash) {
+		final int columnIndex(int columnHash) {
 			HashEntry<RK, CK, V>[] tab = table[0];
 			return columnHash & (tab.length - 1);
 		}
@@ -1865,7 +1865,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		/**
 		 * Returns properly casted first entry of bin for given hash.
 		 */
-		HashEntry<RK, CK, V> getFirst(int rowHash, int columnHash) {
+		final HashEntry<RK, CK, V> getFirst(int rowHash, int columnHash) {
 			return table[rowIndex(rowHash)][columnIndex(columnHash)];
 		}
 
@@ -1875,7 +1875,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		 * reorder a HashEntry initialization with its table assignment, which
 		 * is legal under memory model but is not known to ever occur.
 		 */
-		V readValueUnderLock(HashEntry<RK, CK, V> e) {
+		final V readValueUnderLock(HashEntry<RK, CK, V> e) {
 			lock();
 			try {
 				return e.value;
@@ -2316,12 +2316,12 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			return new HeadSegment[len];
 		}
 
-		void setHeadsTable(Head<K>[] newTable) {
+		final void setHeadsTable(Head<K>[] newTable) {
 			threshold = (int) (newTable.length * loadFactor);
 			headsTable = newTable;
 		}
 
-		private Head<K> getFirst(int hash) {
+		private final Head<K> getFirst(int hash) {
 			Head<K>[] tab = headsTable;
 			return tab[hash & tab.length - 1];
 		}
@@ -2344,7 +2344,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			}
 		}
 
-		private Head<K> getHead0(Object key, int hash) {
+		private final Head<K> getHead0(Object key, int hash) {
 			Head<K> h = getFirst(hash);
 			while (h != null) {
 				if (h.hash == hash && eq(key, h.key))
@@ -2371,7 +2371,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			}
 		}
 
-		private boolean containsKey0(Object key, int hash) {
+		private final boolean containsKey0(Object key, int hash) {
 			Head<K> h = getFirst(hash);
 			while (h != null) {
 				if (h.hash == hash && eq(key, h.key))

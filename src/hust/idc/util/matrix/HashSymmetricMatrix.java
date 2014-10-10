@@ -613,7 +613,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		@Override
-		public int size() {
+		public final int size() {
 			// TODO Auto-generated method stub
 			return validateHead() == null ? 0 : head.size;
 		}
@@ -649,7 +649,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		@Override
-		public void clear() {
+		public final void clear() {
 			// TODO Auto-generated method stub
 			if (validateHead() != null) {
 				HashSymmetricMatrix.this.removeKey(viewKey, keyHash);
@@ -658,14 +658,14 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 		
 		@Override
-		public Set<Map.Entry<K, V>> entrySet() {
+		public final Set<Map.Entry<K, V>> entrySet() {
 			// TODO Auto-generated method stub
 			validateHead();
 			return super.entrySet();
 		}
 
 		@Override
-		Iterator<Map.Entry<K, V>> entryIterator() {
+		final Iterator<Map.Entry<K, V>> entryIterator() {
 			// TODO Auto-generated method stub
 			validateHead();
 			return new EntryIterator();
@@ -713,7 +713,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			}
 
 			@Override
-			public boolean hasNext() {
+			public final boolean hasNext() {
 				// TODO Auto-generated method stub
 				return next != null;
 			}
@@ -788,13 +788,13 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			keySet = new AbstractSet<K>() {
 
 				@Override
-				public Iterator<K> iterator() {
+				public final Iterator<K> iterator() {
 					// TODO Auto-generated method stub
 					return new KeyIterator();
 				}
 
 				@Override
-				public int size() {
+				public final int size() {
 					// TODO Auto-generated method stub
 					return HashSymmetricMatrix.this.dimension();
 				}
@@ -811,13 +811,13 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			entrySet = new AbstractSet<Matrix.Entry<K, K, V>>() {
 
 				@Override
-				public Iterator<Matrix.Entry<K, K, V>> iterator() {
+				public final Iterator<Matrix.Entry<K, K, V>> iterator() {
 					// TODO Auto-generated method stub
 					return new EntryIterator();
 				}
 
 				@Override
-				public int size() {
+				public final int size() {
 					// TODO Auto-generated method stub
 					return HashSymmetricMatrix.this.size;
 				}
@@ -834,12 +834,12 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			resetModCount();
 		}
 
-		void checkModCount() {
+		final void checkModCount() {
 			if (HashSymmetricMatrix.this.modCount != expectedModCount)
 				throw new ConcurrentModificationException();
 		}
 
-		void resetModCount() {
+		final void resetModCount() {
 			expectedModCount = HashSymmetricMatrix.this.modCount;
 		}
 	}
@@ -855,7 +855,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		@Override
-		public boolean hasNext() {
+		public final boolean hasNext() {
 			// TODO Auto-generated method stub
 			return null != next;
 		}
@@ -905,7 +905,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		@Override
-		public boolean hasNext() {
+		public final boolean hasNext() {
 			// TODO Auto-generated method stub
 			return next != null;
 		}
@@ -937,7 +937,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 	}
 
-	private class Entry extends AbstractSymmetricMatrixEntry<K, V> {
+	class Entry extends AbstractSymmetricMatrixEntry<K, V> {
 		V value;
 		transient Head rowHead, columnHead;
 		transient Entry next;
@@ -1017,7 +1017,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 	}
 
-	private class Head {
+	private final class Head {
 		K key;
 		final int hash;
 		int size;
@@ -1033,16 +1033,16 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			this.next = next;
 		}
 
-		K getKey() {
+		final K getKey() {
 			return key;
 		}
 
-		int increaseSize(int incr) {
+		final int increaseSize(int incr) {
 			size = Math.max(0, size + incr);
 			return size;
 		}
 
-		void dispose() {
+		final void dispose() {
 			size = -1;
 			next = null;
 			if (viewMap != null) {
@@ -1051,7 +1051,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 			}
 		}
 
-		boolean disposed() {
+		final boolean disposed() {
 			return size < 0;
 		}
 	}

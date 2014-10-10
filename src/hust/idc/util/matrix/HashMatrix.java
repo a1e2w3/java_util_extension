@@ -357,7 +357,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		Head<RK>[] newRowHeads = new Head[newCapacity];
 		transferRows(newRowHeads);
 		rowHeads = newRowHeads;
-		rowThreshold = (int) (newCapacity * loadFactor);
+		rowThreshold = (int) (newCapacity * loadFactor());
 
 		Entry[][] newTable = new HashMatrix.Entry[newCapacity][this
 				.columnCapacity()];
@@ -378,7 +378,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		Head<CK>[] newColumnHeads = new Head[newCapacity];
 		transferColumns(newColumnHeads);
 		columnHeads = newColumnHeads;
-		columnThreshold = (int) (newCapacity * loadFactor);
+		columnThreshold = (int) (newCapacity * loadFactor());
 
 		Entry[][] newTable = new HashMatrix.Entry[this.rowCapacity()][newCapacity];
 		transferEntries(newTable);
@@ -411,13 +411,13 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		Head<RK>[] newRowHeads = new Head[newRowCapacity];
 		transferRows(newRowHeads);
 		rowHeads = newRowHeads;
-		rowThreshold = (int) (newRowCapacity * loadFactor);
+		rowThreshold = (int) (newRowCapacity * loadFactor());
 
 		int newColumnCapacity = this.columnCapacity() << 1;
 		Head<CK>[] newColumnHeads = new Head[newColumnCapacity];
 		transferColumns(newColumnHeads);
 		columnHeads = newColumnHeads;
-		columnThreshold = (int) (newColumnCapacity * loadFactor);
+		columnThreshold = (int) (newColumnCapacity * loadFactor());
 
 		Entry[][] newTable = new HashMatrix.Entry[newRowCapacity][newColumnCapacity];
 		transferEntries(newTable);
@@ -842,13 +842,13 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			rowKeySet = new AbstractSet<RK>() {
 
 				@Override
-				public Iterator<RK> iterator() {
+				public final Iterator<RK> iterator() {
 					// TODO Auto-generated method stub
 					return new RowKeyIterator();
 				}
 
 				@Override
-				public int size() {
+				public final int size() {
 					// TODO Auto-generated method stub
 					return HashMatrix.this.rows;
 				}
@@ -865,13 +865,13 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			columnKeySet = new AbstractSet<CK>() {
 
 				@Override
-				public Iterator<CK> iterator() {
+				public final Iterator<CK> iterator() {
 					// TODO Auto-generated method stub
 					return new ColumnKeyIterator();
 				}
 
 				@Override
-				public int size() {
+				public final int size() {
 					// TODO Auto-generated method stub
 					return HashMatrix.this.columns;
 				}
@@ -888,13 +888,13 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			entrySet = new AbstractSet<Matrix.Entry<RK, CK, V>>() {
 
 				@Override
-				public Iterator<Matrix.Entry<RK, CK, V>> iterator() {
+				public final Iterator<Matrix.Entry<RK, CK, V>> iterator() {
 					// TODO Auto-generated method stub
 					return new EntryIterator();
 				}
 
 				@Override
-				public int size() {
+				public final int size() {
 					// TODO Auto-generated method stub
 					return HashMatrix.this.size;
 				}
@@ -911,12 +911,12 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			resetModCount();
 		}
 
-		void checkModCount() {
+		final void checkModCount() {
 			if (HashMatrix.this.modCount != expectedModCount)
 				throw new ConcurrentModificationException();
 		}
 
-		void resetModCount() {
+		final void resetModCount() {
 			expectedModCount = HashMatrix.this.modCount;
 		}
 	}
@@ -933,7 +933,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		public boolean hasNext() {
+		public final boolean hasNext() {
 			// TODO Auto-generated method stub
 			return null != next;
 		}
@@ -979,7 +979,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		public boolean hasNext() {
+		public final boolean hasNext() {
 			// TODO Auto-generated method stub
 			return null != next;
 		}
@@ -1039,7 +1039,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		public boolean hasNext() {
+		public final boolean hasNext() {
 			// TODO Auto-generated method stub
 			return next != null;
 		}
@@ -1123,7 +1123,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 		
 		@Override
-		public int size() {
+		public final int size() {
 			// TODO Auto-generated method stub
 			return validateHead() == null ? 0 : head.size;
 		}
@@ -1172,7 +1172,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		void resetHead() {
+		final void resetHead() {
 			// TODO Auto-generated method stub
 			head = HashMatrix.this.rowHead(viewKey);
 		}
@@ -1188,7 +1188,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		public boolean containsKey(Object key) {
+		public final boolean containsKey(Object key) {
 			// TODO Auto-generated method stub
 			if (validateHead() == null) 
 				return false;
@@ -1196,7 +1196,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		public V get(Object key) {
+		public final V get(Object key) {
 			// TODO Auto-generated method stub
 			if (validateHead() == null) 
 				return null;
@@ -1215,7 +1215,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		public void clear() {
+		public final void clear() {
 			// TODO Auto-generated method stub
 			if (validateHead() != null) {
 				HashMatrix.this.removeRow(viewKey);
@@ -1224,7 +1224,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		Iterator<java.util.Map.Entry<CK, V>> entryIterator() {
+		final Iterator<java.util.Map.Entry<CK, V>> entryIterator() {
 			// TODO Auto-generated method stub
 			return new EntryIterator();
 		}
@@ -1241,7 +1241,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				advance();
 			}
 
-			void checkForModification() {
+			final void checkForModification() {
 				if (RowMapView.this.modCount() != expectedModCount)
 					throw new ConcurrentModificationException();
 			}
@@ -1262,7 +1262,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			}
 
 			@Override
-			public boolean hasNext() {
+			public final boolean hasNext() {
 				// TODO Auto-generated method stub
 				return next != null;
 			}
@@ -1310,7 +1310,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 		
 		@Override
-		void resetHead() {
+		final void resetHead() {
 			// TODO Auto-generated method stub
 			head = HashMatrix.this.columnHead(viewKey);
 		}
@@ -1353,7 +1353,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		public void clear() {
+		public final void clear() {
 			// TODO Auto-generated method stub
 			if (validateHead() != null){
 				HashMatrix.this.removeColumn(viewKey);
@@ -1362,7 +1362,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 
 		@Override
-		Iterator<Map.Entry<RK, V>> entryIterator() {
+		final Iterator<Map.Entry<RK, V>> entryIterator() {
 			// TODO Auto-generated method stub
 			return new EntryIterator();
 		}
@@ -1381,7 +1381,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 				advance();
 			}
 
-			void checkForModification() {
+			final void checkForModification() {
 				if (ColumnMapView.this.modCount() != expectedModCount)
 					throw new ConcurrentModificationException();
 			}
@@ -1402,7 +1402,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			}
 
 			@Override
-			public boolean hasNext() {
+			public final boolean hasNext() {
 				// TODO Auto-generated method stub
 				return next != null;
 			}
@@ -1444,7 +1444,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 	}
 
-	private class Entry extends AbstractEntry<RK, CK, V> {
+	class Entry extends AbstractEntry<RK, CK, V> {
 		V value;
 		transient Head<RK> rowHead;
 		transient Head<CK> columnHead;
@@ -1549,7 +1549,7 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 		}
 	}
 
-	private class Head<K> {
+	private final class Head<K> {
 		final K key;
 		final int hash;
 		int size = 0;
@@ -1564,11 +1564,11 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			this.next = next;
 		}
 
-		K getKey() {
+		final K getKey() {
 			return key;
 		}
 
-		int increaseSize(int incr) {
+		final int increaseSize(int incr) {
 			if (0 == incr)
 				return size;
 			++modCount;
@@ -1576,14 +1576,14 @@ public class HashMatrix<RK, CK, V> extends AbstractMatrix<RK, CK, V> implements
 			return size;
 		}
 
-		void dispose() {
+		final void dispose() {
 			size = -1;
 			modCount = -1;
 			next = null;
 			viewMap = null;
 		}
 
-		boolean disposed() {
+		final boolean disposed() {
 			return size < 0;
 		}
 	}

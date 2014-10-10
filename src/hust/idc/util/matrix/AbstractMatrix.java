@@ -665,7 +665,7 @@ public abstract class AbstractMatrix<RK, CK, V> implements Matrix<RK, CK, V> {
 	/**
 	 * Utility method for AbstractEntry. Test for equality, checking for nulls.
 	 */
-	protected static boolean eq(Object o1, Object o2) {
+	protected static final boolean eq(Object o1, Object o2) {
 		return o1 == null ? o2 == null : (o1 == o2 || o1.equals(o2));
 	}
 
