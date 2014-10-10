@@ -1,7 +1,13 @@
 package hust.idc.util.pair;
 
 public abstract class AbstractPair<T, S> implements Pair<T, S> {
-	protected AbstractPair() {
+	public AbstractPair() {
+		super();
+	}
+	
+	AbstractPair(Pair<S, T> convertPair){
+		this();
+		this.convertPair = convertPair;
 	}
 
 	@Override
@@ -22,12 +28,12 @@ public abstract class AbstractPair<T, S> implements Pair<T, S> {
 		throw new UnsupportedOperationException();
 	}
 
-	protected transient volatile Pair<S, T> convertPair;
+	transient volatile Pair<S, T> convertPair;
 
 	@Override
 	public Pair<S, T> convertPair() {
 		if (convertPair == null) {
-			convertPair = new AbstractPair<S, T>() {
+			convertPair = new AbstractPair<S, T>(this) {
 
 				@Override
 				public S getFirst() {

@@ -3,8 +3,12 @@ package hust.idc.util.pair;
 public abstract class AbstractUnorderedPair<E> extends AbstractPair<E, E>
 		implements UnorderedPair<E>, Pair<E, E> {
 	
-	protected AbstractUnorderedPair(){
+	public AbstractUnorderedPair(){
 		super();
+	}
+	
+	AbstractUnorderedPair(UnorderedPair<E> convertPair){
+		super(convertPair);
 	}
 
 	@Override
@@ -24,11 +28,8 @@ public abstract class AbstractUnorderedPair<E> extends AbstractPair<E, E>
 	@Override
 	public UnorderedPair<E> convertPair() {
 		// TODO Auto-generated method stub
-		if (Pairs.eq(getFirst(), getSecond()))
-			return this;
-		
 		if (convertPair == null) {
-			convertPair = new AbstractUnorderedPair<E>() {
+			convertPair = new AbstractUnorderedPair<E>(this) {
 
 				@Override
 				public E getFirst() {

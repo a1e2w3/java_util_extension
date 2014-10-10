@@ -133,11 +133,11 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		return capacity;
 	}
 
-	static int arraySize(int demension) {
+	static final int arraySize(int demension) {
 		return demension == 0 ? 0 : (demension * (demension + 1)) >> 1;
 	}
 
-	static int tableIndexFor(int row, int column) {
+	static final int tableIndexFor(int row, int column) {
 		if (row < column)
 			return tableIndexFor(column, row);
 		return arraySize(row) + column;

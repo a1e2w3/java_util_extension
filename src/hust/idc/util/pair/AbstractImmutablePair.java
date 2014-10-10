@@ -2,8 +2,14 @@ package hust.idc.util.pair;
 
 public abstract class AbstractImmutablePair<T, S> extends AbstractPair<T, S> implements
 		ImmutablePair<T, S>, Pair<T, S> {
-	protected AbstractImmutablePair(){
+	public AbstractImmutablePair(){
 		super();
+	}
+
+	AbstractImmutablePair(
+			ImmutablePair<S, T> convertPair) {
+		// TODO Auto-generated constructor stub
+		super(convertPair);
 	}
 
 	@Override
@@ -27,7 +33,7 @@ public abstract class AbstractImmutablePair<T, S> extends AbstractPair<T, S> imp
 	@Override
 	public ImmutablePair<S, T> convertPair() {
 		if (convertPair == null) {
-			convertPair = new AbstractImmutablePair<S, T>() {
+			convertPair = new AbstractImmutablePair<S, T>(this) {
 
 				@Override
 				public S getFirst() {

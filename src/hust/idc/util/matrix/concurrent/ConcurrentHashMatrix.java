@@ -1686,7 +1686,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		}
 	}
 
-	static final class Head<K> {
+	private static final class Head<K> {
 		final K key;
 		final int hash;
 		volatile int size = 0;
