@@ -3,7 +3,7 @@ package hust.idc.util.pair;
 public abstract class AbstractUnorderedPair<E> extends AbstractPair<E, E>
 		implements UnorderedPair<E>, Pair<E, E> {
 	
-	public AbstractUnorderedPair(){
+	protected AbstractUnorderedPair(){
 		super();
 	}
 	

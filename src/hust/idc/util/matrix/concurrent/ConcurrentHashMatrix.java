@@ -98,7 +98,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	final HeadSegment<CK>[] columnHeadSegments;
 
 	/**
-	 * Creates a new, empty map with the specified initial capacity, load factor
+	 * Creates a new, empty matrix with the specified initial capacity, load factor
 	 * and concurrency level.
 	 * 
 	 * @param initialCapacity
@@ -184,7 +184,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	/**
-	 * Creates a new, empty map with the specified initial capacity and load
+	 * Creates a new, empty matrix with the specified initial capacity and load
 	 * factor and with the default concurrencyLevel (16).
 	 * 
 	 * @param initialCapacity
@@ -207,7 +207,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	/**
-	 * Creates a new, empty map with the specified initial capacity and load
+	 * Creates a new, empty matrix with the specified initial capacity and load
 	 * factor and with the default concurrencyLevel (16).
 	 * 
 	 * @param initialCapacity
@@ -229,7 +229,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	/**
-	 * Creates a new, empty map with the specified initial capacity and load
+	 * Creates a new, empty matrix with the specified initial capacity and load
 	 * factor and with the default concurrencyLevel (16).
 	 * 
 	 * @param initialCapacity
@@ -250,7 +250,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	/**
-	 * Creates a new, empty map with the specified initial capacity, and with
+	 * Creates a new, empty matrix with the specified initial capacity, and with
 	 * default load factor (0.75) and concurrencyLevel (16).
 	 * 
 	 * @param initialCapacity
@@ -264,7 +264,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	/**
-	 * Creates a new, empty map with a default initial capacity (16), load
+	 * Creates a new, empty matrix with a default initial capacity (16), load
 	 * factor (0.75) and concurrencyLevel (16).
 	 */
 	public ConcurrentHashMatrix() {
@@ -272,7 +272,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	/**
-	 * Creates a new map with the same mappings as the given map. The map is
+	 * Creates a new matrix with the same mappings as the given matrix. The matrix is
 	 * created with a capacity of 1.5 times the number of mappings in the given
 	 * map or 16 (whichever is greater), and a default load factor (0.75) and
 	 * concurrencyLevel (16).
@@ -290,7 +290,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	}
 
 	/**
-	 * Creates a new map with the same mappings as the given map. The map is
+	 * Creates a new matrix with the same mappings as the given map. The matrix is
 	 * created with a capacity of 1.5 times the number of mappings in the given
 	 * map or 16 (whichever is greater), and a default load factor (0.75) and
 	 * concurrencyLevel (16).
@@ -938,7 +938,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 					Block<RK, CK, V> blk = blocks[nextBlkRowIndex][nextBlkColumnIndex--];
 					if (validateBlock(blk)) {
 						currentTable = blk.table;
-						nextTableRowIndex = blk.rowIndex(keyHash);
+						nextTableRowIndex = Block.index(keyHash, currentTable);
 						nextTableColumnIndex = currentTable[nextTableRowIndex].length - 1;
 						return blk;
 					}
@@ -1076,7 +1076,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 					if (validateBlock(blk)) {
 						currentTable = blk.table;
 						nextTableRowIndex = currentTable.length - 1;
-						nextTableColumnIndex = blk.columnIndex(keyHash);
+						nextTableColumnIndex = Block.index(keyHash, currentTable[0]);
 						return blk;
 					}
 				}
@@ -1852,21 +1852,16 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			table = newTable;
 		}
 
-		final int rowIndex(int rowHash) {
-			HashEntry<RK, CK, V>[][] tab = table;
+		static final int index(int rowHash, Object[] tab) {
 			return rowHash & (tab.length - 1);
-		}
-
-		final int columnIndex(int columnHash) {
-			HashEntry<RK, CK, V>[] tab = table[0];
-			return columnHash & (tab.length - 1);
 		}
 
 		/**
 		 * Returns properly casted first entry of bin for given hash.
 		 */
 		final HashEntry<RK, CK, V> getFirst(int rowHash, int columnHash) {
-			return table[rowIndex(rowHash)][columnIndex(columnHash)];
+			HashEntry<RK, CK, V>[][] tab = table;
+			return tab[index(rowHash, tab)][index(columnHash, tab[0])];
 		}
 
 		/**
@@ -2049,7 +2044,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			int columnMask = newTable[0].length - 1;
 			for (int i = 0; i < oldRowCapacity; i++) {
 				for (int j = 0; j < oldColumnCapacity; ++j) {
-					// We need to guarantee that any existing reads of old Map
+					// We need to guarantee that any existing reads of old Matrix
 					// can
 					// proceed. So we cannot yet null out each bin.
 					HashEntry<RK, CK, V> e = oldTable[i][j];
@@ -2121,13 +2116,13 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 						// in list, but all preceding ones need to be
 						// cloned.
 						++modCount;
+						HashEntry<RK, CK, V> newFirst = e.next;
+						for (HashEntry<RK, CK, V> p = first; p != e; p = p.next)
+							newFirst = new HashEntry<RK, CK, V>(p.rowHead,
+									p.columnHead, p.value, newFirst);
 						rowHeads.lock();
 						columnHeads.lock();
 						try {
-							HashEntry<RK, CK, V> newFirst = e.next;
-							for (HashEntry<RK, CK, V> p = first; p != e; p = p.next)
-								newFirst = new HashEntry<RK, CK, V>(p.rowHead,
-										p.columnHead, p.value, newFirst);
 							tab[rowIndex][columnIndex] = newFirst;
 							rowHeads.incrHeadSizeUnderLock(e.rowHead, -1);
 							columnHeads.incrHeadSizeUnderLock(e.columnHead, -1);

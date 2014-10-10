@@ -1,6 +1,6 @@
 package hust.idc.util.matrix;
 
-import hust.idc.util.pair.Pair;
+import hust.idc.util.pair.UnorderedPair;
 
 import java.io.IOException;
 import java.util.AbstractSet;
@@ -104,7 +104,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	public HashSymmetricMatrix(
-			Map<? extends Pair<? extends K, ? extends K>, ? extends V> otherMatrix) {
+			Map<? extends UnorderedPair<? extends K>, ? extends V> otherMatrix) {
 		this();
 		this.putAll(otherMatrix);
 	}
@@ -268,7 +268,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 		}
 
 		++modCount;
-		int newDimension = this.dimension() << 1;
+		int newDimension = this.dimensionCapacity() << 1;
 		Head[] newHeads = new HashSymmetricMatrix.Head[newDimension];
 		this.transferHeads(newHeads);
 
@@ -471,6 +471,14 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 
 						entry.recordRemoval(this);
 						entry.dispose();
+					} else if (entry.columnHead == rowHead) {
+						if (prevEntry == null)
+							table[tableIndex] = next;
+						else
+							prevEntry.next = next;
+						--size;
+						if (entry.rowHead.increaseSize(-1) == 0)
+							removeHead(j, entry.rowHead);
 					} else {
 						prevEntry = entry;
 					}

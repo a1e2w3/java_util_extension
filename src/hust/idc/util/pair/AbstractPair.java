@@ -1,7 +1,8 @@
 package hust.idc.util.pair;
 
 public abstract class AbstractPair<T, S> implements Pair<T, S> {
-	public AbstractPair() {
+	
+	protected AbstractPair() {
 		super();
 	}
 	

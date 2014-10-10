@@ -3,7 +3,7 @@ package hust.idc.util.pair;
 public abstract class AbstractImmutableUnorderedPair<E> extends
 		AbstractUnorderedPair<E> implements ImmutableUnorderedPair<E> {
 	
-	public AbstractImmutableUnorderedPair(){
+	protected AbstractImmutableUnorderedPair(){
 		super();
 	}
 
@@ -33,6 +33,9 @@ public abstract class AbstractImmutableUnorderedPair<E> extends
 	
 	@Override
 	public ImmutableUnorderedPair<E> convertPair() {
+		if (Pairs.eq(this.getFirst(), this.getSecond()))
+			return (ImmutableUnorderedPair<E>) (convertPair = this);
+		
 		if (convertPair == null) {
 			convertPair = new AbstractImmutableUnorderedPair<E>(this) {
 
@@ -50,7 +53,7 @@ public abstract class AbstractImmutableUnorderedPair<E> extends
 
 			};
 		}
-		return (ImmutableUnorderedPair<E>)convertPair;
+		return (ImmutableUnorderedPair<E>) convertPair;
 	}
 
 }
