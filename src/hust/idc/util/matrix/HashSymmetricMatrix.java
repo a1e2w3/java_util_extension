@@ -94,7 +94,7 @@ public class HashSymmetricMatrix<K, V> extends AbstractSymmetricMatrix<K, V>
 	}
 
 	public HashSymmetricMatrix(
-			Matrix<? extends K, ? extends K, ? extends V> otherMatrix) {
+			SymmetricMatrix<? extends K, ? extends V> otherMatrix) {
 		this(
 				Math.max(
 						(int) (Math.max(otherMatrix.rows(),

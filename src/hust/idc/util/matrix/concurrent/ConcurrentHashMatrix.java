@@ -314,7 +314,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 	 * encounter collisions for hashCodes that do not differ in lower or upper
 	 * bits.
 	 */
-	private static int hash(int h) {
+	static int hash(int h) {
 		// Spread bits to regularize both segment and index locations,
 		// using variant of single-word Wang/Jenkins hash.
 		h += (h << 15) ^ 0xffffcd7d;
@@ -517,7 +517,16 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		else
 			return (int) sum;
 	}
-
+	
+	/**
+     * Tests if the specified object is a row key in this table.
+     *
+     * @param  key   possible key
+     * @return <tt>true</tt> if and only if the specified object
+     *         is a key in this table, as determined by the
+     *         <tt>equals</tt> method; <tt>false</tt> otherwise.
+     * @throws NullPointerException if the specified key is null
+     */
 	@Override
 	public boolean containsRow(Object row) {
 		// TODO Auto-generated method stub
@@ -525,6 +534,15 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		return rowHeadSegmentFor(rowHash).containsKey(row, rowHash);
 	}
 
+	/**
+     * Tests if the specified object is a column key in this table.
+     *
+     * @param  key   possible key
+     * @return <tt>true</tt> if and only if the specified object
+     *         is a key in this table, as determined by the
+     *         <tt>equals</tt> method; <tt>false</tt> otherwise.
+     * @throws NullPointerException if the specified key is null
+     */
 	@Override
 	public boolean containsColumn(Object column) {
 		// TODO Auto-generated method stub
@@ -532,6 +550,16 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 		return columnHeadSegmentFor(columnHash).containsKey(column, columnHash);
 	}
 
+	/**
+     * Tests if the specified object pair is a key pair in this table.
+     *
+     * @param  row   possible row key
+     * @param  column   possible column key
+     * @return <tt>true</tt> if and only if the specified object pair
+     *         is a key pair in this table, as determined by the
+     *         <tt>equals</tt> method; <tt>false</tt> otherwise.
+     * @throws NullPointerException if the specified key is null
+     */
 	@Override
 	public boolean containsKey(Object row, Object column) {
 		// TODO Auto-generated method stub
@@ -1879,7 +1907,7 @@ public class ConcurrentHashMatrix<RK, CK, V> extends
 			}
 		}
 
-		/* Specialized implementations of map methods */
+		/* Specialized implementations of matrix methods */
 
 		V get(Object row, int rowHash, Object column, int columnHash) {
 			if (count != 0) { // read-volatile

@@ -1,6 +1,7 @@
 package hust.idc.util.matrix;
 
 import hust.idc.util.pair.Pair;
+import hust.idc.util.pair.UnorderedPair;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -21,6 +22,21 @@ public class Matrixs {
 
 	private Matrixs() {
 		// cannot be instantiate
+	}
+
+	public static <RK, CK, V> Matrix<RK, CK, V> toMatrix(
+			Map<? extends Pair<? extends RK, ? extends CK>, ? extends V> map) {
+		return null;
+	}
+
+	public static <RK, CK, V> Matrix<RK, CK, V> toMatrix1(
+			Map<? extends RK, ? extends Map<? extends CK, ? extends V>> map) {
+		return null;
+	}
+
+	public static <K, V> SymmetricMatrix<K, V> toSymmetricMatrix(
+			Map<? extends UnorderedPair<? extends K>, ? extends V> map) {
+		return null;
 	}
 
 	public static <RK, CK, V> Matrix<RK, CK, V> synchronizedMatrix(
@@ -257,7 +273,8 @@ public class Matrixs {
 		public Set<Map.Entry<K, V>> entrySet() {
 			synchronized (mutex) {
 				if (entrySet == null)
-					entrySet = new SynchronizedSet<Map.Entry<K, V>>(m.entrySet(), mutex);
+					entrySet = new SynchronizedSet<Map.Entry<K, V>>(
+							m.entrySet(), mutex);
 				return entrySet;
 			}
 		}
@@ -534,7 +551,8 @@ public class Matrixs {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
 				if (entrySet == null)
-					entrySet = new SynchronizedSet<Matrix.Entry<RK, CK, V>>(m.entrySet(), mutex);
+					entrySet = new SynchronizedSet<Matrix.Entry<RK, CK, V>>(
+							m.entrySet(), mutex);
 				return entrySet;
 			}
 		}
@@ -544,7 +562,8 @@ public class Matrixs {
 			// TODO Auto-generated method stub
 			synchronized (mutex) {
 				if (keyPairSet == null)
-					keyPairSet = new SynchronizedSet<Pair<RK, CK>>(m.keyPairSet(), mutex);
+					keyPairSet = new SynchronizedSet<Pair<RK, CK>>(
+							m.keyPairSet(), mutex);
 				return keyPairSet;
 			}
 		}
