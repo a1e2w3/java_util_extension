@@ -39,6 +39,20 @@ public class TestHeaps {
 		
 		Heaps.makeHeap(array);
 		printArray(array);
+		
+		array[9].set(20);
+		printArray(array);
+		Heaps.pushHeap(array);
+		printArray(array);
+		
+		Heaps.popHeap(array);
+		printArray(array);
+		
+		Heaps.sortHeap(array, 0, 9);
+		printArray(array);
+		
+		Heaps.makeHeap(array);
+		printArray(array);
 	}
 
 }
