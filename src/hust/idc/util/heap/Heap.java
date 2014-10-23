@@ -68,7 +68,7 @@ public interface Heap<E> extends Queue<E> {
 	 * 
 	 * @return the comparator
 	 */
-	Comparator<? super E> getComparator();
+	Comparator<? super E> comparator();
 	
 	
 	/**

@@ -85,37 +85,40 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		super();
 		// TODO Auto-generated constructor stub
 		if (elements != null && !elements.isEmpty()) {
-			@SuppressWarnings("unchecked")
-			E[] array = (E[]) elements.toArray();
-			this.elements = this.initArray(array.length);
-			for (int i = 0; i < this.elements.length; ++i)
-				this.elements[i] = new BinaryHeapEntry(array[i], i);
+			this.elements = this.initArray(elements, elements.size());
+			this.size = this.elements.length;
 			this.buildHeap();
 		}
 	}
 
 	public BinaryHeap(Collection<? extends E> elements,
 			Comparator<? super E> comparator) {
-		super(comparator);
-		// TODO Auto-generated constructor stub
-		if (elements != null && !elements.isEmpty()) {
-			@SuppressWarnings("unchecked")
-			E[] array = (E[]) elements.toArray();
-			this.elements = this.initArray(array.length);
-			for (int i = 0; i < this.elements.length; ++i)
-				this.elements[i] = new BinaryHeapEntry(array[i], i);
+		this(comparator);
+		if(elements != null && !elements.isEmpty()){
+			this.elements = this.initArray(elements, elements.size());
+			this.size = this.elements.length;
 			this.buildHeap();
 		}
 	}
 
 	public BinaryHeap(Heap<E> heap) {
-		super(heap == null ? null : heap.getComparator());
-		if (heap != null && !heap.isEmpty()) {
-			@SuppressWarnings("unchecked")
-			E[] array = (E[]) heap.toArray();
-			this.elements = this.initArray(array.length);
-			for (int i = 0; i < this.elements.length; ++i)
-				this.elements[i] = new BinaryHeapEntry(array[i], i);
+		this(heap, heap == null ? null : heap.comparator());
+	}
+	
+	public BinaryHeap(E[] array, Comparator<? super E> comparator){
+		this(comparator);
+		if(array != null){
+			this.elements = this.initArray(array);
+			this.size = this.elements.length;
+			this.buildHeap();
+		}
+	}
+	
+	public BinaryHeap(E[] array){
+		this();
+		if(array != null){
+			this.elements = this.initArray(array);
+			this.size = this.elements.length;
 			this.buildHeap();
 		}
 	}
@@ -136,6 +139,21 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	@SuppressWarnings("unchecked")
 	private BinaryHeapEntry[] initArray(int capacity) {
 		return new BinaryHeap.BinaryHeapEntry[capacity];
+	}
+	
+	private BinaryHeapEntry[] initArray(E... elements){
+		BinaryHeapEntry[] entries = this.initArray(elements.length);
+		for(int i = 0; i < elements.length; ++i)
+			entries[i] = new BinaryHeapEntry(elements[i], i);
+		return entries;
+	}
+	
+	private BinaryHeapEntry[] initArray(Iterable<? extends E> iterable, int size){
+		BinaryHeapEntry[] entries = this.initArray(size);
+		int idx = 0;
+		for(Iterator<? extends E> it = iterable.iterator(); it.hasNext() && idx < size; ++idx)
+			entries[idx] = new BinaryHeapEntry(it.next(), idx);
+		return entries;
 	}
 
 	/*
@@ -203,11 +221,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 	private boolean buildHeap() {
 		if (this.size <= 1)
 			return false;
-		boolean modified = false;
-		for (int i = (this.size << 1); i > 0; --i) {
-			modified |= this.elements[i].heaplifyDown();
-		}
-		return modified;
+		return Heaps.makeHeap(this.elements);
 	}
 
 	protected transient volatile Collection<HeapEntry<E>> entrys = null;
@@ -531,7 +545,7 @@ public class BinaryHeap<E> extends AbstractHeap<E> implements Heap<E>,
 		
 		@Override
 		public String toString(){
-			return "index = " + index + ", value = " + element();
+			return "(index = " + index + ", value = " + element() + ")";
 		}
 
 	}

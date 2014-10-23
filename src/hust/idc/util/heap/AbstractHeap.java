@@ -82,9 +82,23 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 	}
 
 	public AbstractHeap(Heap<E> heap) {
-		this(heap == null ? null : heap.getComparator());
+		this(heap == null ? null : heap.comparator());
 		if (heap != null)
 			this.addAll(heap);
+	}
+
+	public AbstractHeap(E[] array, Comparator<? super E> comparator) {
+		this(comparator);
+		if (array != null) {
+			for (int i = 0; i < array.length; ++i)
+				this.add(array[i]);
+		}
+	}
+
+	public AbstractHeap(E[] array) {
+		this();
+		for (int i = 0; i < array.length; ++i)
+			this.add(array[i]);
 	}
 
 	/*
@@ -93,7 +107,7 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 	 * @see hust.idc.util.heap.Heap#rebuild()
 	 */
 	@Override
-	public final Comparator<? super E> getComparator() {
+	public final Comparator<? super E> comparator() {
 		// TODO Auto-generated method stub
 		return this.comparator;
 	}
@@ -489,12 +503,19 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 	 * @author Wang Cong
 	 * 
 	 */
-	abstract class AbstractHeapEntry implements HeapEntry<E> {
+	abstract class AbstractHeapEntry implements HeapEntry<E>,
+			Comparable<HeapEntry<E>> {
 		AbstractHeapEntry() {
 		}
-		
+
 		AbstractHeapEntry(E element) {
 			this.set(element);
+		}
+
+		@Override
+		public int compareTo(HeapEntry<E> o) {
+			// TODO Auto-generated method stub
+			return compare(this, o);
 		}
 
 		boolean exchangeElementWith(HeapEntry<E> otherIndex) {
@@ -708,16 +729,16 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 	}
 
 	abstract class AbstractBinaryHeapEntry extends AbstractHeapEntry {
-		AbstractBinaryHeapEntry(){
+		AbstractBinaryHeapEntry() {
 			super();
 		}
-		
-		AbstractBinaryHeapEntry(E element){
+
+		AbstractBinaryHeapEntry(E element) {
 			super(element);
 		}
-		
+
 		public abstract AbstractBinaryHeapEntry parent();
-		
+
 		abstract AbstractBinaryHeapEntry leftChild();
 
 		abstract AbstractBinaryHeapEntry rightChild();
@@ -801,18 +822,18 @@ public abstract class AbstractHeap<E> extends AbstractQueue<E> implements
 			}
 			return children;
 		}
-		
-		void writeBinaryTree(java.io.ObjectOutputStream s) throws IOException{
+
+		void writeBinaryTree(java.io.ObjectOutputStream s) throws IOException {
 			assert s != null;
 			s.writeObject(this.element());
 			boolean leftEmpty = this.leftChild() != null;
 			s.writeBoolean(leftEmpty);
-			if(!leftEmpty)
+			if (!leftEmpty)
 				this.leftChild().writeBinaryTree(s);
 
 			boolean rightEmpty = this.rightChild() != null;
 			s.writeBoolean(rightEmpty);
-			if(!rightEmpty)
+			if (!rightEmpty)
 				this.rightChild().writeBinaryTree(s);
 		}
 	}
