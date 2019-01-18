@@ -37,10 +37,10 @@ Heap maintain the order of keys. The following code gives an example.
 Package matrix provide a new kind of map that associate two different key types to a single value, one key is called 
 row key and the other is column key. For example, if we need to maintain the access authorities to many documents of 
 many different users, we could use a matrix to contain the authorities, let the user id be the row key and the doc id 
-be the column key, the authority of the given user to the given document.  We have three kind implementations of 
+be the column key, whose value is the authority of the given user to the given document.  We have three kind implementations of 
 matrix now. 
 
-An HashMap maintain the data with a two-dimensional array, the position of an entry was decided by hash code of row key 
+An HashMatrix maintain the data with a two-dimensional array, the position of an entry was decided by hash code of row key 
 and column key, the row key decide the row in array and the column key decide the column. So random access will be the 
 fastest. In version 1.0, we use a nest hash map to implement the hash matrix, the array implementation was in the plan. 
 The key of outer hashMap is the row key of the matrix, and the time complexity of random get all value of a row 
